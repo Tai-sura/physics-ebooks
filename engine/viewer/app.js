@@ -8,6 +8,7 @@ import { renderLinks, clearLinks } from "./links.js";
 import { addMedia, toggleMedia } from "./media.js";
 import { openGuide } from "./guide.js";
 import { addInfographics } from "../infographic/infographic.js";
+import { addEmbeds } from "./embed.js";
 import { END_PAGES, mountEndPage } from "./endpages.js";
 
 const PAGE_W = 595.32;
@@ -215,6 +216,7 @@ function buildPages() {
     buildOverlay(page, overlay);
     addMedia(page.page, overlay);
     addInfographics(page, overlay);
+    addEmbeds(page, overlay);
     ink.setText(sheet.dataset.key, page.text);
     sheet.append(pageBackground(pageImage(page.page)), overlay, ...makeCanvases());
     world.append(sheet);

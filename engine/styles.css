@@ -972,8 +972,18 @@ body.embed-open { overflow: hidden; }
 .embed-card header strong { font-size: var(--fs-lg); }
 .embed-sub { font-size: var(--fs-sm); color: #6b7280; }
 .embed-close { margin-left: auto; }
-.embed-frame { flex: 1 1 auto; min-height: 0; }
+.embed-frame { flex: 1 1 auto; min-height: 0; position: relative; }
 .embed-frame iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
+.embed-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fffdf9;
+  color: #6b7280;
+  font-size: var(--fs-md);
+}
 
 @media (max-width: 900px) {
   .embed-modal { padding: 8px; }

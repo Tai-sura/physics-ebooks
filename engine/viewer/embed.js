@@ -96,7 +96,13 @@ export function openEmbed(i) {
   iframe.title = item.title || "Interactive explainer";
   iframe.setAttribute("allow", "fullscreen");
   iframe.src = new URL(item.src, document.baseURI).href;
-  frame.replaceChildren(iframe);
+  // The first open fetches p5 (~1 MB) on a cold cache; until then the frame is
+  // white. Say so instead of showing an empty box.
+  const loading = document.createElement("div");
+  loading.className = "embed-loading";
+  loading.textContent = "載入互動示範…";
+  iframe.addEventListener("load", () => loading.remove());
+  frame.replaceChildren(iframe, loading);
   modal.classList.add("open");
   modal.setAttribute("aria-hidden", "false");
   document.body.classList.add("embed-open");

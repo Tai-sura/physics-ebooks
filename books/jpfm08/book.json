@@ -617,6 +617,19 @@
   },
   "media": [
     {
+      "page": 1,
+      "region": [
+        64,
+        214,
+        552,
+        388
+      ],
+      "scene": "jpfm08:MomentConcept",
+      "src": "media/moment-concept-1.mp4",
+      "poster": "media/moment-concept-1-poster.png",
+      "title": "Moment of a force: the same force, three moment arms (d, d sin theta, 0)"
+    },
+    {
       "page": 15,
       "region": [
         30,

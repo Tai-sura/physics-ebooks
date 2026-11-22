@@ -1367,6 +1367,174 @@ function q46(root) {
   render();
 }
 
+/* ---------------- Q56: e.m.f. and internal resistance from the V-I graph ----------------
+ *
+ * q56 prints a cell (e.m.f. eps, internal resistance r) with an ideal voltmeter across it and a
+ * variable resistor plus an ideal ammeter in series, and a V-I graph whose blue line passes
+ * through (100 mA, 1.2 V), (200 mA, 0.8 V) and (300 mA, 0.4 V).  The printed working is
+ *     eps = V + Ir  =>  V = eps - Ir,  the line has intercept eps and slope -r,
+ *     eps = 1.6 V,  r = (1.6 - 0.4)/0.300 = 4 ohm.
+ * Every number on screen is recomputed from eps = 1.6 V and r = 4 ohm, so the four printed
+ * anchors come out exactly: 1.60 / 1.20 / 0.80 / 0.40 V at 0 / 100 / 200 / 300 mA.
+ *
+ * Geometry of the printed graph, measured on the brief crop of page 19 (1786 x 1232 px, 3 px
+ * per pt): axis origin x = 911.5, V = 0 at y = 566; 100 mA = 104.8 px, 0.4 V = 107.5 px; the
+ * printed blue line covers x 972..1271 px, i.e. I = 57.7..343.0 mA.  So the frame here is
+ * I 0..450 mA across (labels to 400) and V 0..1.8 V up (labels to 1.6), and the solid blue
+ * line is drawn over I = 60..345 mA to match.  The slider stops at 340 mA, so the live point
+ * always sits on the printed segment.
+ */
+const Q56_EMF = 1.6;        // V, printed answer (the intercept)
+const Q56_RINT = 4;         // ohm, printed answer (the slope magnitude)
+const Q56_I0 = 100;         // mA, the printed point (100 mA, 1.2 V)
+
+function q56(root) {
+  const CW = 620, CH = 282;
+  const svg = scene(CW, CH);
+  const iS = slider({ label: "current I (mA)", min: 0, max: 340, step: 10, value: Q56_I0,
+    fmt: (v) => v.toFixed(0) + " mA", play: false });
+  const r = readout();
+
+  root.append(
+    question("The circuit below measures the e.m.f. and the internal resistance of a dry cell (the voltmeter and the ammeter are ideal). (a) Express V in terms of \u03B5, I and r. (b) Hence deduce \u03B5 and r from the graph.", [
+      "$\\varepsilon = V + Ir$, so the graph of $V$ against $I$ is a straight line: intercept $\\varepsilon$, slope $-r$",
+    ]),
+    svg, iS.el, r.el,
+  );
+
+  /* ---- the printed graph frame: I 0..450 mA across, V 0..1.8 V up ---- */
+  const GX0 = 322, GY0 = 232;
+  const SX = 0.59;                    // px per mA  (100 mA = 59 px)
+  const SY = 106;                     // px per V   (0.4 V = 42.4 px)
+  const TX = (mA) => GX0 + mA * SX;
+  const QY = (v) => GY0 - v * SY;
+  const V_AT = (mA) => Q56_EMF - Q56_RINT * (mA / 1000);
+
+  /* ---- the circuit on the left, laid out as the printed figure ---- */
+  const CX0 = 55, CX1 = 235;          // the left and right vertical wires
+  const TOPY = 56, MIDY = 114, BOTY = 196;
+
+  const render = () => {
+    clear(svg);
+    const I_MA = iS.get();
+    const V = V_AT(I_MA);
+
+    /* ---- the printed graph: fine grid first, then the axes ---- */
+    for (let mA = 20; mA <= 440; mA += 20) {
+      S("line", { x1: TX(mA), y1: QY(1.8), x2: TX(mA), y2: GY0,
+        stroke: mA % 100 === 0 ? "#cfc8b8" : C.soft, "stroke-width": 1 }, svg);
+    }
+    for (let k = 1; k <= 18; k++) {
+      S("line", { x1: GX0, y1: QY(k * 0.1), x2: TX(450), y2: QY(k * 0.1),
+        stroke: k % 4 === 0 ? "#cfc8b8" : C.soft, "stroke-width": 1 }, svg);
+    }
+    S("line", { x1: GX0, y1: GY0 + 6, x2: GX0, y2: 34, stroke: C.line, "stroke-width": 1.6,
+      "marker-end": "url(#arr-" + svg.dataset.uid + ")" }, svg);
+    S("line", { x1: GX0 - 8, y1: GY0, x2: GX0 + 272, y2: GY0, stroke: C.line, "stroke-width": 1.6,
+      "marker-end": "url(#arr-" + svg.dataset.uid + ")" }, svg);
+
+    [0, 100, 200, 300, 400].forEach((mA) => {
+      S("line", { x1: TX(mA), y1: GY0, x2: TX(mA), y2: GY0 + 5, stroke: C.line, "stroke-width": 1 }, svg);
+      T(svg, TX(mA), GY0 + 18, String(mA), { "text-anchor": "middle", "font-size": 10.5, fill: "#444" });
+    });
+    [0, 0.4, 0.8, 1.2, 1.6].forEach((v) => {
+      S("line", { x1: GX0 - 5, y1: QY(v), x2: GX0, y2: QY(v), stroke: C.line, "stroke-width": 1 }, svg);
+      T(svg, GX0 - 8, QY(v) + 4, v === 0 ? "0" : v.toFixed(1),
+        { "text-anchor": "end", "font-size": 10.5, fill: "#444" });
+    });
+    T(svg, GX0 + 7, 40, "V / V", { "font-size": 12.5, "font-weight": 700, fill: C.line });
+    T(svg, 594, GY0 + 30, "I / mA", { "text-anchor": "end", "font-size": 12.5, "font-weight": 700, fill: C.line });
+
+    /* ---- the printed blue line, over the span the printed figure draws it ---- */
+    const LN0 = 60, LN1 = 345;
+    S("line", { x1: TX(LN0), y1: QY(V_AT(LN0)), x2: TX(LN1), y2: QY(V_AT(LN1)),
+      stroke: C.blue, "stroke-width": 2.8, "stroke-linecap": "round" }, svg);
+
+    /* ---- the intercept: the line extended back to I = 0 ---- */
+    S("line", { x1: TX(LN0), y1: QY(V_AT(LN0)), x2: GX0, y2: QY(Q56_EMF),
+      stroke: C.amber, "stroke-width": 1.8, "stroke-dasharray": "5 4" }, svg);
+    T(svg, GX0 + 7, 56, "intercept = \u03B5 = 1.6 V",
+      { "font-size": 10.5, "font-weight": 700, fill: C.amber });
+
+    /* ---- the slope triangle on the two printed points (100 mA, 1.2 V) and (300 mA, 0.4 V) ---- */
+    const P1x = TX(100), P1y = QY(V_AT(100));
+    const P2x = TX(300), P2y = QY(V_AT(300));
+    S("line", { x1: P1x, y1: P1y, x2: P2x, y2: P1y, stroke: C.amber, "stroke-width": 1.6,
+      "stroke-dasharray": "5 4" }, svg);
+    S("line", { x1: P2x, y1: P1y, x2: P2x, y2: P2y, stroke: C.amber, "stroke-width": 1.6,
+      "stroke-dasharray": "5 4" }, svg);
+    T(svg, (P1x + P2x) / 2, P1y - 7, "200 mA",
+      { "text-anchor": "middle", "font-size": 10, "font-weight": 700, fill: C.amber });
+    T(svg, P2x + 6, (P1y + P2y) / 2 + 4, "\u22120.80 V",
+      { "font-size": 10, "font-weight": 700, fill: C.amber });
+    T(svg, 455, 276, "slope = \u22120.80 V / 0.200 A = \u22124.0 \u03A9 = \u2212r",
+      { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
+
+    /* ---- the live point on that line, with guides down to both axes ---- */
+    const px = TX(I_MA), py = QY(V);
+    S("line", { x1: px, y1: GY0, x2: px, y2: py, stroke: C.grey, "stroke-width": 1,
+      "stroke-dasharray": "3 3" }, svg);
+    S("line", { x1: GX0, y1: py, x2: px, y2: py, stroke: C.grey, "stroke-width": 1,
+      "stroke-dasharray": "3 3" }, svg);
+    S("circle", { cx: px, cy: py, r: 5.5, fill: C.amber, stroke: C.paper, "stroke-width": 2 }, svg);
+
+    /* ---- the circuit: cell on top, V across it, variable resistor + A along the bottom ---- */
+    const wire = (pts) => S("path", {
+      d: pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" "),
+      fill: "none", stroke: C.line, "stroke-width": 2, "stroke-linejoin": "round",
+    }, svg);
+    wire([[CX0, TOPY], [CX0, BOTY]]);
+    wire([[CX1, TOPY], [CX1, BOTY]]);
+    wire([[CX0, TOPY], [124, TOPY]]);
+    wire([[133, TOPY], [CX1, TOPY]]);
+    S("line", { x1: 124, y1: TOPY - 10, x2: 124, y2: TOPY + 10, stroke: C.line, "stroke-width": 3 }, svg);
+    S("line", { x1: 133, y1: TOPY - 5, x2: 133, y2: TOPY + 5, stroke: C.line, "stroke-width": 3 }, svg);
+    T(svg, 128, TOPY - 16, "\u03B5, r", { "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: C.ink });
+
+    /* the voltmeter sits between the two junction dots, across the cell only */
+    wire([[CX0, MIDY], [128, MIDY]]);
+    wire([[162, MIDY], [CX1, MIDY]]);
+    S("circle", { cx: 145, cy: MIDY, r: 17, fill: C.paper, stroke: C.line, "stroke-width": 2 }, svg);
+    T(svg, 145, MIDY + 5, "V", { "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: C.ink });
+    S("circle", { cx: CX0, cy: MIDY, r: 4.2, fill: C.line }, svg);
+    S("circle", { cx: CX1, cy: MIDY, r: 4.2, fill: C.line }, svg);
+
+    /* the bottom branch: variable resistor, then the ammeter, back to the cell */
+    wire([[CX0, BOTY], [72, BOTY]]);
+    wire([[128, BOTY], [174, BOTY]]);
+    wire([[208, BOTY], [CX1, BOTY]]);
+    S("rect", { x: 72, y: BOTY - 10, width: 56, height: 20, fill: C.paper, stroke: C.line, "stroke-width": 2 }, svg);
+    S("line", { x1: 64, y1: BOTY + 10, x2: 136, y2: BOTY - 16, stroke: C.line, "stroke-width": 1.6,
+      "marker-end": "url(#arr-" + svg.dataset.uid + ")" }, svg);
+    S("circle", { cx: 191, cy: BOTY, r: 17, fill: C.paper, stroke: C.line, "stroke-width": 2 }, svg);
+    T(svg, 191, BOTY + 5, "A", { "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: C.ink });
+
+    /* ---- the (a) answer, above the circuit ---- */
+    T(svg, 20, 30, "V = \u03B5 \u2212 I r", { "font-size": 12.5, "font-weight": 700, fill: C.amber });
+
+    /* ---- the live readings, under the circuit ---- */
+    T(svg, 20, 224, "V = " + V.toFixed(2) + " V", { "font-size": 16, "font-weight": 700, fill: C.ink });
+    T(svg, 20, 244, "I = " + I_MA.toFixed(0) + " mA", { "font-size": 13, "font-weight": 700, fill: C.ink });
+    const rex = I_MA > 0
+      ? "R_ext = V/I = " + (V / (I_MA / 1000)).toFixed(1) + " \u03A9 (from the readings)"
+      : "R_ext = V/I \u2014 not defined at I = 0";
+    T(svg, 20, 262, rex, { "font-size": 9.5, fill: C.grey });
+
+    /* ---- the reading row ---- */
+    const latex = "V = " + Q56_EMF.toFixed(2) + " - " + Q56_RINT.toFixed(2) +
+      "\\,I\\ \\text{(I in A)},\\quad I = " + I_MA.toFixed(0) + "\\ \\text{mA},\\quad V = " +
+      V.toFixed(2) + "\\ \\text{V}";
+    const caption = "At I = 0 the line runs back to the intercept, so " + Q56_EMF.toFixed(1) +
+      " V is the e.m.f.; between the printed points (100 mA, 1.2 V) and (300 mA, 0.4 V) the slope is " +
+      "(0.4 \u2212 1.2)/(0.300 \u2212 0.100) = \u22124.0 \u03A9, so r = 4 \u03A9. " +
+      "The dashed guides and R_ext are worked out from these readings, not printed values.";
+    r.set(latex, true, caption, { yes: "live readings" });
+  };
+
+  iS.on(render);
+  render();
+}
+
 /* ---------------- Q16: the same two resistors, in series and in parallel ----------------
  *
  * q16 gives 3 ohm, 6 ohm and a 9 V battery, and its answers are
@@ -1501,7 +1669,7 @@ function q16(root) {
   render();
 }
 
-const REGISTRY = { q2, q3, q6, q9, q19, q20, q32, q36, q41, q46, q16 };
+const REGISTRY = { q2, q3, q6, q9, q19, q20, q32, q36, q41, q46, q56, q16 };
 
 export function hasGraphic(id) {
   return Boolean(REGISTRY[id]);

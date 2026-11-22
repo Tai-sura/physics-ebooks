@@ -1075,6 +1075,168 @@ function q41(root) {
   render();
 }
 
+/* ---------------- Q32: an ideal voltmeter in a circuit with one fault ----------------
+ *
+ * q32 prints a 6 V cell of negligible resistance, a switch S, and three resistors X, Y, Z:
+ *     battery(+) -> S -> Z -> bottom-right dot -> { X } -> left dot -> battery(-)
+ * and in parallel with X the branch { voltmeter V in series with Y }.
+ * The printed conclusion is "the voltmeter reads 6 V only when no current flows, so X is
+ * faulty and has become an open circuit" -> answer C.
+ *
+ * The printed page gives NO resistance values, so this widget stays symbolic: each of the
+ * five states shows the reading and the main current as expressions in X and Z, never as
+ * invented numbers. The two facts that decide the question are spelled out on the drawing:
+ *   * an ideal voltmeter has infinite resistance, so its own branch never carries current
+ *     and shorting Y cannot change the reading;
+ *   * with the circuit open there is no current, so no resistor drops any p.d. and the whole
+ *     6 V stands across the break.
+ */
+const Q32_E = 6;      // V, the printed e.m.f.
+
+const Q32_STATES = [
+  { id: "normal", name: "normal",
+    read: "6X/(X+Z)", cur: "6/(X+Z)", tag: "only X and Z carry it" },
+  { id: "xs", name: "X shorted",
+    read: "0 V", cur: "6/Z", tag: "no p.d. across X" },
+  { id: "ys", name: "Y shorted",
+    read: "6X/(X+Z)", cur: "6/(X+Z)", tag: "ideal V blocks that branch" },
+  { id: "xo", name: "X open",
+    read: "6 V", cur: "0", tag: "no current, so no drops" },
+  { id: "zo", name: "Z open",
+    read: "0 V", cur: "0", tag: "no current \u21D2 no p.d. on X" },
+];
+
+function q32(root) {
+  const CW = 620, CH = 300;
+  const svg = scene(CW, CH);
+  const r = readout();
+  const state = { s: 0 };
+
+  const row = buttonRow(Q32_STATES.map((st, i) => [st.name, () => { state.s = i; render(); }]));
+
+  root.append(
+    question("In the circuit below the e.m.f. of the cell is 6 V and it has negligible resistance; the voltmeter is ideal. When S is closed the voltmeter reads 6 V. If only one fault has developed, which is possible?", [
+      "An ideal voltmeter has infinite resistance, so its own branch never carries current",
+    ]),
+    svg,
+    row,
+    r.el,
+  );
+
+  const LEFT = 90, RIGHT = 420, TOP = 46, BOT = 246, MIDY = 126;
+  const D1 = [LEFT, MIDY], D2 = [330, BOT];
+  const CX = 530;
+
+  const render = () => {
+    clear(svg);
+    const st = Q32_STATES[state.s];
+
+    const wire = (pts, color, w, dash) => S("path", {
+      d: pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" "),
+      fill: "none", stroke: color || C.line, "stroke-width": w || 2, "stroke-linejoin": "round",
+      "stroke-dasharray": dash || "none",
+    }, svg);
+    const box = (x, y, w, h, label, faded, lx, ly, anchor) => {
+      S("rect", { x, y, width: w, height: h, fill: C.paper,
+        stroke: faded ? C.grey : C.line, "stroke-width": faded ? 1.4 : 2,
+        "stroke-dasharray": faded ? "4 3" : "none" }, svg);
+      T(svg, lx, ly, label, { "text-anchor": anchor || "middle", "font-size": 12.5, "font-weight": 700,
+        fill: faded ? C.grey : C.ink });
+    };
+    const openGap = (x, y) => {  // two stubs with a gap: the printed-style break
+      S("line", { x1: x - 12, y1: y, x2: x - 4, y2: y, stroke: C.grey, "stroke-width": 2 }, svg);
+      S("line", { x1: x + 4, y1: y, x2: x + 12, y2: y, stroke: C.grey, "stroke-width": 2 }, svg);
+      S("circle", { cx: x - 3, cy: y, r: 2.6, fill: C.paper, stroke: C.amber, "stroke-width": 1.8 }, svg);
+      S("circle", { cx: x + 3, cy: y, r: 2.6, fill: C.paper, stroke: C.amber, "stroke-width": 1.8 }, svg);
+    };
+    const shortBar = (x0, x1, y) => S("line", { x1: x0, y1: y, x2: x1, y2: y,
+      stroke: C.amber, "stroke-width": 3.4, "stroke-dasharray": "7 4" }, svg);
+
+    /* ---- battery, switch, Z: the outer loop ---- */
+    wire([[LEFT, TOP], [160, TOP]]);
+    wire([[240, TOP], [300, TOP]]);
+    S("line", { x1: 191, y1: TOP - 13, x2: 191, y2: TOP + 13, stroke: C.line, "stroke-width": 3 }, svg);
+    S("line", { x1: 200, y1: TOP - 7, x2: 200, y2: TOP + 7, stroke: C.line, "stroke-width": 3 }, svg);
+    S("line", { x1: 211, y1: TOP - 13, x2: 211, y2: TOP + 13, stroke: C.line, "stroke-width": 3 }, svg);
+    S("line", { x1: 220, y1: TOP - 7, x2: 220, y2: TOP + 7, stroke: C.line, "stroke-width": 3 }, svg);
+    T(svg, 205, TOP - 22, "6 V", { "text-anchor": "middle", "font-size": 12.5, "font-weight": 700, fill: C.ink });
+    // the switch, drawn closed: the question is about the closed state
+    S("circle", { cx: 300, cy: TOP, r: 3.6, fill: C.paper, stroke: C.line, "stroke-width": 1.8 }, svg);
+    S("circle", { cx: 360, cy: TOP, r: 3.6, fill: C.paper, stroke: C.line, "stroke-width": 1.8 }, svg);
+    wire([[303, TOP], [357, TOP]], C.ink, 2.2);
+    T(svg, 330, TOP - 14, "S", { "text-anchor": "middle", "font-size": 12.5, "font-weight": 700, fill: C.ink });
+    wire([[360, TOP], [RIGHT, TOP], [RIGHT, 116]]);
+    // Z on the right-hand vertical
+    wire([[RIGHT, 176], [RIGHT, BOT], [330, BOT]]);
+    box(RIGHT - 9, 116, 18, 60, "Z", false, RIGHT + 16, 152, "start");
+
+    /* ---- the left rail, with the printed junction dot ---- */
+    wire([[LEFT, TOP], [LEFT, MIDY], [LEFT, BOT], [150, BOT]]);
+    S("circle", { cx: D1[0], cy: D1[1], r: 4.2, fill: C.ink }, svg);
+
+    /* ---- the voltmeter and Y, in series between the left rail and the second dot ---- */
+    S("circle", { cx: 176, cy: BOT, r: 17, fill: C.paper, stroke: C.line, "stroke-width": 2 }, svg);
+    T(svg, 176, BOT + 6, "V", { "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: C.ink });
+    wire([[193, BOT], [250, BOT]]);
+    wire([[320, BOT], [D2[0], BOT]]);
+    box(250, BOT - 9, 70, 18, "Y", state.s === 2, 285, BOT - 15, "middle");
+    S("circle", { cx: D2[0], cy: D2[1], r: 4.2, fill: C.ink }, svg);
+
+    /* ---- X across the two dots ---- */
+    wire([[LEFT, MIDY], [150, MIDY]]);
+    wire([[230, MIDY], [330, MIDY], [330, BOT]]);
+    box(150, MIDY - 9, 80, 18, "X", state.s === 3, 190, MIDY - 15, "middle");
+
+    /* ---- the fault marks, in amber, never red ---- */
+    if (state.s === 1) {
+      shortBar(150, 230, MIDY);
+      T(svg, 190, MIDY + 26, "short", { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
+    }
+    if (state.s === 2) {
+      shortBar(250, 320, BOT);
+      T(svg, 285, BOT + 26, "short", { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
+    }
+    if (state.s === 3) {
+      openGap(140, MIDY);
+      T(svg, 190, MIDY + 26, "open", { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
+    }
+    if (state.s === 4) {
+      S("line", { x1: RIGHT, y1: 134, x2: RIGHT, y2: 142, stroke: C.grey, "stroke-width": 2 }, svg);
+      S("line", { x1: RIGHT, y1: 150, x2: RIGHT, y2: 158, stroke: C.grey, "stroke-width": 2 }, svg);
+      S("circle", { cx: RIGHT, cy: 137, r: 2.6, fill: C.paper, stroke: C.amber, "stroke-width": 1.8 }, svg);
+      S("circle", { cx: RIGHT, cy: 155, r: 2.6, fill: C.paper, stroke: C.amber, "stroke-width": 1.8 }, svg);
+      T(svg, RIGHT + 16, 104, "open", { "text-anchor": "start", "font-size": 11, "font-weight": 700, fill: C.amber });
+    }
+
+    /* ---- the reading column, on the right ---- */
+    const col = (y, s, color, size) =>
+      T(svg, CX, y, s, { "text-anchor": "middle", "font-size": size, "font-weight": 700, fill: color });
+    col(58, st.name, C.ink, 14);
+    col(98, "meter: " + st.read, C.amber, 12.5);
+    col(128, "I = " + st.cur, C.ink, 12.5);
+    col(164, st.tag, C.grey, 10.5);
+
+    /* ---- the reading row ---- */
+    const latex = state.s === 0 || state.s === 2
+      ? "V = \\frac{6X}{X+Z}" + (state.s === 2 ? "\\ \\text{(unchanged)}" : "") + ",\\quad I = \\frac{6}{X+Z}"
+      : state.s === 1
+        ? "V = 0,\\quad I = \\frac{6}{Z}"
+        : state.s === 3
+          ? "V = 6\\ \\text{V},\\quad I = 0"
+          : "V = 0,\\quad I = 0";
+    const cap = [
+      "Normal: the voltmeter branch carries no current (ideal meter), so the meter reads the p.d. across X, 6X/(X+Z).",
+      "X shorted: both ends of X are at the same potential, so the meter reads 0 V and the current is limited by Z alone.",
+      "Y shorted: the ideal voltmeter already stops this branch, so the reading cannot change \u2014 this is why B is not possible.",
+      "X open: no current anywhere, no p.d. across any resistor, so the whole 6 V appears across the break: the meter reads 6 V. This is the printed answer.",
+      "Z open: no current, so no p.d. across X either: the meter reads 0 V.",
+    ][state.s];
+    r.set(latex, state.s === 3 ? true : null, cap, { yes: "printed answer" });
+  };
+
+  render();
+}
+
 /* ---------------- Q16: the same two resistors, in series and in parallel ----------------
  *
  * q16 gives 3 ohm, 6 ohm and a 9 V battery, and its answers are
@@ -1209,7 +1371,7 @@ function q16(root) {
   render();
 }
 
-const REGISTRY = { q2, q3, q6, q9, q19, q20, q36, q41, q16 };
+const REGISTRY = { q2, q3, q6, q9, q19, q20, q32, q36, q41, q16 };
 
 export function hasGraphic(id) {
   return Boolean(REGISTRY[id]);

@@ -932,6 +932,149 @@ function q20(root) {
   render();
 }
 
+/* ---------------- Q41: the metre-wire with a 10 ohm load from A to the slider X ----------
+ *
+ * q41 prints: AB is a metre-wire of 10 ohm, a 10 V battery sits across A and B, and a 10 ohm
+ * resistor is connected from A down under the wire and back up into the sliding contact X
+ * (the printed arrow points up at the wire). With X at the mid-point the printed answer is
+ *     R_AX = R_XB = 5 ohm,  R_p = 5*10/(5+10) = 3.33 ohm,
+ *     V_AX = 10 x 3.33/(3.33+5) = 4.0 V
+ * The 10 ohm is in parallel with the AX part only, so V_AX is NOT proportional to the length:
+ * it is 0 V at A, 10 V at B, and 4.0 V at the mid-point instead of the 5 V a bare wire would
+ * give. That sentence is on the drawing, and the V_AX-x curve is drawn from the model, so it
+ * is visibly not a straight line.
+ */
+const Q41_WIRE = 10;     // ohm, the metre wire AB (printed)
+const Q41_LOAD = 10;     // ohm, the resistor from A to X (printed)
+const Q41_V = 10;        // V, the battery across AB (printed)
+
+function q41(root) {
+  const CW = 620, CH = 430;
+  const svg = scene(CW, CH);
+  const xS = slider({ label: "position of X (m)", min: 0, max: 1, step: 0.01, value: 0.5,
+    fmt: (v) => v.toFixed(2) + " m", play: false });
+  const r = readout();
+
+  root.append(
+    question("In the circuit shown, AB is a metre-wire of resistance 10 \u03A9. When X is moved to the mid-point of AB, the p.d. across AX will be", [
+      "The 10 \u03A9 resistor hangs between A and X, so it is in parallel with the AX part of the wire",
+      "$R_{AX} = 10x$, $R_{XB} = 10(1-x)$, $R_p = \\dfrac{R_{AX}\\times10}{R_{AX}+10}$",
+      "Then $V_{AX} = 10\\dfrac{R_p}{R_p+R_{XB}}$ \u2014 not proportional to $x$",
+    ]),
+    svg,
+    xS.el,
+    r.el,
+  );
+
+  const AX0 = 70, BX = 350, WY = 140;      // the wire AB, A on the left as printed
+  const TOPY = 70, BOTY = 225;
+  const CX = 530;
+
+  const render = () => {
+    clear(svg);
+    const x = xS.get();
+    const rAX = Q41_WIRE * x;
+    const rXB = Q41_WIRE * (1 - x);
+    const rp = rAX > 0 ? (rAX * Q41_LOAD) / (rAX + Q41_LOAD) : 0;
+    const rtot = rp + rXB;
+    const I = Q41_V / rtot;
+    const vAX = I * rp;
+    const Xx = AX0 + x * (BX - AX0);
+
+    const wire = (pts, color, w) => S("path", {
+      d: pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" "),
+      fill: "none", stroke: color || C.line, "stroke-width": w || 2, "stroke-linejoin": "round",
+    }, svg);
+
+    /* ---- the battery across A and B, on top ---- */
+    wire([[AX0, WY], [AX0, TOPY], [BX, TOPY], [BX, WY]]);
+    S("line", { x1: 203, y1: TOPY - 11, x2: 203, y2: TOPY + 11, stroke: C.line, "stroke-width": 3 }, svg);
+    S("line", { x1: 213, y1: TOPY - 6, x2: 213, y2: TOPY + 6, stroke: C.line, "stroke-width": 3 }, svg);
+    S("line", { x1: 223, y1: TOPY - 11, x2: 223, y2: TOPY + 11, stroke: C.line, "stroke-width": 3 }, svg);
+    S("line", { x1: 233, y1: TOPY - 6, x2: 233, y2: TOPY + 6, stroke: C.line, "stroke-width": 3 }, svg);
+    T(svg, 218, TOPY - 18, "10 V", { "text-anchor": "middle", "font-size": 12.5, "font-weight": 700, fill: C.ink });
+
+    /* ---- the metre wire AB, its AX part picked out in amber ---- */
+    S("line", { x1: AX0, y1: WY, x2: Xx, y2: WY, stroke: C.amber, "stroke-width": 5 }, svg);
+    S("line", { x1: Xx, y1: WY, x2: BX, y2: WY, stroke: C.ink, "stroke-width": 5 }, svg);
+    T(svg, AX0 - 12, WY + 5, "A", { "text-anchor": "end", "font-size": 13, "font-weight": 700, fill: C.ink });
+    T(svg, BX + 12, WY + 5, "B", { "text-anchor": "start", "font-size": 13, "font-weight": 700, fill: C.ink });
+
+    /* ---- the 10 ohm load: A down, through the resistor, back up into X ---- */
+    wire([[AX0, WY], [AX0, BOTY], [95, BOTY]]);
+    S("rect", { x: 95, y: BOTY - 9, width: 50, height: 18, fill: C.paper, stroke: C.line, "stroke-width": 2 }, svg);
+    T(svg, 120, BOTY - 15, "10 \u03A9", { "text-anchor": "middle", "font-size": 11.5, "font-weight": 700, fill: C.ink });
+    wire([[145, BOTY], [Xx, BOTY]]);
+    wire([[Xx, BOTY], [Xx, WY + 6]], C.ink, 2);
+    S("line", { x1: Xx, y1: WY + 22, x2: Xx, y2: WY + 5, stroke: C.ink, "stroke-width": 2.4,
+      "marker-end": "url(#arrInk-" + svg.dataset.uid + ")" }, svg);
+    T(svg, Xx + 9, WY + 30, "X", { "font-size": 13, "font-weight": 700, fill: C.ink });
+
+    /* ---- the sentence that is the whole point of the question ---- */
+    T(svg, 210, 262, "V_AX is not proportional to the length: at the mid-point it is 4.0 V, not 5.0 V,",
+      { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
+    T(svg, 210, 277, "because the 10 \u03A9 load pulls the AX part down",
+      { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
+
+    /* ---- the V_AX against x curve, from the model: visibly not a straight line ---- */
+    const gx0 = 70, gx1 = 350, gy0 = 300, gy1 = 400;
+    S("line", { x1: gx0, y1: gy1, x2: gx1 + 8, y2: gy1, stroke: C.line, "stroke-width": 1.4 }, svg);
+    S("line", { x1: gx0, y1: gy1, x2: gx0, y2: gy0 - 6, stroke: C.line, "stroke-width": 1.4 }, svg);
+    const GX = (t) => gx0 + t * (gx1 - gx0);
+    const GY = (v) => gy1 - (v / Q41_V) * (gy1 - gy0);
+    for (let v = 0; v <= 10; v += 5) {
+      S("line", { x1: gx0 - 4, y1: GY(v), x2: gx0, y2: GY(v), stroke: C.line, "stroke-width": 1 }, svg);
+      T(svg, gx0 - 8, GY(v) + 4, String(v), { "text-anchor": "end", "font-size": 10, fill: "#444" });
+    }
+    for (let t = 0; t <= 1.001; t += 0.25) {
+      S("line", { x1: GX(t), y1: gy1, x2: GX(t), y2: gy1 + 4, stroke: C.line, "stroke-width": 1 }, svg);
+      T(svg, GX(t), gy1 + 15, t.toFixed(2).replace(/0$/, ""), { "text-anchor": "middle", "font-size": 10, fill: "#444" });
+    }
+    T(svg, gx1 + 8, gy1 + 30, "x (m)", { "text-anchor": "end", "font-size": 10.5, fill: C.line });
+    T(svg, gx0 - 8, gy0 - 12, "V_AX (V)", { "text-anchor": "start", "font-size": 10.5, fill: C.line });
+    let d = "";
+    for (let i = 0; i <= 60; i++) {
+      const t = i / 60;
+      const a = Q41_WIRE * t;
+      const p = a > 0 ? (a * Q41_LOAD) / (a + Q41_LOAD) : 0;
+      const tot = p + Q41_WIRE * (1 - t);
+      const v = (Q41_V / tot) * p;
+      d += (i ? "L" : "M") + GX(t).toFixed(1) + " " + GY(v).toFixed(1);
+    }
+    S("path", { d, fill: "none", stroke: C.amber, "stroke-width": 2.2 }, svg);
+    S("circle", { cx: GX(x), cy: GY(vAX), r: 4.5, fill: "#fff", stroke: C.ink, "stroke-width": 2.2 }, svg);
+
+    /* ---- the fixed reading column ---- */
+    const col = (y, s, color, size) =>
+      T(svg, CX, y, s, { "text-anchor": "middle", "font-size": size, "font-weight": 700, fill: color });
+    col(84, "R_AX = " + rAX.toFixed(2) + " \u03A9", C.amber, 12.5);
+    col(114, "R_XB = " + rXB.toFixed(2) + " \u03A9", C.ink, 12.5);
+    col(144, "R_p = " + rp.toFixed(2) + " \u03A9", C.amber, 12.5);
+    col(174, "I = " + I.toFixed(2) + " A", C.ink, 12.5);
+    col(212, "V_AX = " + vAX.toFixed(1) + " V", C.amber, 17);
+    col(240, "x = " + x.toFixed(2) + " m", C.grey, 11);
+
+    /* ---- the reading row ---- */
+    const latex = "R_{AX} = 10x = " + rAX.toFixed(2) + "\\ \\Omega,\\quad R_p = " + rp.toFixed(2) +
+      "\\ \\Omega,\\quad I = \\frac{10}{" + rtot.toFixed(2) + "} = " + I.toFixed(2) + "\\ \\text{A},\\quad V_{AX} = " +
+      vAX.toFixed(1) + "\\ \\text{V}";
+    let caption;
+    if (Math.abs(x - 0.5) < 0.005) {
+      caption = "At the mid-point R_AX = R_XB = 5 \u03A9, but the 10 \u03A9 load is in parallel with AX only, so AX drops to 5\u222510 = 3.33 \u03A9. The divider gives 10 \u00D7 3.33/(3.33+5) = 4.0 V \u2014 the printed answer, not 5.0 V.";
+    } else if (x < 0.005) {
+      caption = "X at A: the AX part is zero, so the load is shorted, V_AX = 0 V and the whole 10 \u03A9 of BX takes the 10 V (I = 1.00 A).";
+    } else if (x > 0.995) {
+      caption = "X at B: the load spans the whole wire, 10\u222510 = 5 \u03A9, so the battery sees 5 \u03A9, I = 2.00 A and V_AX is the full 10 V.";
+    } else {
+      caption = "The load is in parallel with AX only, so R_AX and R_XB divide the 10 V unevenly: V_AX rises from 0 V to 10 V but not in a straight line (at 0.50 m it is 4.0 V, not 5.0 V).";
+    }
+    r.set(latex, true, caption, { yes: "live readings" });
+  };
+
+  xS.on(render);
+  render();
+}
+
 /* ---------------- Q16: the same two resistors, in series and in parallel ----------------
  *
  * q16 gives 3 ohm, 6 ohm and a 9 V battery, and its answers are
@@ -1066,7 +1209,7 @@ function q16(root) {
   render();
 }
 
-const REGISTRY = { q2, q3, q6, q9, q19, q20, q36, q16 };
+const REGISTRY = { q2, q3, q6, q9, q19, q20, q36, q41, q16 };
 
 export function hasGraphic(id) {
   return Boolean(REGISTRY[id]);

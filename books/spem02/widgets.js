@@ -1237,6 +1237,136 @@ function q32(root) {
   render();
 }
 
+/* ---------------- Q46: electric potential depends on where 0 V is ----------------
+ *
+ * q46 prints a 12 V cell across the chain A - 5 ohm - B - 2 ohm - C - 3 ohm - D, with C
+ * earthed, and asks for I, V_D, V_B and the potential at the positive terminal. The printed
+ * working is
+ *     I = 12/(5+2+3) = 1.2 A,  V_D = 0 - 1.2x3 = -3.6 V,
+ *     V_B = 0 + 1.2x2 = 2.4 V,  V_+ = 2.4 + 1.2x5 = 8.4 V
+ * and indeed V_A - V_D = 8.4 - (-3.6) = 12 V, so A is the positive terminal.
+ *
+ * The widget lets the reader move the 0 V reference to A, B, C or D: every potential then
+ * shifts by the same constant (the earthed node follows the reference), while the
+ * differences - the IR drops - do not change. Only the printed 12 V, 5, 2, 3 ohm are used.
+ */
+const Q46_EMF = 12;            // V, printed
+const Q46_R = [5, 2, 3];       // ohm, printed: A-B, B-C, C-D
+const Q46_RT = Q46_R.reduce((a, b) => a + b, 0);   // 10 ohm
+const Q46_I = Q46_EMF / Q46_RT;                    // 1.2 A
+const Q46_NODES = ["A", "B", "C", "D"];
+const Q46_REF0 = 2;            // the printed diagram earths C
+
+function q46(root) {
+  const CW = 620, CH = 300;
+  const svg = scene(CW, CH);
+  const r = readout();
+  const state = { ref: Q46_REF0 };
+
+  const row = buttonRow(Q46_NODES.map((n, i) => ["0 V at " + n, () => { state.ref = i; render(); }]));
+
+  root.append(
+    question("In the circuit below the cell is 12 V with negligible internal resistance. Find the current in the 3 \u03A9 resistor, then the potential at D, at B and at the positive terminal of the battery.", [
+      "Take the earthed node as the 0 V reference; the current runs A \u2192 B \u2192 C \u2192 D",
+    ]),
+    svg,
+    row,
+    r.el,
+  );
+
+  const TOP = 50, BOT = 190;
+  const XA = 90, XB = 195, XC = 300, XD = 440;
+  const NODEX = [XA, XB, XC, XD];
+  const CX = 545;
+
+  const render = () => {
+    clear(svg);
+    const ref = state.ref;
+    // potentials relative to A, then shifted so that the chosen node reads 0 V
+    const rel = [0, -Q46_I * Q46_R[0], -Q46_I * (Q46_R[0] + Q46_R[1]), -Q46_EMF];
+    const V = rel.map((v) => v - rel[ref]);
+
+    const wire = (pts, color, w) => S("path", {
+      d: pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" "),
+      fill: "none", stroke: color || C.line, "stroke-width": w || 2, "stroke-linejoin": "round",
+    }, svg);
+    const res = (x0, x1, label) => {
+      const cx = (x0 + x1) / 2;
+      S("rect", { x: cx - 25, y: BOT - 9, width: 50, height: 18, fill: C.paper, stroke: C.line, "stroke-width": 2 }, svg);
+      T(svg, cx, BOT - 16, label, { "text-anchor": "middle", "font-size": 11.5, "font-weight": 700, fill: C.ink });
+    };
+    const earth = (x) => {
+      S("line", { x1: x, y1: BOT + 4, x2: x, y2: 214, stroke: C.line, "stroke-width": 1.6 }, svg);
+      S("line", { x1: x - 11, y1: 214, x2: x + 11, y2: 214, stroke: C.line, "stroke-width": 2.2 }, svg);
+      S("line", { x1: x - 7, y1: 220, x2: x + 7, y2: 220, stroke: C.line, "stroke-width": 2.2 }, svg);
+      S("line", { x1: x - 3, y1: 226, x2: x + 3, y2: 226, stroke: C.line, "stroke-width": 2.2 }, svg);
+    };
+
+    /* ---- the loop, with the 12 V cell at the top right as printed ---- */
+    wire([[XA, BOT], [XA, TOP], [344, TOP]]);
+    wire([[373, TOP], [XD, TOP], [XD, BOT]]);
+    S("line", { x1: 344, y1: TOP - 13, x2: 344, y2: TOP + 13, stroke: C.line, "stroke-width": 3 }, svg);
+    S("line", { x1: 353, y1: TOP - 7, x2: 353, y2: TOP + 7, stroke: C.line, "stroke-width": 3 }, svg);
+    S("line", { x1: 364, y1: TOP - 13, x2: 364, y2: TOP + 13, stroke: C.line, "stroke-width": 3 }, svg);
+    S("line", { x1: 373, y1: TOP - 7, x2: 373, y2: TOP + 7, stroke: C.line, "stroke-width": 3 }, svg);
+    T(svg, 336, TOP - 4, "12 V", { "text-anchor": "end", "font-size": 12.5, "font-weight": 700, fill: C.ink });
+
+    /* ---- the bottom chain A - 5 - B - 2 - C - 3 - D, wires flush to every box ---- */
+    wire([[XA, BOT], [117, BOT]]);
+    wire([[168, BOT], [XB, BOT]]);
+    wire([[XB, BOT], [222, BOT]]);
+    wire([[273, BOT], [XC, BOT]]);
+    wire([[XC, BOT], [345, BOT]]);
+    wire([[395, BOT], [XD, BOT]]);
+    res(117, 168, Q46_R[0] + " \u03A9");
+    res(222, 273, Q46_R[1] + " \u03A9");
+    res(345, 395, Q46_R[2] + " \u03A9");
+    NODEX.forEach((x) => S("circle", { cx: x, cy: BOT, r: 4.4, fill: C.ink }, svg));
+
+    /* ---- the current arrows: down the left side, up the right side ---- */
+    S("line", { x1: XA, y1: 104, x2: XA, y2: 136, stroke: C.amber, "stroke-width": 2.4,
+      "marker-end": "url(#arrAmber-" + svg.dataset.uid + ")" }, svg);
+    T(svg, XA + 8, 118, "I = " + Q46_I.toFixed(2) + " A", { "font-size": 10.5, "font-weight": 700, fill: C.amber });
+    S("line", { x1: XD, y1: 136, x2: XD, y2: 104, stroke: C.amber, "stroke-width": 2.4,
+      "marker-end": "url(#arrAmber-" + svg.dataset.uid + ")" }, svg);
+
+    /* ---- the node labels and the earth, which follows the reference ---- */
+    Q46_NODES.forEach((n, i) => {
+      T(svg, NODEX[i], BOT + 20, n, { "text-anchor": "middle", "font-size": 13, "font-weight": 700,
+        fill: i === ref ? C.amber : C.ink });
+    });
+    earth(NODEX[ref]);
+
+    /* ---- the sentence that is the point of the question ---- */
+    T(svg, 265, 256, "potential is relative: moving the 0 V point shifts every potential by the same constant,",
+      { "text-anchor": "middle", "font-size": 10.5, "font-weight": 700, fill: C.amber });
+    T(svg, 265, 272, "but the p.d. across each resistor (IR) does not change \u2014 V_A \u2212 V_D = 12 V always",
+      { "text-anchor": "middle", "font-size": 10.5, "font-weight": 700, fill: C.amber });
+
+    /* ---- the reading column ---- */
+    const sign = (v) => (Math.abs(v) < 0.005 ? "0.00 V" : (v > 0 ? "+" : "\u2212") + Math.abs(v).toFixed(2) + " V");
+    const col = (y, s, color, size) =>
+      T(svg, CX, y, s, { "text-anchor": "middle", "font-size": size, "font-weight": 700, fill: color });
+    col(58, "I = " + Q46_I.toFixed(2) + " A", C.ink, 12.5);
+    Q46_NODES.forEach((n, i) => {
+      col(96 + i * 26, "V_" + n + " = " + sign(V[i]) + (i === ref ? " (ref)" : ""),
+        i === ref ? C.grey : C.amber, 12);
+    });
+    col(214, "V_A \u2212 V_D = " + (V[0] - V[3]).toFixed(1) + " V", C.grey, 11);
+
+    /* ---- the reading row ---- */
+    const bare = (v) => (Math.abs(v) < 0.005 ? "0.00" : (v > 0 ? "+" : "\u2212") + Math.abs(v).toFixed(2));
+    const latex = "I = " + Q46_I.toFixed(2) + "\\ \\text{A},\\quad (V_A,\\ V_B,\\ V_C,\\ V_D) = (" +
+      bare(V[0]) + ",\\ " + bare(V[1]) + ",\\ " + bare(V[2]) + ",\\ " + bare(V[3]) + ")\\ \\text{V}";
+    const cap = ref === Q46_REF0
+      ? "With C earthed the printed answers come straight out: I = 1.2 A, V_D = \u22123.6 V, V_B = +2.4 V and V_A = +8.4 V (the positive terminal)."
+      : "The reference is now at " + Q46_NODES[ref] + ", so every potential has moved by the same amount; the differences are untouched: V_A \u2212 V_D is still 12 V and each step is still I\u00D7R.";
+    r.set(latex, true, cap, { yes: "live readings" });
+  };
+
+  render();
+}
+
 /* ---------------- Q16: the same two resistors, in series and in parallel ----------------
  *
  * q16 gives 3 ohm, 6 ohm and a 9 V battery, and its answers are
@@ -1371,7 +1501,7 @@ function q16(root) {
   render();
 }
 
-const REGISTRY = { q2, q3, q6, q9, q19, q20, q32, q36, q41, q16 };
+const REGISTRY = { q2, q3, q6, q9, q19, q20, q32, q36, q41, q46, q16 };
 
 export function hasGraphic(id) {
   return Boolean(REGISTRY[id]);

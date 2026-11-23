@@ -266,45 +266,58 @@ function jq1(root) {
   render();
 }
 
-/* ---------------- Page 1 copy: the summary panel's own picture, kept as it was ----------------
+/* ---------------- Page 1: the summary panel's own picture, swept through 0-360 degrees --------
  *
  * The printed summary panel at the top of page 1 draws the hinge O on the RIGHT (red dot) and
- * the force hanging BELOW the door at A. This is the widget that panel is described with, and
- * it is kept exactly as it shipped (force tipping down, door turning anticlockwise) so the page-1
- * play-button widget can carry it unchanged. The question's own figure uses the other direction
- * (see jq1 above), which is why q1 no longer uses this one.
+ * the force hanging BELOW the door at A, with theta measured from the door towards O: the right
+ * panel is theta = 0 (force along the door, towards the hinge, moment arm 0) and the left panel is
+ * theta = 90 (force square to the door, moment arm the full d). Measured on pages/p01.jpg the red
+ * arrows run (+3,+115) px, (+58,+92) px and (+123,-3) px, i.e. straight down, down-towards-O and
+ * along the door towards O - this widget keeps that convention and now lets theta run right round,
+ * 0-360 deg, so the reader can see the force go below, behind and above the door.
+ *
+ * Over the whole turn the signed moment is F d sin(theta): positive (anticlockwise) while the force
+ * is on the A side, negative (clockwise) once it swings round past 180 deg, and zero at 0/180/360
+ * where its line of action runs through the hinge. The swing always follows that sign, so play
+ * turns the door the way the moment would, and the button is off where the moment vanishes.
+ *
+ * The layout is wider than the question's own widget (A at 230 px, O at 490 px, force up to 192 px
+ * long) so that at the largest force no arrow leaves the 620 x 430 frame in any direction.
  */
-const AX = 80, EY = 200;   // A is where the force acts, on the left
-const OX = 340;            // O is the hinge, on the right (as the printed figure has it)
-const CX = 555;            // the fixed reading column, top right
+const AX = 230, EY = 215;   // A is where the force acts, on the left
+const OX = 490;             // O is the hinge, on the right (as the printed figure has it)
+const CX = 560;             // the fixed reading column, top right
 
 function jp1(root) {
   const CW = 620, CH = 430;
   const svg = scene(CW, CH);
   const fS = slider({ label: "force F (N)", min: 10, max: 40, step: 1, value: J_F0,
     fmt: (v) => v.toFixed(0) + " N", play: false });
-  const tS = slider({ label: "angle \u03B8 (degrees)", min: 0, max: 90, step: 1, value: 30,
+  const tS = slider({ label: "angle \u03B8 (degrees)", min: 0, max: 360, step: 1, value: 30,
     fmt: (v) => v.toFixed(0) + "\u00B0", play: false });
   const r = readout();
 
   /* ---- the swing: the door turns about the hinge and comes back ----
-   * The swing is driven by the torque, not by a fixed timer: a door of moment of inertia I
-   * kicked by a moment tau sweeps an angle A in t = sqrt(2 A I / tau), so the same 30 deg takes
-   * longer at a small F or a small theta. I = 14 kg m^2 is chosen so the printed case
-   * (tau = 30 N m) takes 0.70 s; the time is clamped to 0.35-1.6 s so the ends stay watchable.
-   * At tau = 0 there is no moment at all, so the play chip is drawn disabled and the door
-   * does not move.
+   * Timed by the moment, not by a fixed timer: a door of moment of inertia I kicked by a moment
+   * tau sweeps an angle A in t = sqrt(2 A I / |tau|), so the same 30 deg takes longer at a small F
+   * or a small theta. I = 14 kg m^2 keeps the printed case near 0.7 s; clamped to 0.35-1.6 s so
+   * the ends stay watchable. The direction follows the sign of the moment, and at tau = 0 (force
+   * along the door, line of action through the hinge) the door cannot turn at all.
    */
   let phi = 0;                      // live rotation, degrees; negative swings the free end A down
   let raf = 0;                      // the running requestAnimationFrame id, 0 when idle
   const SWING = 30;                 // degrees, as asked
   const INERTIA = 14.0;             // kg m^2, see above
   const spin = () => {
-    const tauNow = fS.get() * J_D * Math.sin((tS.get() * Math.PI) / 180);
-    if (tauNow < 0.05) return;                      // no moment: the door cannot turn
+    const th0 = (tS.get() * Math.PI) / 180;
+    const tauNow = fS.get() * J_D * Math.sin(th0);
+    if (Math.abs(tauNow) < 0.05) return;            // no moment: the door cannot turn
     if (raf) cancelAnimationFrame(raf);
+    // screen sense: with A left of O, a downward force turns the door anticlockwise (A drops),
+    // an upward one clockwise (A rises)
+    const dir = Math.sin(th0) > 0 ? -1 : 1;
     const arc = (SWING * Math.PI) / 180;
-    const tSwing = Math.max(350, Math.min(1600, 1000 * Math.sqrt((2 * arc * INERTIA) / tauNow)));  // ms
+    const tSwing = Math.max(350, Math.min(1600, 1000 * Math.sqrt((2 * arc * INERTIA) / Math.abs(tauNow))));
     const hold = 150;                                                                             // ms
     const total = 2 * tSwing + hold;
     const t0 = performance.now();
@@ -316,7 +329,7 @@ function jp1(root) {
       else k = 1 - (ms - tSwing - hold) / tSwing;
       k = Math.max(0, Math.min(1, k));
       k = k * k * (3 - 2 * k);        // smooth ease in and out
-      phi = -SWING * k;
+      phi = dir * SWING * k;
       render();
       raf = ms < total ? requestAnimationFrame(step) : 0;
     };
@@ -347,11 +360,12 @@ function jp1(root) {
     clear(svg);
     const F = fS.get(), th = tS.get();
     const rad = (th * Math.PI) / 180;
-    const tau = F * J_D * Math.sin(rad);
+    const sinT = Math.sin(rad), cosT = Math.cos(rad);
+    const tau = F * J_D * sinT;                      // signed: the sign is the sense, see below
     const L = F * PX_PER_N;                          // force arrow length, px
-    const ux = Math.cos(rad), uy = Math.sin(rad);    // from A, along the door and tipping below it
-    const perp = L * Math.sin(rad);                  // square to the door (downwards)
-    const along = L * Math.cos(rad);                 // along the door, toward O
+    const ux = cosT, uy = sinT;                      // from A, along the door towards O and below it
+    const perp = L * sinT;                           // square to the door, signed (below is +)
+    const along = L * cosT;                          // along the door, signed (towards O is +)
     const a = (phi * Math.PI) / 180;
 
     // every drawing point lives in the door's own frame; the group transform turns it about O,
@@ -382,67 +396,100 @@ function jp1(root) {
 
     const tipX = AX + ux * L, tipY = EY + uy * L;
 
-    /* ---- the moment arm: from O, perpendicular onto the force's line of action ---- */
+    /* ---- the moment arm: from O, perpendicular onto the force's line of action ----
+     * The foot is where the perpendicular lands; at 0, 180 and 360 deg it is O itself (the line of
+     * action runs through the hinge), at 90 and 270 deg it is A (the arm lies along the door). */
     const tt = (OX - AX) * ux;                       // (O - A) projected on the force line
     const fx = AX + ux * tt, fy = EY + uy * tt;
     const arm = Math.hypot(fx - OX, fy - EY);
     if (arm > 4) {
       // the line of action itself, so the foot is visibly on it
-      S("line", { x1: AX, y1: EY, x2: AX + ux * (tt + 30), y2: EY + uy * (tt + 30), stroke: C.grey,
-        "stroke-width": 1, "stroke-dasharray": "3 4" }, g);
-      // starts at O, never moved: at theta = 90 this lies along the door, which is correct
+      const t0 = Math.min(0, tt) - 24, t1 = Math.max(0, tt) + 24;
+      S("line", { x1: AX + ux * t0, y1: EY + uy * t0, x2: AX + ux * t1, y2: EY + uy * t1,
+        stroke: C.grey, "stroke-width": 1, "stroke-dasharray": "3 4" }, g);
+      // starts at O, never moved: at 90/270 deg this lies along the door, which is correct
       S("line", { x1: OX, y1: EY, x2: fx, y2: fy, stroke: C.amber, "stroke-width": 2.6,
         "stroke-dasharray": "7 4", "stroke-opacity": 0.92 }, g);
-      // the right angle at the foot
+      // the right angle at the foot, skipped when the arm is only a few pixels long
       const wnX = (OX - fx) / arm, wnY = (EY - fy) / arm, k = 10;
-      S("path", { d: "M " + (fx - ux * k) + " " + (fy - uy * k) + " L " + (fx - ux * k + wnX * k) + " " +
-        (fy - uy * k + wnY * k) + " L " + (fx + wnX * k) + " " + (fy + wnY * k),
-        fill: "none", stroke: C.amber, "stroke-width": 1.3 }, g);
-      const nx = -(fy - EY) / arm, ny = (fx - OX) / arm;
-      // near theta = 90 the arm lies on the bar, so its label drops below the bar's middle
-      // instead of piling up on the "A" label at the foot
+      if (arm > 20) {
+        S("path", { d: "M " + (fx - ux * k) + " " + (fy - uy * k) + " L " + (fx - ux * k + wnX * k) + " " +
+          (fy - uy * k + wnY * k) + " L " + (fx + wnX * k) + " " + (fy + wnY * k),
+          fill: "none", stroke: C.amber, "stroke-width": 1.3 }, g);
+      }
+      // the arm's label: below the bar when the arm lies on it, inside the corner between the arm
+      // and the hinge when it is long, and under the foot when it is short
       if (Math.abs(fy - EY) < 0.25 * arm) {
         put((OX + fx) / 2, EY + 36, "d sin\u03B8",
           { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
+      } else if (arm > 100) {
+        const nx = -(fy - EY) / arm, ny = (fx - OX) / arm;
+        put((OX + fx) / 2 + nx * 13, (EY + fy) / 2 + ny * 13, "d sin\u03B8",
+          { "text-anchor": "start", "font-size": 11, "font-weight": 700, fill: C.amber });
       } else {
-        put(fx + (nx > 0 ? 10 : -10), fy + (ny > 0 ? 16 : -8), "d sin\u03B8",
-          { "text-anchor": nx > 0 ? "start" : "end", "font-size": 11, "font-weight": 700, fill: C.amber });
+        put(fx - 14, fy > EY ? fy + 16 : fy - 10, "d sin\u03B8",
+          { "text-anchor": "end", "font-size": 11, "font-weight": 700, fill: C.amber });
       }
     } else {
-      put(OX - 14, EY + 30, "moment arm = 0",
+      put(OX - 14, EY + 46, "moment arm = 0",
         { "text-anchor": "end", "font-size": 11, "font-weight": 700, fill: C.amber });
     }
 
-    /* ---- the force and its two parts ---- */
-    if (perp > 8) {
+    /* ---- the force and its two parts ----
+     * Both parts are signed: past 90 deg F sin(theta) points up and past 180 deg F cos(theta)
+     * points away from the hinge, which is what the drawing has to show. */
+    if (Math.abs(perp) > 8) {
       S("line", { x1: AX, y1: EY, x2: AX, y2: EY + perp, stroke: C.blue, "stroke-width": 2,
         "stroke-dasharray": "6 4", "marker-end": "url(#arr-" + svg.dataset.uid + ")" }, g);
-      put(AX - 8, EY + perp / 2, "F sin\u03B8",
-        { "text-anchor": "end", "font-size": 11, "font-weight": 700, fill: C.blue });
+      if (Math.abs(perp) > 24) {
+        put(AX + 10, EY + perp / 2, "F sin\u03B8",
+          { "text-anchor": "start", "font-size": 11, "font-weight": 700, fill: C.blue });
+      }
     }
-    if (along > 8) {
+    if (Math.abs(along) > 8) {
       S("line", { x1: AX, y1: EY, x2: AX + along, y2: EY, stroke: C.green, "stroke-width": 2,
         "stroke-dasharray": "6 4", "marker-end": "url(#arrGreen-" + svg.dataset.uid + ")" }, g);
-      // the along-door part is drawn on the bar itself (as the printed right panel draws F),
-      // so its label goes ABOVE the bar where the theta arc cannot reach it
-      put(AX + along / 2, EY - 24, "F cos\u03B8",
-        { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.green });
+      // drawn on the bar's own line (as the printed right panel draws F), so its label goes above
+      // the bar where the theta arc cannot reach it
+      if (Math.abs(along) > 34) {
+        put(AX + along / 2, EY - 24, "F cos\u03B8",
+          { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.green });
+      }
     }
     S("line", { x1: AX, y1: EY, x2: tipX, y2: tipY, stroke: C.red, "stroke-width": 3,
       "marker-end": "url(#arrRed-" + svg.dataset.uid + ")" }, g);
-    // the label sits just off the arrowhead on its downhill side, which is empty in every
-    // state (the arm's label lies further round, the arc's label nearer the hinge end)
-    put(tipX - uy * 20, tipY + ux * 20, "F = " + F.toFixed(0) + " N",
-      { "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: C.red });
+    /* the label sits off the arrowhead, offset square to the arrow and anchored outward along that
+     * offset, so it clears the shaft at every angle of the turn; if that side would run off the
+     * canvas (the force points left, so the tip is near the left edge) it goes on the other side */
+    const fnx = -uy, fny = ux;
+    const F_W = 70;                            // generous width of "F = nn N" at 12 px bold
+    const place = (sign) => {
+      const nx = fnx * sign, ny = fny * sign;
+      const ax = tipX + nx * 26;
+      const anchor = nx > 0.3 ? "start" : nx < -0.3 ? "end" : "middle";
+      const left = anchor === "start" ? ax : anchor === "end" ? ax - F_W : ax - F_W / 2;
+      const right = anchor === "start" ? ax + F_W : anchor === "end" ? ax : ax + F_W / 2;
+      return { ax, ay: tipY + ny * 26, anchor, fits: left > 8 && right < CW - 8 };
+    };
+    const fl = place(1).fits ? place(1) : place(-1);
+    put(fl.ax, fl.ay, "F = " + F.toFixed(0) + " N",
+      { "text-anchor": fl.anchor, "font-size": 12, "font-weight": 700, fill: C.red });
 
-    /* ---- the angle between the door and the force, at A ---- */
+    /* ---- the angle between the door and the force, at A, swept through the full turn ---- */
     if (th > 2) {
-      const r0 = 44;
-      sector(g, AX, EY, r0, 0, rad, "none", C.amber);
+      const r0 = 34;
+      const x1 = AX + r0 * Math.cos(rad), y1 = EY + r0 * Math.sin(rad);
+      S("path", { d: "M " + (AX + r0) + " " + EY + " A " + r0 + " " + r0 + " 0 " +
+        (rad > Math.PI ? 1 : 0) + " 1 " + x1 + " " + y1,
+        fill: "none", stroke: C.amber, "stroke-width": 1.5, "stroke-opacity": 0.85 }, g);
+      // the glyph sits at the middle of the swept angle; it is dropped where that middle falls on
+      // the door itself (angles near 0 and 360 deg), where it would sit on the bar
       const bis = rad / 2;
-      put(AX + (r0 + 24) * Math.cos(bis), EY + (r0 + 24) * Math.sin(bis) + 4,
-        "\u03B8 = " + th.toFixed(0) + "\u00B0",
-        { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
+      const onDoor = Math.abs(Math.sin(bis)) < 0.35;
+      if (!onDoor) {
+        put(AX + 46 * Math.cos(bis), EY + 46 * Math.sin(bis), "\u03B8",
+          { "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: C.amber });
+      }
     } else {
       put(AX + 32, EY + 20, "\u03B8 = 0\u00B0",
         { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
@@ -453,7 +500,6 @@ function jp1(root) {
     const turning = Math.abs(tz) > 1e-9;
     const clockwise = tz > 0;
     if (turning) {
-      // anticlockwise: the free end A drops, so on the left of O the arc runs downwards
       const up = "M " + (OX - 30 * 0.342) + " " + (EY - 30 * 0.940) + " A 30 30 0 0 0 " +
         (OX - 30 * 0.342) + " " + (EY + 30 * 0.940);
       const down = "M " + (OX - 30 * 0.342) + " " + (EY + 30 * 0.940) + " A 30 30 0 0 1 " +
@@ -463,15 +509,15 @@ function jp1(root) {
     }
 
     /* ---- the play control: a real button, so it works with a mouse, a finger and the keyboard ---- */
-    const canPlay = tau >= 0.05;                  // tau = 0 means no moment: nothing to play
+    const canPlay = Math.abs(tau) >= 0.05;        // no moment means nothing to play
     playBtn.disabled = !canPlay;
     /* the shared sheet gives every button cursor:pointer and has no :disabled override, so a
      * disabled play would still show a hand and read as clickable; set it per state here
      * rather than touching engine/styles.css */
     playBtn.style.cursor = canPlay ? "pointer" : "default";
     playBtn.title = canPlay
-      ? "swing the door 30\u00B0 about the hinge; the bigger the torque, the faster"
-      : "no moment: the door cannot turn";
+      ? "swing the door 30\u00B0 about the hinge, the way the moment turns it; the bigger the moment, the faster"
+      : "no moment: the force's line of action passes through the hinge, so the door cannot turn";
 
     /* ---- the reading column, top right, clear of the drawing ---- */
     const sense = !turning ? "no moment" : clockwise ? "clockwise" : "anticlockwise";
@@ -480,7 +526,7 @@ function jp1(root) {
     col(66, "F = " + F.toFixed(0) + " N", C.red, 13);
     col(96, "\u03B8 = " + th.toFixed(0) + "\u00B0", C.amber, 13);
     col(126, "d = 2 m", C.grey, 12);
-    col(156, "arm = " + (J_D * Math.sin(rad)).toFixed(2) + " m", C.amber, 12);
+    col(156, "arm = " + (J_D * Math.abs(sinT)).toFixed(2) + " m", C.amber, 12);
     col(190, "\u03C4 = " + tau.toFixed(1) + " N m", C.blue, 16);
     col(218, sense, C.grey, 11.5);
 
@@ -488,13 +534,15 @@ function jp1(root) {
     const latex = "\\tau = F d \\sin\\theta = " + F.toFixed(0) + "\\times 2\\times\\sin " + th.toFixed(0) +
       "^\\circ = " + tau.toFixed(1) + "\\ \\text{N m}";
     let caption;
-    if (th === 0) {
-      caption = "The force lies along the door, so its perpendicular part is zero and the moment arm is zero: the door does not turn (\u03C4 = 0), so the play button is off.";
-    } else if (th === 90) {
-      caption = "The force is square to the door: the whole of it turns the door and the moment arm is the full 2 m (it now lies along the door), so \u03C4 = 2F = " + tau.toFixed(1) + " N m. Press play: the bigger the torque, the faster the door swings.";
+    if (arm <= 4) {
+      caption = "The force lies along the door's line, so its line of action runs through the hinge: the moment arm is zero and the door cannot turn (\u03C4 = 0), so the play button is off.";
+    } else if (Math.abs(th % 180 - 90) < 0.5) {
+      caption = "The force is square to the door: the whole of it turns the door and the moment arm is the full 2 m, so \u03C4 = " + tau.toFixed(1) + " N m. Press play: the bigger the moment, the faster the door swings.";
+    } else if (th > 180) {
+      caption = "Past 180\u00B0 the force has swung round to the other side of the door, so \u03C4 = F d sin\u03B8 is negative: the door turns the other way. Only F sin\u03B8 turns it, and the moment arm is still 2|sin\u03B8| = " + (J_D * Math.abs(sinT)).toFixed(2) + " m. Press play: it swings " + sense + ".";
     } else {
       caption = "Only F sin\u03B8 turns the door; it acts 2 m from the hinge, so \u03C4 = F d sin\u03B8 = " + tau.toFixed(1) +
-        " N m. The F cos\u03B8 part runs along the door and has no moment arm. The free end A is pushed down, so the door turns " + sense + ". Press play: the bigger the torque, the faster the swing.";
+        " N m. The F cos\u03B8 part runs along the door and has no moment arm. Press play: the door swings " + sense + ", faster the bigger the moment.";
     }
     r.set(latex, true, caption, { yes: "live readings" });
   };

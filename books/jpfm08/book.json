@@ -629,6 +629,18 @@
       "title": "Principle of moments: 500 N and 500 N balance; then the 500 N moves in until 500(5 - d) = 300(5), d = 2 m"
     },
     {
+      "page": 5,
+      "region": [
+        296,
+        244,
+        584,
+        336
+      ],
+      "src": "media/p5-equilibrium.mp4",
+      "poster": "media/p5-equilibrium-poster.png",
+      "title": "Reactions: 200 N at mid-span gives 100 N at each support; the 300 N at the right end takes F_A to 0 and F_B to 500 N"
+    },
+    {
       "page": 1,
       "region": [
         64,

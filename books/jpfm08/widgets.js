@@ -79,7 +79,6 @@ function jq1(root) {
       ["\u03B8 = 30\u00B0", () => { fS.set(J_F0); tS.set(30); }],
       ["\u03B8 = 45\u00B0", () => { fS.set(J_F0); tS.set(45); }],
       ["\u03B8 = 0\u00B0", () => { fS.set(J_F0); tS.set(0); }],
-      ["play \u25B6 30\u00B0 swing", spin],
     ]),
     r.el,
   );
@@ -202,6 +201,13 @@ function jq1(root) {
       S("path", { d: clockwise ? down : up, fill: "none", stroke: C.red, "stroke-width": 1.8,
         "marker-end": "url(#arrRed-" + svg.dataset.uid + ")" }, svg);
     }
+
+    /* ---- the play chip rides on the figure, so it is on screen with the drawing (no scrolling) ---- */
+    const chip = S("g", { style: "cursor:pointer" }, svg);
+    S("rect", { x: 14, y: 10, width: 150, height: 34, rx: 17, fill: C.ink }, chip);
+    S("path", { d: "M 30 18 L 30 36 L 46 27 Z", fill: "#ffffff" }, chip);
+    T(chip, 54, 32, "play 30\u00B0", { "font-size": 13, "font-weight": 700, fill: "#ffffff" });
+    chip.addEventListener("click", spin);
 
     /* ---- the reading column, top right, clear of the drawing ---- */
     const sense = !turning ? "no moment" : clockwise ? "clockwise" : "anticlockwise";

@@ -220,6 +220,10 @@ function jq1(root) {
     /* ---- the play control: a real button, so it works with a mouse, a finger and the keyboard ---- */
     const canPlay = tau >= 0.05;                  // tau = 0 means no moment: nothing to play
     playBtn.disabled = !canPlay;
+    /* the shared sheet gives every button cursor:pointer and has no :disabled override, so a
+     * disabled play would still show a hand and read as clickable; set it per state here
+     * rather than touching engine/styles.css */
+    playBtn.style.cursor = canPlay ? "pointer" : "default";
     playBtn.title = canPlay
       ? "swing the door 30\u00B0 about the hinge; the bigger the torque, the faster"
       : "no moment: the door cannot turn";

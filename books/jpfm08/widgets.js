@@ -42,6 +42,31 @@ function jq1(root) {
     fmt: (v) => v.toFixed(0) + "\u00B0", play: false });
   const r = readout();
 
+  /* ---- the swing: the whole door turns about the hinge and comes back ---- */
+  let phi = 0;                      // live rotation, degrees; negative swings the free end A down
+  let raf = 0;                      // the running requestAnimationFrame id, 0 when idle
+  const SWING = 30;                 // degrees, as asked
+  const spin = () => {
+    if (raf) cancelAnimationFrame(raf);
+    const t0 = performance.now();
+    const down = 700, hold = 220, back = 700;
+    const total = down + hold + back;
+    const step = (now) => {
+      const t = Math.min(1, (now - t0) / total);
+      const ms = t * total;
+      let k;
+      if (ms <= down) k = ms / down;
+      else if (ms <= down + hold) k = 1;
+      else k = 1 - (ms - down - hold) / back;
+      k = Math.max(0, Math.min(1, k));
+      k = k * k * (3 - 2 * k);                 // smooth ease in and out
+      phi = -SWING * k;
+      render();
+      raf = t < 1 ? requestAnimationFrame(step) : 0;
+    };
+    raf = requestAnimationFrame(step);
+  };
+
   root.append(
     question("A 20 N force acts on a door 2 m from the hinge, at an angle \u03B8 to the door. Find the torque, then the torque when \u03B8 is 45\u00B0 and when the force is along the door.", [
       "Moment about the hinge: $\\tau = F d \\sin\\theta$",
@@ -54,6 +79,7 @@ function jq1(root) {
       ["\u03B8 = 30\u00B0", () => { fS.set(J_F0); tS.set(30); }],
       ["\u03B8 = 45\u00B0", () => { fS.set(J_F0); tS.set(45); }],
       ["\u03B8 = 0\u00B0", () => { fS.set(J_F0); tS.set(0); }],
+      ["play \u25B6 30\u00B0 swing", spin],
     ]),
     r.el,
   );
@@ -67,15 +93,33 @@ function jq1(root) {
     const ux = Math.cos(rad), uy = Math.sin(rad);    // from A, along the door and tipping below it
     const perp = L * Math.sin(rad);                  // square to the door (downwards)
     const along = L * Math.cos(rad);                 // along the door, toward O
-    const pxm = (OX - AX) / J_D;                     // px per metre
+    const a = (phi * Math.PI) / 180;
+
+    // every drawing point lives in the door's own frame; the group transform turns it about O,
+    // and the labels are placed at rotated anchors but kept upright so they stay readable
+    const rp = (x, y) => {
+      if (!phi) return [x, y];
+      const dx = x - OX, dy = y - EY, c = Math.cos(a), s = Math.sin(a);
+      return [OX + dx * c - dy * s, EY + dx * s + dy * c];
+    };
+    const fit = (p) => [Math.max(26, Math.min(CW - 26, p[0])), Math.max(16, Math.min(CH - 10, p[1]))];
+    const put = (x, y, s, attrs) => T(svg, ...fit(rp(x, y)), s, attrs);
+
+    // where the door rests, so the 30 deg it has turned is visible while it is turned
+    if (Math.abs(phi) > 0.5) {
+      S("rect", { x: AX, y: EY - 6, width: OX - AX, height: 12, fill: "none", stroke: C.grey,
+        "stroke-width": 1, "stroke-dasharray": "4 4", "stroke-opacity": 0.55 }, svg);
+    }
+
+    const g = S("g", { transform: "rotate(" + phi + " " + OX + " " + EY + ")" }, svg);
 
     /* ---- the door, seen from above: A on the left, the hinge O on the right ---- */
-    S("rect", { x: AX, y: EY - 6, width: OX - AX, height: 12, fill: C.soft, stroke: C.line, "stroke-width": 2 }, svg);
-    T(svg, (AX + OX) / 2, EY - 12, "d = 2 m", { "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: C.line });
-    S("circle", { cx: OX, cy: EY, r: 5.5, fill: C.red, stroke: C.red, "stroke-width": 1 }, svg);
+    S("rect", { x: AX, y: EY - 6, width: OX - AX, height: 12, fill: C.soft, stroke: C.line, "stroke-width": 2 }, g);
+    put((AX + OX) / 2, EY - 12, "d = 2 m", { "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: C.line });
+    S("circle", { cx: OX, cy: EY, r: 5.5, fill: C.red, stroke: C.red, "stroke-width": 1 }, g);
     T(svg, OX + 10, EY + 6, "O", { "text-anchor": "start", "font-size": 13, "font-weight": 700, fill: C.red });
     T(svg, OX + 10, EY + 21, "hinge", { "text-anchor": "start", "font-size": 10.5, fill: C.grey });
-    T(svg, AX - 10, EY - 2, "A", { "text-anchor": "end", "font-size": 13, "font-weight": 700, fill: C.line });
+    put(AX - 10, EY - 2, "A", { "text-anchor": "end", "font-size": 13, "font-weight": 700, fill: C.line });
 
     const tipX = AX + ux * L, tipY = EY + uy * L;
 
@@ -86,58 +130,63 @@ function jq1(root) {
     if (arm > 4) {
       // the line of action itself, so the foot is visibly on it
       S("line", { x1: AX, y1: EY, x2: AX + ux * (tt + 30), y2: EY + uy * (tt + 30), stroke: C.grey,
-        "stroke-width": 1, "stroke-dasharray": "3 4" }, svg);
+        "stroke-width": 1, "stroke-dasharray": "3 4" }, g);
       // starts at O, never moved: at theta = 90 this lies along the door, which is correct
       S("line", { x1: OX, y1: EY, x2: fx, y2: fy, stroke: C.amber, "stroke-width": 2.6,
-        "stroke-dasharray": "7 4", "stroke-opacity": 0.92 }, svg);
+        "stroke-dasharray": "7 4", "stroke-opacity": 0.92 }, g);
       // the right angle at the foot
       const wnX = (OX - fx) / arm, wnY = (EY - fy) / arm, k = 10;
       S("path", { d: "M " + (fx - ux * k) + " " + (fy - uy * k) + " L " + (fx - ux * k + wnX * k) + " " +
         (fy - uy * k + wnY * k) + " L " + (fx + wnX * k) + " " + (fy + wnY * k),
-        fill: "none", stroke: C.amber, "stroke-width": 1.3 }, svg);
+        fill: "none", stroke: C.amber, "stroke-width": 1.3 }, g);
       const nx = -(fy - EY) / arm, ny = (fx - OX) / arm;
       // near theta = 90 the arm lies on the bar, so its label drops below the bar's middle
       // instead of piling up on the "A" label at the foot
       if (Math.abs(fy - EY) < 0.25 * arm) {
-        T(svg, (OX + fx) / 2, EY + 36, "d sin\u03B8",
+        put((OX + fx) / 2, EY + 36, "d sin\u03B8",
           { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
       } else {
-        T(svg, fx + (nx > 0 ? 10 : -10), fy + (ny > 0 ? 16 : -8), "d sin\u03B8",
+        put(fx + (nx > 0 ? 10 : -10), fy + (ny > 0 ? 16 : -8), "d sin\u03B8",
           { "text-anchor": nx > 0 ? "start" : "end", "font-size": 11, "font-weight": 700, fill: C.amber });
       }
     } else {
-      T(svg, OX - 14, EY + 30, "moment arm = 0", { "text-anchor": "end", "font-size": 11, "font-weight": 700, fill: C.amber });
+      put(OX - 14, EY + 30, "moment arm = 0",
+        { "text-anchor": "end", "font-size": 11, "font-weight": 700, fill: C.amber });
     }
 
     /* ---- the force and its two parts ---- */
     if (perp > 8) {
       S("line", { x1: AX, y1: EY, x2: AX, y2: EY + perp, stroke: C.blue, "stroke-width": 2,
-        "stroke-dasharray": "6 4", "marker-end": "url(#arr-" + svg.dataset.uid + ")" }, svg);
-      T(svg, AX - 8, EY + perp / 2, "F sin\u03B8", { "text-anchor": "end", "font-size": 11, "font-weight": 700, fill: C.blue });
+        "stroke-dasharray": "6 4", "marker-end": "url(#arr-" + svg.dataset.uid + ")" }, g);
+      put(AX - 8, EY + perp / 2, "F sin\u03B8",
+        { "text-anchor": "end", "font-size": 11, "font-weight": 700, fill: C.blue });
     }
     if (along > 8) {
       S("line", { x1: AX, y1: EY, x2: AX + along, y2: EY, stroke: C.green, "stroke-width": 2,
-        "stroke-dasharray": "6 4", "marker-end": "url(#arrGreen-" + svg.dataset.uid + ")" }, svg);
+        "stroke-dasharray": "6 4", "marker-end": "url(#arrGreen-" + svg.dataset.uid + ")" }, g);
       // the along-door part is drawn on the bar itself (as the printed right panel draws F),
       // so its label goes ABOVE the bar where the theta arc cannot reach it
-      T(svg, AX + along / 2, EY - 24, "F cos\u03B8", { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.green });
+      put(AX + along / 2, EY - 24, "F cos\u03B8",
+        { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.green });
     }
     S("line", { x1: AX, y1: EY, x2: tipX, y2: tipY, stroke: C.red, "stroke-width": 3,
-      "marker-end": "url(#arrRed-" + svg.dataset.uid + ")" }, svg);
+      "marker-end": "url(#arrRed-" + svg.dataset.uid + ")" }, g);
     // the label sits just off the arrowhead on its downhill side, which is empty in every
     // state (the arm's label lies further round, the arc's label nearer the hinge end)
-    T(svg, tipX - uy * 20, tipY + ux * 20, "F = " + F.toFixed(0) + " N",
+    put(tipX - uy * 20, tipY + ux * 20, "F = " + F.toFixed(0) + " N",
       { "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: C.red });
 
     /* ---- the angle between the door and the force, at A ---- */
     if (th > 2) {
       const r0 = 44;
-      sector(svg, AX, EY, r0, 0, rad, "none", C.amber);
+      sector(g, AX, EY, r0, 0, rad, "none", C.amber);
       const bis = rad / 2;
-      T(svg, AX + (r0 + 24) * Math.cos(bis), EY + (r0 + 24) * Math.sin(bis) + 4,
-        "\u03B8 = " + th.toFixed(0) + "\u00B0", { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
+      put(AX + (r0 + 24) * Math.cos(bis), EY + (r0 + 24) * Math.sin(bis) + 4,
+        "\u03B8 = " + th.toFixed(0) + "\u00B0",
+        { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
     } else {
-      T(svg, AX + 32, EY + 20, "\u03B8 = 0\u00B0", { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
+      put(AX + 32, EY + 20, "\u03B8 = 0\u00B0",
+        { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
     }
 
     /* ---- which way the door turns, read off r x F (positive z is clockwise on screen) ---- */
@@ -172,7 +221,7 @@ function jq1(root) {
     if (th === 0) {
       caption = "The force lies along the door, so its perpendicular part is zero and the moment arm is zero: the door does not turn (\u03C4 = 0).";
     } else if (th === 90) {
-      caption = "The force is square to the door: the whole of it turns the door and the moment arm is the full 2 m (it now lies along the door), so \u03C4 = 2F = " + tau.toFixed(1) + " N m.";
+      caption = "The force is square to the door: the whole of it turns the door and the moment arm is the full 2 m (it now lies along the door), so \u03C4 = 2F = " + tau.toFixed(1) + " N m. Press play to swing the door 30\u00B0 about the hinge and back.";
     } else {
       caption = "Only F sin\u03B8 turns the door; it acts 2 m from the hinge, so \u03C4 = F d sin\u03B8 = " + tau.toFixed(1) +
         " N m. The F cos\u03B8 part runs along the door and has no moment arm. The free end A is pushed down, so the door turns " + sense + ".";

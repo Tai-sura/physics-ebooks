@@ -42,27 +42,38 @@ function jq1(root) {
     fmt: (v) => v.toFixed(0) + "\u00B0", play: false });
   const r = readout();
 
-  /* ---- the swing: the whole door turns about the hinge and comes back ---- */
+  /* ---- the swing: the door turns about the hinge and comes back ----
+   * The swing is driven by the torque, not by a fixed timer: a door of moment of inertia I
+   * kicked by a moment tau sweeps an angle A in t = sqrt(2 A I / tau), so the same 30 deg takes
+   * longer at a small F or a small theta. I = 14 kg m^2 is chosen so the printed case
+   * (tau = 30 N m) takes 0.70 s; the time is clamped to 0.35-1.6 s so the ends stay watchable.
+   * At tau = 0 there is no moment at all, so the play chip is drawn disabled and the door
+   * does not move.
+   */
   let phi = 0;                      // live rotation, degrees; negative swings the free end A down
   let raf = 0;                      // the running requestAnimationFrame id, 0 when idle
   const SWING = 30;                 // degrees, as asked
+  const INERTIA = 14.0;             // kg m^2, see above
   const spin = () => {
+    const tauNow = fS.get() * J_D * Math.sin((tS.get() * Math.PI) / 180);
+    if (tauNow < 0.05) return;                      // no moment: the door cannot turn
     if (raf) cancelAnimationFrame(raf);
+    const arc = (SWING * Math.PI) / 180;
+    const tSwing = Math.max(350, Math.min(1600, 1000 * Math.sqrt((2 * arc * INERTIA) / tauNow)));  // ms
+    const hold = 150;                                                                             // ms
+    const total = 2 * tSwing + hold;
     const t0 = performance.now();
-    const down = 700, hold = 220, back = 700;
-    const total = down + hold + back;
     const step = (now) => {
-      const t = Math.min(1, (now - t0) / total);
-      const ms = t * total;
+      const ms = Math.min(total, now - t0);
       let k;
-      if (ms <= down) k = ms / down;
-      else if (ms <= down + hold) k = 1;
-      else k = 1 - (ms - down - hold) / back;
+      if (ms <= tSwing) k = ms / tSwing;
+      else if (ms <= tSwing + hold) k = 1;
+      else k = 1 - (ms - tSwing - hold) / tSwing;
       k = Math.max(0, Math.min(1, k));
-      k = k * k * (3 - 2 * k);                 // smooth ease in and out
+      k = k * k * (3 - 2 * k);        // smooth ease in and out
       phi = -SWING * k;
       render();
-      raf = t < 1 ? requestAnimationFrame(step) : 0;
+      raf = ms < total ? requestAnimationFrame(step) : 0;
     };
     raf = requestAnimationFrame(step);
   };
@@ -203,11 +214,18 @@ function jq1(root) {
     }
 
     /* ---- the play chip rides on the figure, so it is on screen with the drawing (no scrolling) ---- */
-    const chip = S("g", { style: "cursor:pointer" }, svg);
-    S("rect", { x: 14, y: 10, width: 150, height: 34, rx: 17, fill: C.ink }, chip);
-    S("path", { d: "M 30 18 L 30 36 L 46 27 Z", fill: "#ffffff" }, chip);
-    T(chip, 54, 32, "play 30\u00B0", { "font-size": 13, "font-weight": 700, fill: "#ffffff" });
-    chip.addEventListener("click", spin);
+    const canPlay = tau >= 0.05;                  // tau = 0 means no moment: nothing to play
+    const chip = S("g", canPlay ? { style: "cursor:pointer" } : {}, svg);
+    S("rect", { x: 14, y: 10, width: 150, height: 34, rx: 17, fill: canPlay ? C.ink : C.grey,
+      "fill-opacity": canPlay ? 1 : 0.45 }, chip);
+    S("path", { d: "M 30 18 L 30 36 L 46 27 Z", fill: "#ffffff",
+      "fill-opacity": canPlay ? 1 : 0.65 }, chip);
+    T(chip, 54, 32, "play 30\u00B0", { "font-size": 13, "font-weight": 700, fill: "#ffffff",
+      "fill-opacity": canPlay ? 1 : 0.65 });
+    S("title", {}, chip).textContent = canPlay
+      ? "swing the door 30\u00B0 about the hinge; the bigger the torque, the faster"
+      : "no moment: the door cannot turn";
+    if (canPlay) chip.addEventListener("click", spin);
 
     /* ---- the reading column, top right, clear of the drawing ---- */
     const sense = !turning ? "no moment" : clockwise ? "clockwise" : "anticlockwise";
@@ -225,12 +243,12 @@ function jq1(root) {
       "^\\circ = " + tau.toFixed(1) + "\\ \\text{N m}";
     let caption;
     if (th === 0) {
-      caption = "The force lies along the door, so its perpendicular part is zero and the moment arm is zero: the door does not turn (\u03C4 = 0).";
+      caption = "The force lies along the door, so its perpendicular part is zero and the moment arm is zero: the door does not turn (\u03C4 = 0), so the play chip is off.";
     } else if (th === 90) {
-      caption = "The force is square to the door: the whole of it turns the door and the moment arm is the full 2 m (it now lies along the door), so \u03C4 = 2F = " + tau.toFixed(1) + " N m. Press play to swing the door 30\u00B0 about the hinge and back.";
+      caption = "The force is square to the door: the whole of it turns the door and the moment arm is the full 2 m (it now lies along the door), so \u03C4 = 2F = " + tau.toFixed(1) + " N m. Press play: the bigger the torque, the faster the door swings.";
     } else {
       caption = "Only F sin\u03B8 turns the door; it acts 2 m from the hinge, so \u03C4 = F d sin\u03B8 = " + tau.toFixed(1) +
-        " N m. The F cos\u03B8 part runs along the door and has no moment arm. The free end A is pushed down, so the door turns " + sense + ".";
+        " N m. The F cos\u03B8 part runs along the door and has no moment arm. The free end A is pushed down, so the door turns " + sense + ". Press play: the bigger the torque, the faster the swing.";
     }
     r.set(latex, true, caption, { yes: "live readings" });
   };

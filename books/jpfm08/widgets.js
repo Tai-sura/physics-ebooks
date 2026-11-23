@@ -281,15 +281,19 @@ function jq1(root) {
  * where its line of action runs through the hinge. The swing always follows that sign, so play
  * turns the door the way the moment would, and the button is off where the moment vanishes.
  *
- * The layout is wider than the question's own widget (A at 230 px, O at 490 px, force up to 192 px
- * long) so that at the largest force no arrow leaves the 620 x 430 frame in any direction.
+ * The layout is sized for the swing as well as the still picture: turning the whole figure 30 deg
+ * about O sweeps every drawn point round O, so O sits near the middle of a 670 x 580 frame and the
+ * door is 210 px with the force at most 152 px long (scale 3.8). That way the largest force stays
+ * inside the frame at every angle, during the swing too. (Checked for 36 angles at F = 40 N with
+ * the swing running: no pixel leaves the frame.)
  */
-const AX = 230, EY = 215;   // A is where the force acts, on the left
-const OX = 490;             // O is the hinge, on the right (as the printed figure has it)
-const CX = 560;             // the fixed reading column, top right
+const AX = 170, EY = 290;   // A is where the force acts, on the left
+const OX = 380;             // O is the hinge, on the right (as the printed figure has it)
+const CX = 600;             // the fixed reading column, top right
+const P1_PX_PER_N = 3.8;    // p1's own force scale (the question's widget keeps 4.8)
 
 function jp1(root) {
-  const CW = 620, CH = 430;
+  const CW = 670, CH = 580;
   const svg = scene(CW, CH);
   const fS = slider({ label: "force F (N)", min: 10, max: 40, step: 1, value: J_F0,
     fmt: (v) => v.toFixed(0) + " N", play: false });
@@ -362,7 +366,7 @@ function jp1(root) {
     const rad = (th * Math.PI) / 180;
     const sinT = Math.sin(rad), cosT = Math.cos(rad);
     const tau = F * J_D * sinT;                      // signed: the sign is the sense, see below
-    const L = F * PX_PER_N;                          // force arrow length, px
+    const L = F * P1_PX_PER_N;                       // force arrow length, px
     const ux = cosT, uy = sinT;                      // from A, along the door towards O and below it
     const perp = L * sinT;                           // square to the door, signed (below is +)
     const along = L * cosT;                          // along the door, signed (towards O is +)
@@ -422,12 +426,12 @@ function jp1(root) {
       if (Math.abs(fy - EY) < 0.25 * arm) {
         put((OX + fx) / 2, EY + 36, "d sin\u03B8",
           { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
-      } else if (arm > 100) {
+      } else if (arm > 130) {
         const nx = -(fy - EY) / arm, ny = (fx - OX) / arm;
         put((OX + fx) / 2 + nx * 13, (EY + fy) / 2 + ny * 13, "d sin\u03B8",
           { "text-anchor": "start", "font-size": 11, "font-weight": 700, fill: C.amber });
       } else {
-        put(fx - 14, fy > EY ? fy + 16 : fy - 10, "d sin\u03B8",
+        put(fx - 14, fy > EY ? fy + (arm < 130 ? 30 : 16) : fy - (arm < 130 ? 24 : 10), "d sin\u03B8",
           { "text-anchor": "end", "font-size": 11, "font-weight": 700, fill: C.amber });
       }
     } else {
@@ -452,7 +456,7 @@ function jp1(root) {
       // drawn on the bar's own line (as the printed right panel draws F), so its label goes above
       // the bar where the theta arc cannot reach it
       if (Math.abs(along) > 34) {
-        put(AX + along / 2, EY - 24, "F cos\u03B8",
+        put(AX + along / 2, EY - 30, "F cos\u03B8",
           { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.green });
       }
     }
@@ -486,7 +490,7 @@ function jp1(root) {
       // the door itself (angles near 0 and 360 deg), where it would sit on the bar
       const bis = rad / 2;
       const onDoor = Math.abs(Math.sin(bis)) < 0.35;
-      if (!onDoor) {
+      if (!onDoor && th <= 90) {
         put(AX + 46 * Math.cos(bis), EY + 46 * Math.sin(bis), "\u03B8",
           { "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: C.amber });
       }

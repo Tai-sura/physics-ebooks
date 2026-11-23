@@ -6,7 +6,7 @@
  * mistake was removed; nothing of it is left.)
  */
 
-import { C, S, T, scene, clear, sector, slider, readout, question, buttonRow } from "../../engine/widgets/kit.js";
+import { C, S, T, H, scene, clear, sector, slider, readout, question, buttonRow } from "../../engine/widgets/kit.js";
 
 /* ---------------- Q1: the moment of a force on a door, tau = F d sin(theta) ----------------
  *
@@ -78,12 +78,16 @@ function jq1(root) {
     raf = requestAnimationFrame(step);
   };
 
+  const playBtn = H("button", { type: "button", onclick: () => spin() }, ["\u25B6 play 30\u00B0 swing"]);
+  const playRow = H("div", { class: "g-btns" }, [playBtn]);
+
   root.append(
     question("A 20 N force acts on a door 2 m from the hinge, at an angle \u03B8 to the door. Find the torque, then the torque when \u03B8 is 45\u00B0 and when the force is along the door.", [
       "Moment about the hinge: $\\tau = F d \\sin\\theta$",
       "Only the part perpendicular to the door turns it: $F\\sin\\theta$",
       "Along the door the moment arm is 0, so $\\tau = 0$",
     ]),
+    playRow,
     svg,
     fS.el, tS.el,
     buttonRow([
@@ -213,19 +217,12 @@ function jq1(root) {
         "marker-end": "url(#arrRed-" + svg.dataset.uid + ")" }, svg);
     }
 
-    /* ---- the play chip rides on the figure, so it is on screen with the drawing (no scrolling) ---- */
+    /* ---- the play control: a real button, so it works with a mouse, a finger and the keyboard ---- */
     const canPlay = tau >= 0.05;                  // tau = 0 means no moment: nothing to play
-    const chip = S("g", canPlay ? { style: "cursor:pointer" } : {}, svg);
-    S("rect", { x: 14, y: 10, width: 150, height: 34, rx: 17, fill: canPlay ? C.ink : C.grey,
-      "fill-opacity": canPlay ? 1 : 0.45 }, chip);
-    S("path", { d: "M 30 18 L 30 36 L 46 27 Z", fill: "#ffffff",
-      "fill-opacity": canPlay ? 1 : 0.65 }, chip);
-    T(chip, 54, 32, "play 30\u00B0", { "font-size": 13, "font-weight": 700, fill: "#ffffff",
-      "fill-opacity": canPlay ? 1 : 0.65 });
-    S("title", {}, chip).textContent = canPlay
+    playBtn.disabled = !canPlay;
+    playBtn.title = canPlay
       ? "swing the door 30\u00B0 about the hinge; the bigger the torque, the faster"
       : "no moment: the door cannot turn";
-    if (canPlay) chip.addEventListener("click", spin);
 
     /* ---- the reading column, top right, clear of the drawing ---- */
     const sense = !turning ? "no moment" : clockwise ? "clockwise" : "anticlockwise";
@@ -243,7 +240,7 @@ function jq1(root) {
       "^\\circ = " + tau.toFixed(1) + "\\ \\text{N m}";
     let caption;
     if (th === 0) {
-      caption = "The force lies along the door, so its perpendicular part is zero and the moment arm is zero: the door does not turn (\u03C4 = 0), so the play chip is off.";
+      caption = "The force lies along the door, so its perpendicular part is zero and the moment arm is zero: the door does not turn (\u03C4 = 0), so the play button is off.";
     } else if (th === 90) {
       caption = "The force is square to the door: the whole of it turns the door and the moment arm is the full 2 m (it now lies along the door), so \u03C4 = 2F = " + tau.toFixed(1) + " N m. Press play: the bigger the torque, the faster the door swings.";
     } else {

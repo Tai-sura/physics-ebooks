@@ -95,6 +95,7 @@ function jq1(root) {
     const F = fS.get(), th = tS.get();
     const rad = (th * Math.PI) / 180;
     const tau = F * J_D * Math.sin(rad);
+    const tauOut = Math.abs(tau) < 0.05 ? 0 : tau;   // never print a signed zero
     const L = F * PX_PER_N;                // force arrow length, px
     const ux = -Math.cos(rad), uy = -Math.sin(rad);   // from A, away from the hinge and above the door
     const perp = L * Math.sin(rad);                   // square to the door, upwards
@@ -244,19 +245,19 @@ function jq1(root) {
     col(96, "\u03B8 = " + th.toFixed(0) + "\u00B0", C.amber, 13);
     col(126, "d = 2 m", C.grey, 12);
     col(156, "arm = " + (J_D * Math.sin(rad)).toFixed(2) + " m", C.amber, 12);
-    col(190, "\u03C4 = " + tau.toFixed(1) + " N m", C.blue, 16);
+    col(190, "\u03C4 = " + tauOut.toFixed(1) + " N m", C.blue, 16);
     col(218, sense, C.grey, 11.5);
 
     /* ---- the reading row ---- */
     const latex = "\\tau = F d \\sin\\theta = " + F.toFixed(0) + "\\times 2\\times\\sin " + th.toFixed(0) +
-      "^\\circ = " + tau.toFixed(1) + "\\ \\text{N m}";
+      "^\\circ = " + tauOut.toFixed(1) + "\\ \\text{N m}";
     let caption;
     if (th === 0) {
       caption = "The force lies along the door's line, so its line of action runs straight through the hinge: the moment arm is zero and the door cannot turn (\u03C4 = 0), so the play button is off.";
     } else if (th === 90) {
       caption = "The force is square to the door: the whole of it turns the door and the moment arm is the full 2 m, so \u03C4 = 2F = " + tau.toFixed(1) + " N m. Press play: the bigger the torque, the faster the door swings.";
     } else {
-      caption = "Only F sin\u03B8 turns the door; it acts 2 m from the hinge, so \u03C4 = F d sin\u03B8 = " + tau.toFixed(1) +
+      caption = "Only F sin\u03B8 turns the door; it acts 2 m from the hinge, so \u03C4 = F d sin\u03B8 = " + tauOut.toFixed(1) +
         " N m. The F cos\u03B8 part runs along the door and has no moment arm. The force lifts the free edge A, so the door turns clockwise. Press play: the bigger the torque, the faster the swing.";
     }
     r.set(latex, true, caption, { yes: "live readings" });
@@ -371,6 +372,13 @@ function jp1(root) {
     const perp = L * sinT;                           // square to the door, signed (below is +)
     const along = L * cosT;                          // along the door, signed (towards O is +)
     const a = (phi * Math.PI) / 180;
+    /* sin(360 deg) comes back as a tiny negative number, which would print as "-0.0"; anything that
+     * small is simply zero, and it must not carry a sign */
+    const tauOut = Math.abs(tau) < 0.05 ? 0 : tau;
+    /* the explanatory labels (the two parts and the moment arm) fade out while the door is turning,
+     * so the moving figure is not crossed by text; the numbers stay in the reading column */
+    const fade = Math.max(0, 1 - Math.abs(phi) / 1.2);
+    const showParts = fade > 0.05;
 
     // every drawing point lives in the door's own frame; the group transform turns it about O,
     // and the labels are placed at rotated anchors but kept upright so they stay readable
@@ -422,17 +430,18 @@ function jp1(root) {
           fill: "none", stroke: C.amber, "stroke-width": 1.3 }, g);
       }
       // the arm's label: below the bar when the arm lies on it, inside the corner between the arm
-      // and the hinge when it is long, and under the foot when it is short
-      if (Math.abs(fy - EY) < 0.25 * arm) {
+      // and the hinge when it is long, and under the foot when it is short. It fades out while the
+      // door is turning (see `fade`), so the moving figure stays clean
+      if (showParts && Math.abs(fy - EY) < 0.25 * arm) {
         put((OX + fx) / 2, EY + 36, "d sin\u03B8",
-          { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber });
-      } else if (arm > 130) {
+          { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.amber, "fill-opacity": fade });
+      } else if (showParts && arm > 130) {
         const nx = -(fy - EY) / arm, ny = (fx - OX) / arm;
         put((OX + fx) / 2 + nx * 13, (EY + fy) / 2 + ny * 13, "d sin\u03B8",
-          { "text-anchor": "start", "font-size": 11, "font-weight": 700, fill: C.amber });
-      } else {
+          { "text-anchor": "start", "font-size": 11, "font-weight": 700, fill: C.amber, "fill-opacity": fade });
+      } else if (showParts) {
         put(fx - 14, fy > EY ? fy + (arm < 130 ? 30 : 16) : fy - (arm < 130 ? 24 : 10), "d sin\u03B8",
-          { "text-anchor": "end", "font-size": 11, "font-weight": 700, fill: C.amber });
+          { "text-anchor": "end", "font-size": 11, "font-weight": 700, fill: C.amber, "fill-opacity": fade });
       }
     } else {
       put(OX - 14, EY + 46, "moment arm = 0",
@@ -445,9 +454,9 @@ function jp1(root) {
     if (Math.abs(perp) > 8) {
       S("line", { x1: AX, y1: EY, x2: AX, y2: EY + perp, stroke: C.blue, "stroke-width": 2,
         "stroke-dasharray": "6 4", "marker-end": "url(#arr-" + svg.dataset.uid + ")" }, g);
-      if (Math.abs(perp) > 24) {
+      if (showParts && Math.abs(perp) > 24) {
         put(AX + 10, EY + perp / 2, "F sin\u03B8",
-          { "text-anchor": "start", "font-size": 11, "font-weight": 700, fill: C.blue });
+          { "text-anchor": "start", "font-size": 11, "font-weight": 700, fill: C.blue, "fill-opacity": fade });
       }
     }
     if (Math.abs(along) > 8) {
@@ -455,9 +464,9 @@ function jp1(root) {
         "stroke-dasharray": "6 4", "marker-end": "url(#arrGreen-" + svg.dataset.uid + ")" }, g);
       // drawn on the bar's own line (as the printed right panel draws F), so its label goes above
       // the bar where the theta arc cannot reach it
-      if (Math.abs(along) > 34) {
+      if (showParts && Math.abs(along) > 34) {
         put(AX + along / 2, EY - 30, "F cos\u03B8",
-          { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.green });
+          { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.green, "fill-opacity": fade });
       }
     }
     S("line", { x1: AX, y1: EY, x2: tipX, y2: tipY, stroke: C.red, "stroke-width": 3,
@@ -531,21 +540,21 @@ function jp1(root) {
     col(96, "\u03B8 = " + th.toFixed(0) + "\u00B0", C.amber, 13);
     col(126, "d = 2 m", C.grey, 12);
     col(156, "arm = " + (J_D * Math.abs(sinT)).toFixed(2) + " m", C.amber, 12);
-    col(190, "\u03C4 = " + tau.toFixed(1) + " N m", C.blue, 16);
+    col(190, "\u03C4 = " + tauOut.toFixed(1) + " N m", C.blue, 16);
     col(218, sense, C.grey, 11.5);
 
     /* ---- the reading row ---- */
     const latex = "\\tau = F d \\sin\\theta = " + F.toFixed(0) + "\\times 2\\times\\sin " + th.toFixed(0) +
-      "^\\circ = " + tau.toFixed(1) + "\\ \\text{N m}";
+      "^\\circ = " + tauOut.toFixed(1) + "\\ \\text{N m}";
     let caption;
     if (arm <= 4) {
       caption = "The force lies along the door's line, so its line of action runs through the hinge: the moment arm is zero and the door cannot turn (\u03C4 = 0), so the play button is off.";
     } else if (Math.abs(th % 180 - 90) < 0.5) {
-      caption = "The force is square to the door: the whole of it turns the door and the moment arm is the full 2 m, so \u03C4 = " + tau.toFixed(1) + " N m. Press play: the bigger the moment, the faster the door swings.";
+      caption = "The force is square to the door: the whole of it turns the door and the moment arm is the full 2 m, so \u03C4 = " + tauOut.toFixed(1) + " N m. Press play: the bigger the moment, the faster the door swings.";
     } else if (th > 180) {
       caption = "Past 180\u00B0 the force has swung round to the other side of the door, so \u03C4 = F d sin\u03B8 is negative: the door turns the other way. Only F sin\u03B8 turns it, and the moment arm is still 2|sin\u03B8| = " + (J_D * Math.abs(sinT)).toFixed(2) + " m. Press play: it swings " + sense + ".";
     } else {
-      caption = "Only F sin\u03B8 turns the door; it acts 2 m from the hinge, so \u03C4 = F d sin\u03B8 = " + tau.toFixed(1) +
+      caption = "Only F sin\u03B8 turns the door; it acts 2 m from the hinge, so \u03C4 = F d sin\u03B8 = " + tauOut.toFixed(1) +
         " N m. The F cos\u03B8 part runs along the door and has no moment arm. Press play: the door swings " + sense + ", faster the bigger the moment.";
     }
     r.set(latex, true, caption, { yes: "live readings" });

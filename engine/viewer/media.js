@@ -1,4 +1,5 @@
 import { BOOK, BOOK_DIR } from "../book.js";
+import { openGraphicPanel } from "./panel.js";
 
 const PAGE_W = 595.32;
 /** Half the play button: it straddles the panel's top-right corner. */
@@ -43,6 +44,23 @@ export function addMedia(pageNo, overlay) {
       box.classList.remove("playing");
       label(video.ended ? "↻" : "▶", video.ended ? "Replay the animation" : "Resume the animation");
     });
+    // item.widget = a widgets.js graphic that belongs to this printed panel (e.g. the
+    // interactive version of a summary panel). One more round button, left of ▶.
+    if (item.widget) {
+      const gb = document.createElement("button");
+      gb.type = "button";
+      gb.className = "media-widget";
+      gb.dataset.mediaWidget = String(n);
+      const what = item.widgetTitle || "Open the interactive graphic";
+      gb.title = what;
+      gb.setAttribute("aria-label", what);
+      gb.innerHTML =
+        '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 16h14M5 13l4-5 3 3 4-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      gb.style.right = `${-Math.min(HALF, PAGE_W - EDGE - x1) - dx + 28}px`;
+      gb.style.top = `${-Math.min(HALF, y0 - EDGE) + dy}px`;
+      gb.addEventListener("click", () => openGraphicPanel(item.widget, what));
+      box.append(gb);
+    }
     box.append(video, button);
     overlay.append(box);
   }

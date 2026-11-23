@@ -9,6 +9,7 @@ import { addMedia, toggleMedia } from "./media.js";
 import { openGuide } from "./guide.js";
 import { addInfographics } from "../infographic/infographic.js";
 import { addEmbeds, hasEmbed, openEmbedForQ } from "./embed.js";
+import { openGraphicPanel } from "./panel.js";
 import { END_PAGES, mountEndPage } from "./endpages.js";
 
 const PAGE_W = 595.32;
@@ -1034,12 +1035,7 @@ function openGraphic(id) {
     openEmbedForQ(id);
     return;
   }
-  const drawer = document.getElementById("graphic");
-  document.getElementById("graphic-title").textContent = `${questionLabel(id)}: interactive graphic`;
-  mountGraphic(id, document.getElementById("graphic-body"));
-  drawer.classList.add("open");
-  drawer.setAttribute("aria-hidden", "false");
-  document.body.classList.add("drawer-open");
+  openGraphicPanel(id, `${questionLabel(id)}: interactive graphic`);
 }
 
 function closeGraphic() {

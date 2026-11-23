@@ -627,7 +627,9 @@
       "scene": "jpfm08:MomentConcept",
       "src": "media/moment-concept-1.mp4",
       "poster": "media/moment-concept-1-poster.png",
-      "title": "Moment of a force: the same force, three moment arms (d, d sin theta, 0)"
+      "title": "Moment of a force: the same force, three moment arms (d, d sin theta, 0)",
+      "widget": "p1",
+      "widgetTitle": "P.1: moment of a force — three moment arms (interactive)"
     },
     {
       "page": 15,

@@ -51,6 +51,17 @@ let frame = null;
 let title = null;
 let sub = null;
 
+/** True when the question's own graphic button should open an explainer. */
+export function hasEmbed(id) {
+  return EMBEDS.some((item) => item.q === id);
+}
+
+/** Opens the explainer that belongs to question `id` (its own widget button). */
+export function openEmbedForQ(id) {
+  const i = EMBEDS.findIndex((item) => item.q === id);
+  if (i >= 0) openEmbed(i);
+}
+
 function build() {
   modal = document.createElement("div");
   modal.className = "embed-modal";

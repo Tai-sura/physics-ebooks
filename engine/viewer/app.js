@@ -8,7 +8,7 @@ import { renderLinks, clearLinks } from "./links.js";
 import { addMedia, toggleMedia } from "./media.js";
 import { openGuide } from "./guide.js";
 import { addInfographics } from "../infographic/infographic.js";
-import { addEmbeds } from "./embed.js";
+import { addEmbeds, hasEmbed, openEmbedForQ } from "./embed.js";
 import { END_PAGES, mountEndPage } from "./endpages.js";
 
 const PAGE_W = 595.32;
@@ -1028,6 +1028,12 @@ function questionLabel(id) {
 }
 
 function openGraphic(id) {
+  // The question's own graphic button. A full explainer embedded for this question
+  // opens in the big panel; a widgets.js graphic opens in the drawer as before.
+  if (hasEmbed(id)) {
+    openEmbedForQ(id);
+    return;
+  }
   const drawer = document.getElementById("graphic");
   document.getElementById("graphic-title").textContent = `${questionLabel(id)}: interactive graphic`;
   mountGraphic(id, document.getElementById("graphic-body"));

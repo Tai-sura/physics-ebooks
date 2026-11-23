@@ -672,20 +672,14 @@
   "embeds": [
     {
       "page": 3,
-      "at": [
-        1.5,
-        410.75
-      ],
+      "q": "q3",
       "title": "力矩平衡：蹺蹺板（q3、q5）",
       "sub": "Moment balance",
       "src": "explainers/moment-balance/moment-balance.html"
     },
     {
       "page": 5,
-      "at": [
-        1.5,
-        339.15
-      ],
+      "q": "q11",
       "title": "平衡條件：樑與支撐（q11）",
       "sub": "Equilibrium",
       "src": "explainers/equilibrium-beam/equilibrium-beam.html"
@@ -703,42 +697,22 @@
     {
       "page": 7,
       "at": [
-        1.5,
-        352
-      ],
-      "title": "重心：懸掛法",
-      "sub": "Centre of gravity, steps 1-5",
-      "src": "explainers/centroid-hang/centroid-hang.html"
-    },
-    {
-      "page": 3,
-      "at": [
-        537,
-        438
-      ],
-      "title": "力矩平衡：蹺蹺板（q3、q5）",
-      "sub": "Moment balance",
-      "src": "explainers/moment-balance/moment-balance.html"
-    },
-    {
-      "page": 5,
-      "at": [
-        528.7,
-        405.7
-      ],
-      "title": "平衡條件：樑與支撐（q11）",
-      "sub": "Equilibrium",
-      "src": "explainers/equilibrium-beam/equilibrium-beam.html"
-    },
-    {
-      "page": 7,
-      "at": [
         563.7,
         107
       ],
       "title": "力偶：力矩與支點無關",
       "sub": "Couples",
       "src": "explainers/couple/couple.html"
+    },
+    {
+      "page": 7,
+      "at": [
+        1.5,
+        352
+      ],
+      "title": "重心：懸掛法",
+      "sub": "Centre of gravity, steps 1-5",
+      "src": "explainers/centroid-hang/centroid-hang.html"
     },
     {
       "page": 7,

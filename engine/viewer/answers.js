@@ -1,4 +1,5 @@
 import { BOOK, SOLUTION_BY_ID, hasGraphic, hasGuide } from "../book.js";
+import { hasEmbed } from "./embed.js";
 import { guideButton } from "./guide.js";
 
 const GAP = 7;
@@ -512,13 +513,18 @@ function placeCtl(qa, els) {
   ctl.dataset.home = ctl.style.left;
 }
 
+/** A question's graphic button: its widgets.js graphic, or the explainer embedded for it. */
+function canGraphic(id) {
+  return hasGraphic(id) || hasEmbed(id);
+}
+
 function ctlHTML(id) {
   return `<div class="ctl">
     <button type="button" data-act="next" data-q="${id}" title="Show the next step">▸</button>
     <button type="button" data-act="all" data-q="${id}" title="Show every step">»</button>
     <button type="button" data-act="back" data-q="${id}" title="Hide the last step">◂</button>
     <button type="button" data-act="reset" data-q="${id}" title="Hide all steps">↺</button>
-    ${hasGraphic(id) ? graphicButton(id) : ""}
+    ${canGraphic(id) ? graphicButton(id) : ""}
     ${hasGuide(id) ? guideButton(id) : ""}
     <span class="prog" data-q="${id}"></span>
   </div>`;
@@ -622,12 +628,12 @@ export function buildOverlay(page, overlay) {
     if (!sol) continue;
     const [x0, y0, x1, y1] = q.region;
     if (sol.printed) {
-      if (!hasGraphic(q.id) && !hasGuide(q.id)) continue;
+      if (!canGraphic(q.id) && !hasGuide(q.id)) continue;
       const [cx, cy] = sol.ctlAt;
       const chip = document.createElement("div");
       chip.className = "ctl printed";
       Object.assign(chip.style, { left: `${cx}px`, top: `${cy}px` });
-      chip.innerHTML = (hasGraphic(q.id) ? graphicButton(q.id) : "") + (hasGuide(q.id) ? guideButton(q.id) : "");
+      chip.innerHTML = (canGraphic(q.id) ? graphicButton(q.id) : "") + (hasGuide(q.id) ? guideButton(q.id) : "");
       overlay.append(chip);
       continue;
     }

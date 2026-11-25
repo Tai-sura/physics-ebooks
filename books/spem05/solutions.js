@@ -198,7 +198,7 @@ export const SOLUTIONS = [
       steps: [
         t("(a) The magnetic forces acting on the wires are attractive.", "currents in the same direction"),
         t("They are an action-and-reaction pair, so the two forces have the same magnitude."),
-        t("$F/l = \\mu_0 I_1 I_2/(2\\pi r) = (4\\pi \\times 10^{-7})(5)(0.3)/((2\\pi)(8 \\times 10^{-3})) = \\underline{3.75 \\times 10^{-5}\\ \\text{N}}$"),
+        t("$F/l = \\mu_0 I_1 I_2/(2\\pi r) = (4\\pi \\times 10^{-7})(5)(0.3)/((2\\pi)(8 \\times 10^{-3})) = \\underline{3.75 \\times 10^{-5}\\ \\text{N m}^{-1}}$"),
         t("(b) The forces become repulsive, and their magnitude does not change."),
       ],
     }],
@@ -261,7 +261,7 @@ export const SOLUTIONS = [
         t("(b) Field lines are parallel inside the soft-iron core and radial between the core and the magnets, pointing from N to S."),
         t("(c) Cylindrical magnets give a radial field, so the angle of deflection varies linearly with the current."),
         t("(d) Use stronger magnets, more turns on the coil, or weaker hair springs."),
-        t("(e) The pointer cannot follow 50 changes per second, so it stays at the zero mark."),
+        t("(e) The pointer cannot follow 100 reversals per second, so it stays at the zero mark."),
       ],
     }],
   },

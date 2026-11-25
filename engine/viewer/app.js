@@ -235,6 +235,11 @@ function buildPages() {
       sheet.classList.add("deck");
       sheet.dataset.noInk = "";
     }
+    if (item.video) {
+      // A film page takes no ink either: a stroke over the controls would block the scrubber.
+      sheet.classList.add("film");
+      sheet.dataset.noInk = "";
+    }
     mountEndPage(item, overlay);
     ink.setText(sheet.dataset.key, []);
     sheet.append(...(item.src ? [pageBackground(item.src)] : []), overlay, ...makeCanvases());

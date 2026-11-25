@@ -97,7 +97,7 @@
       },
       "q11": {
         "region": [66, 433.5, 336, 543],
-        "space": 6
+        "space": 23
       },
       "q14": {
         "region": [66, 236.5, 546, 424.8],
@@ -120,5 +120,25 @@
         "space": 75
       }
     }
-  }
+  },
+  "media": [
+    {
+      "page": 7,
+      "region": [30, 119, 582, 784],
+      "scene": "spem05:P07Turning",
+      "src": "media/p07-turning.mp4",
+      "poster": "media/p07-turning-poster.jpg",
+      "title": "Turning effect on a current-carrying coil in a magnetic field",
+      "ctrl": [0, -17]
+    }
+  ],
+  "endPages": [
+    {
+      "key": "commutator",
+      "label": "Commutator: how the current is reversed",
+      "video": "media/p08-commutator.mp4",
+      "poster": "media/p08-commutator-poster.jpg",
+      "height": 334.87
+    }
+  ]
 }

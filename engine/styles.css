@@ -196,6 +196,18 @@ body[data-mode="laser"] #viewport { cursor: crosshair; }
 }
 .media.playing .media-play { opacity: 0.6; }
 
+/* ---------- film page (book.json endPages "video") ---------- */
+
+.end-video { position: absolute; inset: 0; background: #000; }
+.end-video video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+.sheet.film { background: #000; }
+
 /* Second round button beside ?? the same printed panel, as an interactive widget
    (book.json media "widget"). Sized and coloured like the graphic button on a question. */
 .media-widget {

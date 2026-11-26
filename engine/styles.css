@@ -1116,28 +1116,48 @@ body.embed-open { overflow: hidden; }
 .qa.card.dragging,
 .qa.card.dragging * { user-select: none; -webkit-user-select: none; }
 .qa.card.dragging { box-shadow: 0 14px 34px rgba(30, 25, 15, 0.3); }
-.qa.card .card-head strong { flex: 1 1 auto; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.qa.card .card-head .ctl {
+.qa.card .card-head strong { flex: 1 1 auto; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The step buttons do not fit beside the title on a card this narrow: in the head they
+   pushed the close button outside the card, where it could not be seen or tapped. They
+   get their own row under the head, and the head is grip + title + close only. */
+.qa.card .card-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 8px;
+  background: #fdfaf3;
+  border-bottom: 1px solid #e4d7bd;
+}
+.qa.card .card-tools .ctl {
   position: static !important;
   left: auto !important;
   top: auto !important;
   display: flex;
-  grid-auto-flow: row;
+  flex-wrap: wrap;
   gap: 4px;
+  align-items: center;
 }
-.qa.card .card-head .prog { font: 400 11px/1 system-ui, sans-serif; color: #8a7c5e; min-width: 22px; }
+.qa.card .card-tools .prog { margin-left: auto; font: 400 11px/1 system-ui, sans-serif; color: #8a7c5e; }
 .qa.card .card-close {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  /* The global button rule floors every button at 40 px, which is taller than the head
+     and pushed this one out of the card. 30 pt is 45 CSS px at 1.5x, still a full tap. */
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
   border: 0;
   background: transparent;
   color: #6d5c3b;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1;
-  padding: 5px 6px;
   cursor: pointer;
   border-radius: 5px;
 }
 .qa.card .card-close:hover { background: #eadfc7; }
-.qa.card .qa-in { top: 34px; bottom: 6px; left: 6px; }
+.qa.card .qa-in { top: var(--card-body, 64px); bottom: 6px; left: 6px; }
 .qa.card.scroll .qa-in { overflow: auto; }
-.qa.card .qa-bar { top: 34px; bottom: 6px; }
+.qa.card .qa-bar { top: var(--card-body, 64px); bottom: 6px; }
 

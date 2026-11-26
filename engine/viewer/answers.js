@@ -664,7 +664,7 @@ export function buildOverlay(page, overlay) {
       // waits in a card over the page, and the printed page never moves.
       q.space = 0;
       qa.hidden = true;
-      qa.innerHTML = `<div class="card-head"><span class="card-grip" aria-hidden="true" title="Drag to move the card">⠿</span><strong>${esc(q.label ? `Q${q.label}` : q.id)} · worked solution</strong>${ctlHTML(q.id)}<button type="button" class="card-close" title="Close (Esc)">✕</button></div><div class="qa-in"></div><div class="qa-bar" title="Drag to scroll the answer"><i></i></div>`;
+      qa.innerHTML = `<div class="card-head"><span class="card-grip" aria-hidden="true" title="Drag to move the card">⠿</span><strong>${esc(q.label ? `Q${q.label}` : q.id)} · worked solution</strong><button type="button" class="card-close" title="Close (Esc)">✕</button></div><div class="card-tools">${ctlHTML(q.id)}</div><div class="qa-in"></div><div class="qa-bar" title="Drag to scroll the answer"><i></i></div>`;
       qa.querySelector(".card-close").addEventListener("click", (event) => {
         event.stopPropagation();
         closeAnswer();
@@ -684,7 +684,10 @@ export function buildOverlay(page, overlay) {
       });
       chip.addEventListener("click", (event) => {
         event.stopPropagation();
-        openAnswer(q.id);
+        // The chip is a toggle: a second press on the question already open closes it,
+        // so the reader never has to hunt for the ✕ or reach for Esc.
+        if (openCard && openCard.dataset.q === q.id) closeAnswer();
+        else openAnswer(q.id);
       });
       overlay.append(chip);
       ANSWER_QUESTIONS.set(q.id, q);
@@ -747,11 +750,19 @@ function layoutCard(q, qa) {
   const box = { ...q, space: 0, region: [x0, y0, x1, y0 + maxH] };
   flowFit(box, qa, BASE, "scroll");
   const used = parseFloat(inner.style.getPropertyValue("--used")) || maxH;
-  // The card is its header plus the working plus the small gap under it.
-  const h = Math.min(Math.ceil(used) + 44, maxH);
+  // The working starts under the head and the tool row; their real height is measured,
+  // so a tool row that wraps on a narrow card still leaves the working clear.
+  const head = qa.querySelector(".card-head");
+  const tools = qa.querySelector(".card-tools");
+  const bodyTop = (head ? head.offsetHeight : 30) + (tools ? tools.offsetHeight : 0);
+  qa.style.setProperty("--card-body", `${bodyTop}px`);
+  // The card is its header and tools, the working, and the small gap under it.
+  const h = Math.min(Math.ceil(used) + bodyTop + 10, maxH);
   qa.style.height = `${h}px`;
   box.region[3] = y0 + h;
-  if (used > h + 0.5) qa.classList.add("scroll");
+  // The window the working actually has, not the card's outer height: the head and
+  // the tool row sit above it.
+  if (used > h - bodyTop - 6 + 0.5) qa.classList.add("scroll");
   else qa.classList.remove("scroll");
   // Sit the card where the reader last put it, otherwise at a spot that does not
   // cover this question's printed text.

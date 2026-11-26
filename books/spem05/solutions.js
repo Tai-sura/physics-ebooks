@@ -289,14 +289,15 @@ export const SOLUTIONS = [
 
   // ---------------------------------------------------------------- q18
   // Simple motor with solenoids (ans_11, red text): B South, C North; clockwise
-  // rotation with PQ up and RS down; no current at the vertical; reversal keeps
+  // seen from Y, the commutator end - XY is a horizontal axis, so "from above"
+  // would name the wrong end; PQ up and RS down; no current at the vertical; reversal keeps
   // the sense; three ways to increase the turning effect.
   {
     id: "q18",
     boxes: [{
       steps: [
         t("(a) $B$: South; $C$: North."),
-        t("(b) The coil rotates clockwise as viewed from above; the force on $PQ$ is upward and the force on $RS$ is downward."),
+        t("(b) The coil rotates clockwise as viewed from $Y$ (the commutator end); the force on $PQ$ is upward and the force on $RS$ is downward."),
         t("(c) No: in the vertical position the contacts between the commutator and the brushes are broken, so no current flows."),
         t("(d) The current and the magnetic field both reverse, so the sense of rotation is unchanged."),
         t("(e) Increase the current, put soft-iron cores inside the solenoids, or increase the number of turns of $PQRS$."),

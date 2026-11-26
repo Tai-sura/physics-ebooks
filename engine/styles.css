@@ -1088,6 +1088,30 @@ body.embed-open { overflow: hidden; }
   top: -7px;
   bottom: -7px;
 }
+/* A fixed grip on the left of the bar: the buttons take most of the head, so the
+   grip is the one patch that is always there and always draggable. It is a span,
+   not a button, and it never scrolls the page (touch-action: none). */
+.qa.card .card-grip {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-left: -8px;
+  color: #8a7c5e;
+  font: 400 15px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 5px;
+}
+.qa.card .card-grip:hover { background: #eadfc7; }
+.qa.card.dragging .card-grip { cursor: grabbing; }
+/* The working area drags the card only when it does not scroll; a scrolling answer
+   keeps the finger for panning (pan-y), so q9 can still be read to the bottom. */
+.qa.card:not(.scroll) .qa-in { touch-action: none; }
+.qa.card.scroll .qa-in { touch-action: pan-y; }
 .qa.card.dragging,
 .qa.card.dragging .card-head { cursor: grabbing; }
 .qa.card.dragging { box-shadow: 0 14px 34px rgba(30, 25, 15, 0.3); }

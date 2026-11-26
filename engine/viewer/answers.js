@@ -664,7 +664,7 @@ export function buildOverlay(page, overlay) {
       // waits in a card over the page, and the printed page never moves.
       q.space = 0;
       qa.hidden = true;
-      qa.innerHTML = `<div class="card-head"><strong>${esc(q.label ? `Q${q.label}` : q.id)} · worked solution</strong>${ctlHTML(q.id)}<button type="button" class="card-close" title="Close (Esc)">✕</button></div><div class="qa-in"></div><div class="qa-bar" title="Drag to scroll the answer"><i></i></div>`;
+      qa.innerHTML = `<div class="card-head"><span class="card-grip" aria-hidden="true" title="Drag to move the card">⠿</span><strong>${esc(q.label ? `Q${q.label}` : q.id)} · worked solution</strong>${ctlHTML(q.id)}<button type="button" class="card-close" title="Close (Esc)">✕</button></div><div class="qa-in"></div><div class="qa-bar" title="Drag to scroll the answer"><i></i></div>`;
       qa.querySelector(".card-close").addEventListener("click", (event) => {
         event.stopPropagation();
         closeAnswer();
@@ -923,16 +923,24 @@ function cardSpot(q, qa, h) {
   return best || { left: baseL, top: baseT, overlap: minOver, ink: minInk };
 }
 
-/** Drag the card by its head bar; it stays inside the page and each card keeps its spot. */
+/**
+ * Drag the card: by the grip on its head bar (a plain span, so it is always there
+ * whatever the card is wide), by the rest of the head, and by the working area when
+ * that area does not need to scroll. The card stays inside the page, above the
+ * printed footer, and each question keeps the spot it was dragged to.
+ */
 function bindCardDrag(qa) {
   const head = qa.querySelector(".card-head");
+  const body = qa.querySelector(".qa-in");
   if (!head) return;
-  head.addEventListener("pointerdown", (ev) => {
+  const startDrag = (ev) => {
     // The card is appended after this runs, so the overlay is looked up now.
     const overlay = qa.parentElement;
     if (!overlay) return;
     if (ev.button > 0) return;
-    if (ev.target.closest("button, .ctl, .card-close, .qa-bar")) return;
+    // The pointer is captured by the element the press started on, so a finger that
+    // slides off the grip keeps dragging instead of panning the page.
+    const host = ev.currentTarget;
     const box = overlay.getBoundingClientRect();
     const k = box.width / PAGE_W || 1;
     const startL = parseFloat(qa.style.left) || 0;
@@ -952,11 +960,11 @@ function bindCardDrag(qa) {
       qa.style.top = `${Math.min(Math.max(0, startT + dy), maxT)}px`;
     };
     const end = () => {
-      head.removeEventListener("pointermove", move);
-      head.removeEventListener("pointerup", end);
-      head.removeEventListener("pointercancel", end);
+      host.removeEventListener("pointermove", move);
+      host.removeEventListener("pointerup", end);
+      host.removeEventListener("pointercancel", end);
       qa.classList.remove("dragging");
-      if (head.hasPointerCapture?.(ev.pointerId)) head.releasePointerCapture(ev.pointerId);
+      if (host.hasPointerCapture?.(ev.pointerId)) host.releasePointerCapture(ev.pointerId);
       if (dragged) {
         CARD_POS.set(cardKey(qa.dataset.q), {
           left: parseFloat(qa.style.left),
@@ -968,13 +976,25 @@ function bindCardDrag(qa) {
         cardJustDragged = true;
       }
     };
-    head.setPointerCapture?.(ev.pointerId);
+    host.setPointerCapture?.(ev.pointerId);
     qa.classList.add("dragging");
-    head.addEventListener("pointermove", move);
-    head.addEventListener("pointerup", end);
-    head.addEventListener("pointercancel", end);
+    host.addEventListener("pointermove", move);
+    host.addEventListener("pointerup", end);
+    host.addEventListener("pointercancel", end);
     ev.preventDefault();
     ev.stopPropagation();
+  };
+  head.addEventListener("pointerdown", (ev) => {
+    if (ev.target.closest("button, .ctl, .card-close, .qa-bar")) return;
+    startDrag(ev);
+  });
+  // The working area moves the card too, but only when nothing in it needs to
+  // scroll: a card whose answer scrolls (q9) keeps its finger panning the answer.
+  body?.addEventListener("pointerdown", (ev) => {
+    if (qa.classList.contains("scroll")) return;
+    if (body.scrollHeight > body.clientHeight + 1) return;
+    if (ev.target.closest("button, .ctl, a, input, select, textarea, .qa-bar")) return;
+    startDrag(ev);
   });
 }
 

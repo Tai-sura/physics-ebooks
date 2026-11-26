@@ -585,12 +585,66 @@ function jp1(root) {
  * at the drawer width an iPad gives (24 viewBox units) so a finger can hold them.
  */
 const Q2_W = 620, Q2_H = 400;
-const Q2_S = 150;                    // px per metre
+let Q2_S = 150;                      // px per metre; every printed case brings its own scale
 const Q2_CX = 232, Q2_CY = 190;      // centre of the object
 const Q2_COLX = 462;                 // the reading column starts here
 const Q2_COL = [C.red, C.blue, C.green];   // F1, F2, F3
 const Q2_SUB = ["\u2081", "\u2082", "\u2083"];
 const Q2_PIVOT_R = 24, Q2_PT_R = 22, Q2_TIP_R = 22;   // hit radii, viewBox units
+
+/* ---- the six printed cases (a)-(f) on page 2 ----
+ *
+ * The bar, P and the force of each case are the printed ones, and each case brings its own
+ * px-per-metre S, chosen so that tau = F * d_px / S lands on the number in
+ * books/jpfm08/solutions.js q2 (checked on paper, then read back out of the reader):
+ *   (a) 30 x 0.4                  = 12    anticlockwise
+ *   (b) 30 x 0.4 x sin 60         = 10.4  clockwise
+ *   (c) 120 x 1.5 x cos 40        = 138   clockwise
+ *   (d) 50 x 1 x sin 0            = 0
+ *   (e) 6 x 0.4                   = 2.4   clockwise
+ *   (f) 20(7+3) sin 70 + 15(3) sin 60 = 227 anticlockwise
+ *
+ * deg is the screen angle: 0 = +x (right), 90 = +y (down), so a = deg * PI / 180.
+ * (d)'s 369.81 / -30 deg is deliberate: cos(-30) * 300 = 259.808 and sin(-30) * 300 = -150 put
+ * the line of action exactly through P, so d reads 0.000 rather than 0.001.
+ * (e) keeps the sandbox plate and its 150 px/m frame; P = (-0.42, -0.40) m = (169, 130) and the
+ * force acts at P + (0.40, 0.30) m = (229, 175), straight down.
+ */
+const Q2_CASES = [
+  { label: "(a)", S: 700, bar: [[120, 190], [400, 190]], pivot: [400, 190],
+    forces: [{ x: 120, y: 190, deg: 90, F: 30 }],
+    note: "30 N at 0.4 m from P",
+    answer: "\u03C4 = 30 \u00D7 0.4 = 12 N m anticlockwise" },
+  { label: "(b)", S: 700, bar: [[120, 250], [400, 250]], pivot: [400, 250],
+    forces: [{ x: 120, y: 250, deg: -60, F: 30 }],
+    note: "30 N at 0.4 m from P, 60\u00B0 to the bar",
+    answer: "\u03C4 = 30 \u00D7 0.4 \u00D7 sin 60\u00B0 = 10.4 N m clockwise" },
+  { label: "(c)", S: 220, bar: [[80, 200], [450, 200]], pivot: [80, 200],
+    forces: [{ x: 410, y: 200, deg: 130, F: 120 }],
+    note: "120 N at 1.5 m from P",
+    answer: "\u03C4 = 120 \u00D7 1.5 \u00D7 cos 40\u00B0 = 138 N m clockwise" },
+  { label: "(d)", S: 300, bar: [[110, 290], [355.746, 117.927]], pivot: [110, 290],
+    forces: [{ x: 355.746, y: 117.927, deg: -35, F: 50 }],
+    note: "50 N, its line of action passes through P",
+    answer: "\u03C4 = 50 \u00D7 1 \u00D7 sin 0\u00B0 = 0" },
+  { label: "(e)", S: 150, plate: true, pivot: [169, 130],
+    forces: [{ x: 229, y: 175, deg: 90, F: 6 }],
+    note: "6 N at 0.4 m from P",
+    answer: "\u03C4 = 6 \u00D7 0.4 = 2.4 N m clockwise" },
+  { label: "(f)", S: 40, bar: [[40, 200], [440, 200]], pivot: [440, 200],
+    forces: [{ x: 40, y: 200, deg: 70, F: 20 }, { x: 320, y: 200, deg: 120, F: 15 }],
+    note: "20 N at 10 m and 15 N at 3 m from P",
+    answer: "\u03C4 = 20(7+3) sin 70\u00B0 + 15(3) sin 60\u00B0 = 227 N m anticlockwise" },
+];
+
+/* 3 significant figures with the trailing zeros dropped, so the live reading reads word for word
+ * like the printed answer: 12, 10.4, 138, 0, 2.4, 227, 39, 188. */
+const sig3 = (v) => {
+  if (!Number.isFinite(v) || Math.abs(v) < 0.0005) return "0";
+  const dp = Math.max(0, 2 - Math.floor(Math.log10(Math.abs(v))));
+  const s = Math.abs(v).toFixed(dp);
+  return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+};
 
 function jq2(root) {
   const svg = scene(Q2_W, Q2_H);
@@ -608,6 +662,7 @@ function jq2(root) {
   };
 
   let shape = "rod";
+  let caseIdx = -1;                    // >= 0 while a printed case (a)-(f) is showing
   let pivot = [0, 0];                  // screen px
   let forces = [];                     // {x, y, a, F}: screen px, radians (screen), newtons
 
@@ -617,6 +672,12 @@ function jq2(root) {
 
   /* ---- the objects ---- */
   function drawShape() {
+    if (caseIdx >= 0) {                  // a printed case draws its own bar (or the plate)
+      const c = Q2_CASES[caseIdx];
+      if (c.plate) drawPlate();
+      else drawBar(c.bar[0], c.bar[1]);
+      return;
+    }
     if (shape === "rod") {
       S("rect", { x: X(-0.86), y: Y(-0.055), width: 1.72 * Q2_S, height: 0.11 * Q2_S, rx: 5,
         fill: C.soft, stroke: C.line, "stroke-width": 2 }, svg);
@@ -646,17 +707,31 @@ function jq2(root) {
       S("line", { x1: hx, y1: hy, x2: hx - 16, y2: hy, stroke: C.grey, "stroke-width": 3.4,
         "stroke-linecap": "round", "stroke-opacity": 0.85 }, svg);
     } else {
-      // the kidney plate of printed case (e): a smooth outline with the concave left edge
-      const P = (mx, my) => `${X(mx)},${Y(my)}`;
-      S("path", {
-        d: `M${P(-0.55, -0.60)} C${P(-0.28, -0.74)} ${P(0.20, -0.70)} ${P(0.46, -0.48)} `
-          + `C${P(0.74, -0.24)} ${P(0.78, 0.16)} ${P(0.54, 0.44)} `
-          + `C${P(0.30, 0.70)} ${P(-0.06, 0.74)} ${P(-0.20, 0.58)} `
-          + `C${P(-0.36, 0.40)} ${P(-0.26, 0.12)} ${P(-0.40, -0.06)} `
-          + `C${P(-0.52, -0.22)} ${P(-0.62, -0.44)} ${P(-0.55, -0.60)} Z`,
-        fill: C.soft, stroke: C.line, "stroke-width": 2,
-      }, svg);
+      drawPlate();
     }
+  }
+
+  /* the kidney plate of printed case (e): a smooth outline with the concave left edge */
+  function drawPlate() {
+    const P = (mx, my) => `${X(mx)},${Y(my)}`;
+    S("path", {
+      d: `M${P(-0.55, -0.60)} C${P(-0.28, -0.74)} ${P(0.20, -0.70)} ${P(0.46, -0.48)} `
+        + `C${P(0.74, -0.24)} ${P(0.78, 0.16)} ${P(0.54, 0.44)} `
+        + `C${P(0.30, 0.70)} ${P(-0.06, 0.74)} ${P(-0.20, 0.58)} `
+        + `C${P(-0.36, 0.40)} ${P(-0.26, 0.12)} ${P(-0.40, -0.06)} `
+        + `C${P(-0.52, -0.22)} ${P(-0.62, -0.44)} ${P(-0.55, -0.60)} Z`,
+      fill: C.soft, stroke: C.line, "stroke-width": 2,
+    }, svg);
+  }
+
+  /* a printed case's bar: 10 px thick with round ends, C.soft fill and a 2 px C.line edge, drawn
+   * between the two printed endpoints whatever the bar's angle. The soft core is 6 px, so the
+   * outline shows 2 px all round and the total is the printed 10 px. */
+  function drawBar(p, q) {
+    const [x1, y1] = p, [x2, y2] = q;
+    S("line", { x1, y1, x2, y2, stroke: C.line, "stroke-width": 10, "stroke-linecap": "round" }, svg);
+    S("line", { x1, y1, x2, y2, stroke: C.soft, "stroke-width": 6, "stroke-linecap": "round" }, svg);
+    S("line", { x1, y1, x2, y2, stroke: C.line, "stroke-width": 1, "stroke-opacity": 0.25 }, svg);
   }
 
   /* ---- one arrowhead, drawn rather than a marker, so any colour works ---- */
@@ -687,6 +762,13 @@ function jq2(root) {
   function render() {
     clear(svg);
     drawShape();
+
+    // which printed case is on show: a thin line in the empty top-left corner of the canvas
+    if (caseIdx >= 0) {
+      const c = Q2_CASES[caseIdx];
+      T(svg, 14, 20, `${c.label} ${c.note}`,
+        { "font-size": 11.5, "font-weight": 700, fill: C.grey, "class": "g-case-tag" });
+    }
 
     const sums = [];
     forces.forEach((f, i) => {
@@ -729,10 +811,10 @@ function jq2(root) {
         // the arm's value, set square to the arm so it never lies along it. Its spot along the
         // arm is staggered by the force's index, so three arms that cross near the middle do not
         // stack their numbers on top of each other.
-        const tLab = clamp(0.28 + i * 0.11, 0.26, 0.52);
+        const tLab = clamp(0.28 + i * 0.15, 0.26, 0.55);
         const mx = pivot[0] + (foot[0] - pivot[0]) * tLab;
         const my = pivot[1] + (foot[1] - pivot[1]) * tLab;
-        const ox = (pivot[1] - foot[1]) / d * 26, oy = (foot[0] - pivot[0]) / d * 26;
+        const ox = (pivot[1] - foot[1]) / d * 28, oy = (foot[0] - pivot[0]) / d * 28;
         T(svg, mx + ox, my + oy + 4, (d / Q2_S).toFixed(3) + " m",
           { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: col, "class": "g-arm-lab",
             stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
@@ -745,15 +827,26 @@ function jq2(root) {
       const [tx, ty] = tipOf(f);
       arrow(f.x, f.y, tx - Math.cos(f.a) * 8, ty - Math.sin(f.a) * 8, col, 3.4, 11);
       // the label runs beside the shaft, on the far side from P, and is anchored away from the
-      // shaft: centred 12 px off a vertical shaft the text still crossed it (seen at 22:48)
+      // shaft: centred 12 px off a vertical shaft the text still crossed it (seen at 22:48).
+      // Where that side would push the text off the frame it hops to the other side of the
+      // shaft instead of sliding onto it: case (f) puts a force at x = 40, and a label clamped
+      // to the edge there lost its first character and then sat under the arrow (23:41, 23:45).
       const side = Math.sign((pivot[0] - f.x) * uy - (pivot[1] - f.y) * ux) || 1;
       const nx = -uy * side, ny = ux * side;
       const anchor = nx > 0.25 ? "start" : nx < -0.25 ? "end" : "middle";
       const off = anchor === "middle" ? 18 : 14;
       const mid = Math.max(20, lenOf(f.F) * 0.55);
-      T(svg, f.x + ux * mid + nx * off, f.y + uy * mid + ny * off + 4,
+      let anc = anchor;
+      let lx = f.x + ux * mid + nx * off;
+      let ly = f.y + uy * mid + ny * off + 4;
+      if ((anc === "end" && lx < 54) || (anc === "start" && lx > 566)) {
+        anc = anc === "end" ? "start" : "end";
+        lx = f.x + ux * mid - nx * off;
+        ly = f.y + uy * mid - ny * off + 4;
+      }
+      T(svg, clamp(lx, 6, 614), ly,
         `F${Q2_SUB[i]} ${f.F.toFixed(0)} N`,
-        { "text-anchor": anchor, "font-size": 11.5, "font-weight": 700, fill: col,
+        { "text-anchor": anc, "font-size": 11.5, "font-weight": 700, fill: col,
           stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
 
       // the point it acts at, and a hollow knob on the head: both are drag handles
@@ -821,7 +914,7 @@ function jq2(root) {
       if (s.F < 0.5) {
         T(svg, x, y + 34, "no force", { "font-size": 11, fill: C.grey });
       } else {
-        T(svg, x, y + 34, `\u03C4${Q2_SUB[s.i]} = ${Math.abs(s.tau).toFixed(1)} N m`,
+        T(svg, x, y + 34, `\u03C4${Q2_SUB[s.i]} = ${sig3(s.tau)} N m`,
           { "font-size": 11.5, "font-weight": 700, fill: s.col });
         T(svg, x + 2, y + 51, Math.abs(s.tau) < 0.05 ? "\u2014" : s.tau > 0 ? "clockwise" : "anticlockwise",
           { "font-size": 10.5, fill: C.grey });
@@ -834,7 +927,7 @@ function jq2(root) {
     const net = live.reduce((a, s) => a + s.tau, 0);
     const y0 = Math.max(232, 60 + sums.length * 70 + 16);
     S("line", { x1: x, y1: y0, x2: Q2_W - 14, y2: y0, stroke: C.grey, "stroke-width": 1, "stroke-opacity": 0.45 }, svg);
-    T(svg, x, y0 + 22, live.length ? `\u03A3\u03C4 = ${Math.abs(net).toFixed(1)} N m` : "\u03A3\u03C4 = 0 N m",
+    T(svg, x, y0 + 22, live.length ? `\u03A3\u03C4 = ${sig3(net)} N m` : "\u03A3\u03C4 = 0 N m",
       { "font-size": 14, "font-weight": 700, fill: C.ink });
     const flat = !live.length ? "no force"
       : Math.abs(net) < 0.05 ? "balanced \u2014 does not turn"
@@ -846,42 +939,48 @@ function jq2(root) {
   function writeReading(sums) {
     const live = sums.filter((s) => s.F >= 0.5);
     const net = live.reduce((a, s) => a + s.tau, 0);
-    const cw = live.filter((s) => s.tau > 0);
-    const acw = live.filter((s) => s.tau < 0);
+    /* a moment under 0.05 N m is zero: without this, case (d) - whose line of action runs through
+     * P, so d = 0 - printed "0 (acw)" and read "0 N m anticlockwise" */
+    const acts = live.filter((s) => Math.abs(s.tau) >= 0.05);
+    const cw = acts.filter((s) => s.tau > 0);
+    const acw = acts.filter((s) => s.tau < 0);
     const tot = (list) => list.reduce((a, s) => a + Math.abs(s.tau), 0);
     const names = (list) => list.map((s) => `F${Q2_SUB[s.i]}`).join(" and ");
-    const parts = live.map((s) => `${Math.abs(s.tau).toFixed(1)}\\ (${s.tau > 0 ? "cw" : "acw"})`);
-    const latex = live.length
-      ? `\\Sigma\\tau = ${parts.join(" + ")} = ${Math.abs(net).toFixed(1)}\\ \\text{N m}`
+    const parts = acts.map((s) => `${sig3(s.tau)}\\ (${s.tau > 0 ? "cw" : "acw"})`);
+    const latex = acts.length
+      ? `\\Sigma\\tau = ${parts.join(" + ")} = ${sig3(net)}\\ \\text{N m}`
       : `\\Sigma\\tau = 0\\ \\text{N m}`;
     let caption;
     if (!live.length) {
       caption = "No force acting: add one by tapping the object, then drag its dot to move it, its knob to turn it, or use the slider for its size. Drag P anywhere \u2014 the arms and moments follow.";
     } else if (Math.abs(net) < 0.05) {
-      // Say how the two senses cancel, never "the same size in opposite senses" unless that is true.
-      const sides = [cw.length ? `${tot(cw).toFixed(1)} N m clockwise from ${names(cw)}` : "",
-        acw.length ? `${tot(acw).toFixed(1)} N m anticlockwise from ${names(acw)}` : ""].filter(Boolean);
-      caption = `The moments cancel: ${sides.join(" against ")} give a net moment of zero, so the object does not turn.`;
+      // Say how the two senses cancel, never "the same size in opposite senses" unless that is
+      // true. A force whose line runs through P has no moment at all: that is not a cancellation.
+      const sides = [cw.length ? `${sig3(tot(cw))} N m clockwise from ${names(cw)}` : "",
+        acw.length ? `${sig3(tot(acw))} N m anticlockwise from ${names(acw)}` : ""].filter(Boolean);
+      caption = sides.length
+        ? `The moments cancel: ${sides.join(" against ")} give a net moment of zero, so the object does not turn.`
+        : `The line of action of ${names(live)} passes through P, so ${live.length > 1 ? "the arm is zero for each force" : "the arm is zero"} and the moment is zero: the object does not turn.`;
     } else {
       // Name the forces that act each way and add up each side. Never say a force "wins": the
       // moment is what is being summed, and two equal moments are not a contest.
       const phrase = cw.length && acw.length
-        ? `${names(cw)} ${cw.length > 1 ? "give" : "gives"} ${tot(cw).toFixed(1)} N m clockwise against ${names(acw)} (${tot(acw).toFixed(1)} N m anticlockwise)`
+        ? `${names(cw)} ${cw.length > 1 ? "give" : "gives"} ${sig3(tot(cw))} N m clockwise against ${names(acw)} (${sig3(tot(acw))} N m anticlockwise)`
         : (() => {
           const one = cw.length ? cw : acw;
           const w = cw.length ? "clockwise" : "anticlockwise";
           return one.length > 1
-            ? `${names(one)} all act ${w}, adding to ${tot(one).toFixed(1)} N m`
-            : `${names(one)} acts ${w}, ${tot(one).toFixed(1)} N m`;
+            ? `${names(one)} all act ${w}, adding to ${sig3(tot(one))} N m`
+            : `${names(one)} acts ${w}, ${sig3(tot(one))} N m`;
         })();
-      caption = `Net moment ${Math.abs(net).toFixed(1)} N m ${net > 0 ? "clockwise" : "anticlockwise"}: ${phrase}. Move P and watch every arm and moment change \u2014 the moment is F times the perpendicular distance from P to the line of action, not the distance to the point of application.`;
+      caption = `Net moment ${sig3(net)} N m ${net > 0 ? "clockwise" : "anticlockwise"}: ${phrase}. Move P and watch every arm and moment change \u2014 the moment is F times the perpendicular distance from P to the line of action, not the distance to the point of application.`;
     }
     r.set(latex, null, caption);
   }
 
   /* ---- the controls ---- */
   const sfc = [0, 1, 2].map((i) => slider({
-    label: `F${Q2_SUB[i]} (N)`, min: 0, max: 100, step: 1, value: 30, play: false,
+    label: `F${Q2_SUB[i]} (N)`, min: 0, max: 150, step: 1, value: 30, play: false,
     fmt: (v) => v.toFixed(0) + " N",
   }));
   let syncing = false;
@@ -902,12 +1001,21 @@ function jq2(root) {
   const resetBtn = H("button", { type: "button", onclick: () => reset() }, ["reset this object"]);
   const tools = H("div", { class: "g-btns" }, [addBtn, resetBtn]);
 
+  /* the printed answer, kept visually apart from the live reading below the canvas: a static
+   * line on a tinted card, so a student can compare their own sum with the book's */
+  const printed = H("div", {
+    class: "g-printed",
+    style: "margin:2px 0 8px;padding:7px 10px;border-left:3px solid #c8a24a;background:#fdf9ef;"
+      + "border-radius:6px;font-size:12.5px;line-height:1.4;color:#3c3c3c",
+  });
+  printed.hidden = true;
+
   function syncUI() {
     syncing = true;
     sfc.forEach((s, i) => {
       const on = i < forces.length;
       s.el.hidden = !on;
-      if (on) s.set(clamp(Math.round(forces[i].F), 0, 100));
+      if (on) s.set(clamp(Math.round(forces[i].F), 0, 150));
     });
     syncing = false;
     addBtn.disabled = forces.length >= 3;
@@ -917,10 +1025,10 @@ function jq2(root) {
   /* two forces on the same spot bury each other's dot, knob, arm and label: step a new one
    * sideways until it is clear of every force already there */
   function clearSpot(x, y) {
-    let nx = clamp(x, 52, 402), ny = clamp(y, 42, 356);
+    let nx = clamp(x, 40, 456), ny = clamp(y, 34, 370);
     for (let k = 0; k < 6 && forces.some((f) => Math.hypot(f.x - nx, f.y - ny) < 46); k++) {
-      nx = clamp(nx + 44, 52, 402);
-      if (k % 2) ny = clamp(ny + 34, 42, 356);
+      nx = clamp(nx + 44, 40, 456);
+      if (k % 2) ny = clamp(ny + 34, 34, 370);
     }
     return [nx, ny];
   }
@@ -941,7 +1049,24 @@ function jq2(root) {
     render();
   }
 
+  /* ---- a printed case: set its scale, its object, its P and its forces in one go ----
+   * Every case carries its own px/m, so tau = F * d_px / S comes out on the printed number. */
+  function applyCase(k) {
+    const c = Q2_CASES[k];
+    caseIdx = k;
+    Q2_S = c.S;
+    shape = "case";
+    pivot = [c.pivot[0], c.pivot[1]];
+    forces = c.forces.map((f) => ({ x: f.x, y: f.y, a: f.deg * Math.PI / 180, F: f.F }));
+    clearTabs(shapeTabs);              // the object tabs stop being lit: this is a case now
+    printed.textContent = "Printed answer: " + c.answer;
+    printed.hidden = false;
+    syncUI();
+    render();
+  }
+
   function reset() {
+    if (caseIdx >= 0) { applyCase(caseIdx); return; }      // "reset" here = back to this case
     const s = SHAPES[shape];
     pivot = [X(s.pivot[0]), Y(s.pivot[1])];
     forces = [{ x: X(s.at[0]), y: Y(s.at[1]), a: Math.PI / 2, F: s.F }];
@@ -949,10 +1074,20 @@ function jq2(root) {
     render();
   }
 
+  const clearTabs = (row) => [...row.children].forEach((b) => b.classList.remove("on"));
+  let caseTabs;                        // built below; the object tabs have to un-highlight it
+
   const shapeTabs = tabs(["rod", "box", "flat door", "irregular plate"], (i) => {
+    caseIdx = -1;                      // picking an object leaves case mode
+    Q2_S = 150;
     shape = Object.keys(SHAPES)[i];
+    clearTabs(caseTabs);
+    printed.hidden = true;
     reset();
   });
+
+  caseTabs = tabs(Q2_CASES.map((c) => c.label), (i) => applyCase(i));
+  clearTabs(caseTabs);                 // nothing is on show until a case is picked
 
   /* ---- dragging: one handler on the svg, hit-tested by distance so a finger has 47 px ---- */
   let drag = null;
@@ -995,13 +1130,15 @@ function jq2(root) {
     if (!drag) return;
     const [x, y] = at(e);
     if (drag.kind === "pivot") {
-      pivot = [clamp(x, 26, 432), clamp(y, 26, 374)];
+      // the safe area is the whole canvas bar the reading column: (f) puts P at x = 440, so a
+      // 432 ceiling would drag it away the moment the reader touched it
+      pivot = [clamp(x, 26, 456), clamp(y, 34, 370)];
     } else {
       const f = forces[drag.i];
       if (!f) { drag = null; return; }
       if (drag.kind === "pt") {
-        f.x = clamp(x, 52, 402);
-        f.y = clamp(y, 42, 356);
+        f.x = clamp(x, 40, 456);
+        f.y = clamp(y, 34, 370);
       } else {
         f.a = Math.atan2(y - f.y, x - f.x);          // the head sets the direction
       }
@@ -1038,6 +1175,8 @@ function jq2(root) {
       "Drag P anywhere (even off the object) \u00B7 tap the object to add a force \u00B7 drag a force's dot to move it, its round knob to turn it",
     ]),
     shapeTabs,
+    caseTabs,
+    printed,
     svg,
     tools,
     ...rows,

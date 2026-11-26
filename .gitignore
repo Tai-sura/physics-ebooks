@@ -1,0 +1,7 @@
+# tooling
+node_modules/
+__pycache__/
+
+# editor / OS noise
+.DS_Store
+Thumbs.db

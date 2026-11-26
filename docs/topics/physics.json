@@ -1,0 +1,2395 @@
+{
+  "source_file": "Physics_Topics_List_Final_Checked (1).xlsx",
+  "imported": "2026-11-26",
+  "topics": [
+    {
+      "code": "JPF01",
+      "grade": "S3",
+      "level1_code": "CH0",
+      "level1_en": "Foundation",
+      "level1_zh": "物理基礎",
+      "name_en": "Physical quantities and units",
+      "name_zh": "物理量與單位",
+      "legacy_symbol": "F01",
+      "shorthand": "QuantUnit",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "1",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPF01.1",
+          "name_en": "Physical quantities and SI units",
+          "name_zh": "物理量與國際單位制"
+        },
+        {
+          "no": "2",
+          "code": "JPF01.2",
+          "name_en": "Scientific notation",
+          "name_zh": "科學記數法"
+        },
+        {
+          "no": "3",
+          "code": "JPF01.3",
+          "name_en": "SI prefixes and unit conversions",
+          "name_zh": "國際單位制詞頭與單位換算"
+        }
+      ]
+    },
+    {
+      "code": "JPF02",
+      "grade": "S3",
+      "level1_code": "CH0",
+      "level1_en": "Foundation",
+      "level1_zh": "物理基礎",
+      "name_en": "Useful mathematics in physics",
+      "name_zh": "物理實用數學",
+      "legacy_symbol": "F02",
+      "shorthand": "PhysMaths",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "2",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPF02.1",
+          "name_en": "Coordinates, gradients and intercepts",
+          "name_zh": "坐標、斜率與截距"
+        },
+        {
+          "no": "2",
+          "code": "JPF02.2",
+          "name_en": "Linear relationships and equations",
+          "name_zh": "線性關係與直線方程"
+        },
+        {
+          "no": "3",
+          "code": "JPF02.3",
+          "name_en": "Rearranging equations and sketching graphs",
+          "name_zh": "方程變換與直線圖像繪畫"
+        }
+      ]
+    },
+    {
+      "code": "JPHG01",
+      "grade": "S3",
+      "level1_code": "CH1",
+      "level1_en": "Heat and Gases",
+      "level1_zh": "熱和氣體",
+      "name_en": "Temperature and thermometers",
+      "name_zh": "溫度與溫度計",
+      "legacy_symbol": "HG01",
+      "shorthand": "TempTherm",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "3",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPHG01.1",
+          "name_en": "Temperature scales",
+          "name_zh": "溫標"
+        },
+        {
+          "no": "2",
+          "code": "JPHG01.2",
+          "name_en": "Calibration of thermometers",
+          "name_zh": "溫度計的校準"
+        },
+        {
+          "no": "3",
+          "code": "JPHG01.3",
+          "name_en": "Types of thermometers",
+          "name_zh": "溫度計的種類"
+        }
+      ]
+    },
+    {
+      "code": "JPHG02",
+      "grade": "S3",
+      "level1_code": "CH1",
+      "level1_en": "Heat and Gases",
+      "level1_zh": "熱和氣體",
+      "name_en": "Heat and internal energy",
+      "name_zh": "熱與內能",
+      "legacy_symbol": "HG02",
+      "shorthand": "HeatIntEng",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "4",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPHG02.1",
+          "name_en": "State and internal energy",
+          "name_zh": "狀態與內能"
+        },
+        {
+          "no": "2",
+          "code": "JPHG02.2",
+          "name_en": "Energy transfer and power",
+          "name_zh": "能量轉移與功率"
+        },
+        {
+          "no": "3",
+          "code": "JPHG02.3",
+          "name_en": "Energy transfer and temperature change",
+          "name_zh": "能量轉移與溫度變化"
+        },
+        {
+          "no": "4",
+          "code": "JPHG02.4",
+          "name_en": "Specific heat capacity and experiments to determine it",
+          "name_zh": "比熱容量及測定比熱容量的實驗"
+        },
+        {
+          "no": "5",
+          "code": "JPHG02.5",
+          "name_en": "Heat capacity",
+          "name_zh": "熱容量"
+        },
+        {
+          "no": "6",
+          "code": "JPHG02.6",
+          "name_en": "Heat transfer calculations",
+          "name_zh": "傳熱計算"
+        }
+      ]
+    },
+    {
+      "code": "JPHG03",
+      "grade": "S3",
+      "level1_code": "CH1",
+      "level1_en": "Heat and Gases",
+      "level1_zh": "熱和氣體",
+      "name_en": "Change of state",
+      "name_zh": "物態變化",
+      "legacy_symbol": "HG03",
+      "shorthand": "StateChange",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "5",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPHG03.1",
+          "name_en": "Evaporation and boiling",
+          "name_zh": "蒸發與沸騰"
+        },
+        {
+          "no": "2",
+          "code": "JPHG03.2",
+          "name_en": "Latent heat and change of state",
+          "name_zh": "潛熱與物態變化"
+        },
+        {
+          "no": "3",
+          "code": "JPHG03.3",
+          "name_en": "Heating and cooling curves",
+          "name_zh": "加熱與冷卻曲線"
+        },
+        {
+          "no": "4",
+          "code": "JPHG03.4",
+          "name_en": "Experiments to determine specific latent heat",
+          "name_zh": "測定比潛熱的實驗"
+        },
+        {
+          "no": "5",
+          "code": "JPHG03.5",
+          "name_en": "Calculations involving specific latent heat",
+          "name_zh": "涉及比潛熱的計算"
+        }
+      ]
+    },
+    {
+      "code": "JPHG04",
+      "grade": "S3",
+      "level1_code": "CH1",
+      "level1_en": "Heat and Gases",
+      "level1_zh": "熱和氣體",
+      "name_en": "Heat transfer processes",
+      "name_zh": "傳熱過程",
+      "legacy_symbol": "HG04",
+      "shorthand": "HeatTrans",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "6",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPHG04.1",
+          "name_en": "Conduction",
+          "name_zh": "傳導"
+        },
+        {
+          "no": "2",
+          "code": "JPHG04.2",
+          "name_en": "Convection",
+          "name_zh": "對流"
+        },
+        {
+          "no": "3",
+          "code": "JPHG04.3",
+          "name_en": "Radiation",
+          "name_zh": "輻射"
+        }
+      ]
+    },
+    {
+      "code": "SPHG05",
+      "grade": "S4",
+      "level1_code": "CH1",
+      "level1_en": "Heat and Gases",
+      "level1_zh": "熱和氣體",
+      "name_en": "Gases",
+      "name_zh": "氣體",
+      "legacy_symbol": "HG05",
+      "shorthand": "GasLaws",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "7",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPHG05.1",
+          "name_en": "Pressure",
+          "name_zh": "壓強"
+        },
+        {
+          "no": "2",
+          "code": "SPHG05.2",
+          "name_en": "Boyle's law, pressure law and Charles's law",
+          "name_zh": "波義耳定律、壓強定律與查理定律"
+        },
+        {
+          "no": "3",
+          "code": "SPHG05.3",
+          "name_en": "General gas law",
+          "name_zh": "普遍氣體定律"
+        },
+        {
+          "no": "4",
+          "code": "SPHG05.4",
+          "name_en": "Mixing gases",
+          "name_zh": "混合氣體"
+        },
+        {
+          "no": "5",
+          "code": "SPHG05.5",
+          "name_en": "Kinetic theory",
+          "name_zh": "氣體分子運動論"
+        },
+        {
+          "no": "6",
+          "code": "SPHG05.6",
+          "name_en": "Root-mean-square speed",
+          "name_zh": "方均根速率"
+        },
+        {
+          "no": "7",
+          "code": "SPHG05.7",
+          "name_en": "Average and total kinetic energy",
+          "name_zh": "平均動能與總動能"
+        }
+      ]
+    },
+    {
+      "code": "JPFM01",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Position and motion",
+      "name_zh": "位置與運動",
+      "legacy_symbol": "FM01",
+      "shorthand": "PosMove",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "8",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPFM01.1",
+          "name_en": "Time and percentage error",
+          "name_zh": "時間與百分誤差"
+        },
+        {
+          "no": "2",
+          "code": "JPFM01.2",
+          "name_en": "Distance and displacement",
+          "name_zh": "距離與位移"
+        },
+        {
+          "no": "3",
+          "code": "JPFM01.3",
+          "name_en": "Speed and velocity",
+          "name_zh": "速率與速度"
+        },
+        {
+          "no": "4",
+          "code": "JPFM01.4",
+          "name_en": "Vectors and scalars",
+          "name_zh": "向量與純量"
+        }
+      ]
+    },
+    {
+      "code": "JPFM02",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Uniformly accelerated linear motion",
+      "name_zh": "勻加速直線運動",
+      "legacy_symbol": "FM02",
+      "shorthand": "LinearMot",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "9",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPFM02.1",
+          "name_en": "Acceleration",
+          "name_zh": "加速度"
+        },
+        {
+          "no": "2",
+          "code": "JPFM02.2",
+          "name_en": "Equations of motion",
+          "name_zh": "運動方程"
+        },
+        {
+          "no": "3",
+          "code": "JPFM02.3",
+          "name_en": "Stopping distance",
+          "name_zh": "停車距離"
+        },
+        {
+          "no": "4",
+          "code": "JPFM02.4",
+          "name_en": "Motion analysis tools",
+          "name_zh": "運動分析工具"
+        }
+      ]
+    },
+    {
+      "code": "JPFM03",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Vertical motion",
+      "name_zh": "垂直運動",
+      "legacy_symbol": "FM03",
+      "shorthand": "VertMotion",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "10",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPFM03.1",
+          "name_en": "Acceleration due to gravity",
+          "name_zh": "重力加速度"
+        },
+        {
+          "no": "2",
+          "code": "JPFM03.2",
+          "name_en": "Vertical motion under gravity",
+          "name_zh": "重力下的垂直運動"
+        }
+      ]
+    },
+    {
+      "code": "JPFM04",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Motion graphs",
+      "name_zh": "運動圖像",
+      "legacy_symbol": "FM04",
+      "shorthand": "MotionGraph",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "11",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPFM04.1",
+          "name_en": "Displacement-time graphs",
+          "name_zh": "位移-時間圖"
+        },
+        {
+          "no": "2",
+          "code": "JPFM04.2",
+          "name_en": "Velocity-time graphs",
+          "name_zh": "速度-時間圖"
+        },
+        {
+          "no": "3",
+          "code": "JPFM04.3",
+          "name_en": "Acceleration-time graphs",
+          "name_zh": "加速度-時間圖"
+        }
+      ]
+    },
+    {
+      "code": "JPFM05",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Force (I)",
+      "name_zh": "力 (I)",
+      "legacy_symbol": "FM05",
+      "shorthand": "NewtonLaws",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "12",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPFM05.1",
+          "name_en": "Introduction to forces and free-body diagrams",
+          "name_zh": "力的介紹與隔離體圖"
+        },
+        {
+          "no": "2",
+          "code": "JPFM05.2",
+          "name_en": "Newton's first law and inertia",
+          "name_zh": "牛頓第一定律與慣性"
+        },
+        {
+          "no": "3",
+          "code": "JPFM05.3",
+          "name_en": "Newton's second law",
+          "name_zh": "牛頓第二定律"
+        },
+        {
+          "no": "4",
+          "code": "JPFM05.4",
+          "name_en": "Connected objects",
+          "name_zh": "連接的物體"
+        },
+        {
+          "no": "5",
+          "code": "JPFM05.5",
+          "name_en": "Newton's third law",
+          "name_zh": "牛頓第三定律"
+        }
+      ]
+    },
+    {
+      "code": "JPFM06",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Force (II)",
+      "name_zh": "力 (II)",
+      "legacy_symbol": "FM06",
+      "shorthand": "ForceResolv",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "13",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPFM06.1",
+          "name_en": "Resolving forces into components",
+          "name_zh": "力的分解"
+        },
+        {
+          "no": "2",
+          "code": "JPFM06.2",
+          "name_en": "Component of weight along a slope",
+          "name_zh": "重量沿斜面的分量"
+        }
+      ]
+    },
+    {
+      "code": "JPFM07",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Force (III)",
+      "name_zh": "力 (III)",
+      "legacy_symbol": "FM07",
+      "shorthand": "WeightDrag",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "14",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPFM07.1",
+          "name_en": "Mass and weight",
+          "name_zh": "質量與重量"
+        },
+        {
+          "no": "2",
+          "code": "JPFM07.2",
+          "name_en": "Apparent weight in a lift",
+          "name_zh": "升降機中的視重"
+        },
+        {
+          "no": "3",
+          "code": "JPFM07.3",
+          "name_en": "Fluid resistance and terminal velocity",
+          "name_zh": "流體阻力與終端速度"
+        }
+      ]
+    },
+    {
+      "code": "JPFM08",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Moment of force",
+      "name_zh": "力矩",
+      "legacy_symbol": "FM08",
+      "shorthand": "Moments",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "15",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPFM08.1",
+          "name_en": "Moments and addition of moments",
+          "name_zh": "力矩與力矩的合成"
+        },
+        {
+          "no": "2",
+          "code": "JPFM08.2",
+          "name_en": "Couples",
+          "name_zh": "力偶"
+        },
+        {
+          "no": "3",
+          "code": "JPFM08.3",
+          "name_en": "Equilibrium",
+          "name_zh": "平衡"
+        },
+        {
+          "no": "4",
+          "code": "JPFM08.4",
+          "name_en": "Centre of gravity",
+          "name_zh": "重心"
+        }
+      ]
+    },
+    {
+      "code": "SPFM09",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Work, energy and power",
+      "name_zh": "功、能量與功率",
+      "legacy_symbol": "FM09",
+      "shorthand": "WorkEnergy",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "16",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPFM09.1",
+          "name_en": "Work done",
+          "name_zh": "所作的功"
+        },
+        {
+          "no": "2",
+          "code": "SPFM09.2",
+          "name_en": "Kinetic energy",
+          "name_zh": "動能"
+        },
+        {
+          "no": "3",
+          "code": "SPFM09.3",
+          "name_en": "Potential energy",
+          "name_zh": "勢能"
+        },
+        {
+          "no": "4",
+          "code": "SPFM09.4",
+          "name_en": "Energy changes and conservation of energy",
+          "name_zh": "能量變化與能量守恆"
+        },
+        {
+          "no": "5",
+          "code": "SPFM09.5",
+          "name_en": "Power",
+          "name_zh": "功率"
+        }
+      ]
+    },
+    {
+      "code": "SPFM10",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Momentum",
+      "name_zh": "動量",
+      "legacy_symbol": "FM10",
+      "shorthand": "Momentum",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "17",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPFM10.1",
+          "name_en": "Momentum",
+          "name_zh": "動量"
+        },
+        {
+          "no": "2",
+          "code": "SPFM10.2",
+          "name_en": "Change in momentum and time of impact",
+          "name_zh": "動量變化與撞擊時間"
+        },
+        {
+          "no": "3",
+          "code": "SPFM10.3",
+          "name_en": "Collisions",
+          "name_zh": "碰撞"
+        },
+        {
+          "no": "4",
+          "code": "SPFM10.4",
+          "name_en": "Explosions",
+          "name_zh": "爆炸"
+        }
+      ]
+    },
+    {
+      "code": "SPFM11",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Projectile motion",
+      "name_zh": "拋體運動",
+      "legacy_symbol": "FM11",
+      "shorthand": "Projectile",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "18",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPFM11.1",
+          "name_en": "Horizontal projectile motion",
+          "name_zh": "水平拋體運動"
+        },
+        {
+          "no": "2",
+          "code": "SPFM11.2",
+          "name_en": "Projectile motion at an angle",
+          "name_zh": "斜角拋體運動"
+        },
+        {
+          "no": "3",
+          "code": "SPFM11.3",
+          "name_en": "Energy changes in projectile motion",
+          "name_zh": "拋體運動中的能量變化"
+        },
+        {
+          "no": "4",
+          "code": "SPFM11.4",
+          "name_en": "Projectile motion with air resistance",
+          "name_zh": "有空氣阻力的拋體運動"
+        }
+      ]
+    },
+    {
+      "code": "SPFM12",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Circular motion",
+      "name_zh": "圓周運動",
+      "legacy_symbol": "FM12",
+      "shorthand": "CircularMot",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "19",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPFM12.1",
+          "name_en": "Angular displacement and velocity",
+          "name_zh": "角位移與角速度"
+        },
+        {
+          "no": "2",
+          "code": "SPFM12.2",
+          "name_en": "Relationship between linear and angular speed",
+          "name_zh": "線速率與角速率的關係"
+        },
+        {
+          "no": "3",
+          "code": "SPFM12.3",
+          "name_en": "Period",
+          "name_zh": "週期"
+        },
+        {
+          "no": "4",
+          "code": "SPFM12.4",
+          "name_en": "Centripetal acceleration",
+          "name_zh": "向心加速度"
+        },
+        {
+          "no": "5",
+          "code": "SPFM12.5",
+          "name_en": "Centripetal force",
+          "name_zh": "向心力"
+        },
+        {
+          "no": "6",
+          "code": "SPFM12.6",
+          "name_en": "Daily examples of uniform circular motion",
+          "name_zh": "勻速圓周運動的日常例子"
+        },
+        {
+          "no": "7",
+          "code": "SPFM12.7",
+          "name_en": "Geostationary orbit",
+          "name_zh": "地球靜止軌道"
+        }
+      ]
+    },
+    {
+      "code": "SPFM13",
+      "grade": "S4",
+      "level1_code": "CH2",
+      "level1_en": "Force and Motion",
+      "level1_zh": "力和運動",
+      "name_en": "Gravitation",
+      "name_zh": "萬有引力",
+      "legacy_symbol": "FM13",
+      "shorthand": "Gravitation",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "20",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPFM13.1",
+          "name_en": "Newton's law of universal gravitation",
+          "name_zh": "牛頓萬有引力定律"
+        },
+        {
+          "no": "2",
+          "code": "SPFM13.2",
+          "name_en": "Circular motion under gravity",
+          "name_zh": "重力下的圓周運動"
+        },
+        {
+          "no": "3",
+          "code": "SPFM13.3",
+          "name_en": "Gravitational field strength",
+          "name_zh": "重力場強度"
+        }
+      ]
+    },
+    {
+      "code": "JPWM01",
+      "grade": "S4",
+      "level1_code": "CH3",
+      "level1_en": "Wave Motion",
+      "level1_zh": "波動",
+      "name_en": "Nature of waves",
+      "name_zh": "波的性質",
+      "legacy_symbol": "WM01",
+      "shorthand": "WaveNature",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "21",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPWM01.1",
+          "name_en": "Wave speed in transverse and longitudinal waves",
+          "name_zh": "橫波與縱波的波速"
+        },
+        {
+          "no": "2",
+          "code": "JPWM01.2",
+          "name_en": "Particle motion in transverse and longitudinal waves",
+          "name_zh": "橫波與縱波中粒子的運動"
+        },
+        {
+          "no": "3",
+          "code": "JPWM01.3",
+          "name_en": "Phase relationship",
+          "name_zh": "相位關係"
+        },
+        {
+          "no": "4",
+          "code": "JPWM01.4",
+          "name_en": "Displacement-time and displacement-distance graphs",
+          "name_zh": "位移-時間圖與位移-距離圖"
+        }
+      ]
+    },
+    {
+      "code": "JPWM02",
+      "grade": "S4",
+      "level1_code": "CH3",
+      "level1_en": "Wave Motion",
+      "level1_zh": "波動",
+      "name_en": "Wave phenomena",
+      "name_zh": "波動現象",
+      "legacy_symbol": "WM02",
+      "shorthand": "WavePhenom",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "22",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPWM02.1",
+          "name_en": "Reflection of waves",
+          "name_zh": "波的反射"
+        },
+        {
+          "no": "2",
+          "code": "JPWM02.2",
+          "name_en": "Refraction of waves",
+          "name_zh": "波的折射"
+        },
+        {
+          "no": "3",
+          "code": "JPWM02.3",
+          "name_en": "Diffraction of water waves",
+          "name_zh": "水波的繞射"
+        },
+        {
+          "no": "4",
+          "code": "JPWM02.4",
+          "name_en": "Superposition and interference of waves",
+          "name_zh": "波的疊加與干涉"
+        }
+      ]
+    },
+    {
+      "code": "JPWM03",
+      "grade": "S4",
+      "level1_code": "CH3",
+      "level1_en": "Wave Motion",
+      "level1_zh": "波動",
+      "name_en": "Stationary waves",
+      "name_zh": "駐波",
+      "legacy_symbol": "WM03",
+      "shorthand": "StatWave",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "23",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPWM03.1",
+          "name_en": "Formation of stationary waves",
+          "name_zh": "駐波的形成"
+        },
+        {
+          "no": "2",
+          "code": "JPWM03.2",
+          "name_en": "Characteristics of stationary waves",
+          "name_zh": "駐波的特性"
+        },
+        {
+          "no": "3",
+          "code": "JPWM03.3",
+          "name_en": "Transverse stationary waves on a string",
+          "name_zh": "弦上的橫駐波"
+        }
+      ]
+    },
+    {
+      "code": "JPWM04",
+      "grade": "S4",
+      "level1_code": "CH3",
+      "level1_en": "Wave Motion",
+      "level1_zh": "波動",
+      "name_en": "Wave nature of light",
+      "name_zh": "光的波動性",
+      "legacy_symbol": "WM04",
+      "shorthand": "LightWave",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "24",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPWM04.1",
+          "name_en": "Electromagnetic waves",
+          "name_zh": "電磁波"
+        },
+        {
+          "no": "2",
+          "code": "JPWM04.2",
+          "name_en": "Diffraction of light",
+          "name_zh": "光的繞射"
+        },
+        {
+          "no": "3",
+          "code": "JPWM04.3",
+          "name_en": "Young's double-slit experiment",
+          "name_zh": "楊氏雙縫實驗"
+        },
+        {
+          "no": "4",
+          "code": "JPWM04.4",
+          "name_en": "Plane transmission grating",
+          "name_zh": "平面透射光柵"
+        }
+      ]
+    },
+    {
+      "code": "JPWM05",
+      "grade": "S4",
+      "level1_code": "CH3",
+      "level1_en": "Wave Motion",
+      "level1_zh": "波動",
+      "name_en": "Sound waves",
+      "name_zh": "聲波",
+      "legacy_symbol": "WM05",
+      "shorthand": "SoundWave",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "25",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPWM05.1",
+          "name_en": "Particle vibration and wave motion",
+          "name_zh": "粒子振動與波動"
+        },
+        {
+          "no": "2",
+          "code": "JPWM05.2",
+          "name_en": "Wave nature of sound and ultrasound",
+          "name_zh": "聲波與超聲波的波動性"
+        },
+        {
+          "no": "3",
+          "code": "JPWM05.3",
+          "name_en": "Reflection of sound waves",
+          "name_zh": "聲波的反射"
+        },
+        {
+          "no": "4",
+          "code": "JPWM05.4",
+          "name_en": "Refraction of sound waves",
+          "name_zh": "聲波的折射"
+        },
+        {
+          "no": "5",
+          "code": "JPWM05.5",
+          "name_en": "Diffraction of sound waves",
+          "name_zh": "聲波的繞射"
+        },
+        {
+          "no": "6",
+          "code": "JPWM05.6",
+          "name_en": "Interference of sound waves",
+          "name_zh": "聲波的干涉"
+        },
+        {
+          "no": "7",
+          "code": "JPWM05.7",
+          "name_en": "Musical notes",
+          "name_zh": "樂音"
+        },
+        {
+          "no": "8",
+          "code": "JPWM05.8",
+          "name_en": "Sound intensity level",
+          "name_zh": "聲強級"
+        }
+      ]
+    },
+    {
+      "code": "JPWM06",
+      "grade": "S3",
+      "level1_code": "CH3",
+      "level1_en": "Wave Motion",
+      "level1_zh": "波動",
+      "name_en": "Reflection of light",
+      "name_zh": "光的反射",
+      "legacy_symbol": "WM06",
+      "shorthand": "Reflection",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "26",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPWM06.1",
+          "name_en": "Law of reflection",
+          "name_zh": "反射定律"
+        },
+        {
+          "no": "2",
+          "code": "JPWM06.2",
+          "name_en": "Images formed by plane mirrors",
+          "name_zh": "平面鏡所成的像"
+        },
+        {
+          "no": "3",
+          "code": "JPWM06.3",
+          "name_en": "Diffuse reflection",
+          "name_zh": "漫反射"
+        },
+        {
+          "no": "4",
+          "code": "JPWM06.4",
+          "name_en": "Applications of reflection by plane mirrors",
+          "name_zh": "平面鏡反射的應用"
+        }
+      ]
+    },
+    {
+      "code": "JPWM07",
+      "grade": "S3",
+      "level1_code": "CH3",
+      "level1_en": "Wave Motion",
+      "level1_zh": "波動",
+      "name_en": "Refraction of light",
+      "name_zh": "光的折射",
+      "legacy_symbol": "WM07",
+      "shorthand": "Refraction",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "27",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPWM07.1",
+          "name_en": "Bending of refracted rays",
+          "name_zh": "折射光線的偏折"
+        },
+        {
+          "no": "2",
+          "code": "JPWM07.2",
+          "name_en": "Snell's law",
+          "name_zh": "斯涅爾定律"
+        },
+        {
+          "no": "3",
+          "code": "JPWM07.3",
+          "name_en": "Speed of light and refraction",
+          "name_zh": "光速與折射"
+        },
+        {
+          "no": "4",
+          "code": "JPWM07.4",
+          "name_en": "Dispersion of light",
+          "name_zh": "光的色散"
+        },
+        {
+          "no": "5",
+          "code": "JPWM07.5",
+          "name_en": "Apparent depth and everyday refraction",
+          "name_zh": "視深與折射的日常例子"
+        }
+      ]
+    },
+    {
+      "code": "JPWM08",
+      "grade": "S3",
+      "level1_code": "CH3",
+      "level1_en": "Wave Motion",
+      "level1_zh": "波動",
+      "name_en": "Total internal reflection",
+      "name_zh": "全內反射",
+      "legacy_symbol": "WM08",
+      "shorthand": "TotalIntRef",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "28",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPWM08.1",
+          "name_en": "Criteria for total internal reflection",
+          "name_zh": "全內反射的條件"
+        },
+        {
+          "no": "2",
+          "code": "JPWM08.2",
+          "name_en": "Critical angle and refractive index",
+          "name_zh": "臨界角與折射率"
+        },
+        {
+          "no": "3",
+          "code": "JPWM08.3",
+          "name_en": "Examples of total internal reflection",
+          "name_zh": "全內反射的例子"
+        }
+      ]
+    },
+    {
+      "code": "JPWM09",
+      "grade": "S3",
+      "level1_code": "CH3",
+      "level1_en": "Wave Motion",
+      "level1_zh": "波動",
+      "name_en": "Convex lenses",
+      "name_zh": "凸透鏡",
+      "legacy_symbol": "WM09",
+      "shorthand": "ConvexLens",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "29",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPWM09.1",
+          "name_en": "Ray diagram construction for convex lenses",
+          "name_zh": "凸透鏡的作圖規則"
+        },
+        {
+          "no": "2",
+          "code": "JPWM09.2",
+          "name_en": "Position and nature of images",
+          "name_zh": "像的位置與性質"
+        }
+      ]
+    },
+    {
+      "code": "JPWM10",
+      "grade": "S3",
+      "level1_code": "CH3",
+      "level1_en": "Wave Motion",
+      "level1_zh": "波動",
+      "name_en": "Magnification and lens formula",
+      "name_zh": "放大率與透鏡公式",
+      "legacy_symbol": "WM10",
+      "shorthand": "LensFormula",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "30",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPWM10.1",
+          "name_en": "Linear magnification",
+          "name_zh": "線放大率"
+        },
+        {
+          "no": "2",
+          "code": "JPWM10.2",
+          "name_en": "Lens formula",
+          "name_zh": "透鏡公式"
+        }
+      ]
+    },
+    {
+      "code": "JPWM11",
+      "grade": "S3",
+      "level1_code": "CH3",
+      "level1_en": "Wave Motion",
+      "level1_zh": "波動",
+      "name_en": "Concave lenses",
+      "name_zh": "凹透鏡",
+      "legacy_symbol": "WM11",
+      "shorthand": "ConcaveLens",
+      "elective": "",
+      "department": "Junior Physics",
+      "order": "31",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "JPWM11.1",
+          "name_en": "Ray diagram construction for concave lenses",
+          "name_zh": "凹透鏡的作圖規則"
+        },
+        {
+          "no": "2",
+          "code": "JPWM11.2",
+          "name_en": "Position and nature of images",
+          "name_zh": "像的位置與性質"
+        }
+      ]
+    },
+    {
+      "code": "SPEM01",
+      "grade": "S5",
+      "level1_code": "CH4",
+      "level1_en": "Electricity and Magnetism",
+      "level1_zh": "電和磁",
+      "name_en": "Electrostatics",
+      "name_zh": "靜電學",
+      "legacy_symbol": "EM01",
+      "shorthand": "Electrostat",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "32",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPEM01.1",
+          "name_en": "Charging and discharging",
+          "name_zh": "起電與放電"
+        },
+        {
+          "no": "2",
+          "code": "SPEM01.2",
+          "name_en": "Coulomb's law",
+          "name_zh": "庫侖定律"
+        },
+        {
+          "no": "3",
+          "code": "SPEM01.3",
+          "name_en": "Electric field lines",
+          "name_zh": "電場線"
+        },
+        {
+          "no": "4",
+          "code": "SPEM01.4",
+          "name_en": "Electric field strength due to point charges",
+          "name_zh": "點電荷的電場強度"
+        },
+        {
+          "no": "5",
+          "code": "SPEM01.5",
+          "name_en": "Electric field strength between parallel charged plates",
+          "name_zh": "平行帶電板間的電場強度"
+        }
+      ]
+    },
+    {
+      "code": "SPEM02",
+      "grade": "S5",
+      "level1_code": "CH4",
+      "level1_en": "Electricity and Magnetism",
+      "level1_zh": "電和磁",
+      "name_en": "Electric circuits",
+      "name_zh": "電路",
+      "legacy_symbol": "EM02",
+      "shorthand": "ElecCircuit",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "33",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPEM02.1",
+          "name_en": "Concepts of current and voltage",
+          "name_zh": "電流與電壓的概念"
+        },
+        {
+          "no": "2",
+          "code": "SPEM02.2",
+          "name_en": "Calculation and graphs of currents and voltages",
+          "name_zh": "電流與電壓的計算及圖像"
+        },
+        {
+          "no": "3",
+          "code": "SPEM02.3",
+          "name_en": "Factors affecting resistance",
+          "name_zh": "影響電阻的因素"
+        },
+        {
+          "no": "4",
+          "code": "SPEM02.4",
+          "name_en": "Variable resistors and potential dividers",
+          "name_zh": "可變電阻與分壓器"
+        },
+        {
+          "no": "5",
+          "code": "SPEM02.5",
+          "name_en": "Resistors in series and in parallel",
+          "name_zh": "串聯與並聯電阻"
+        },
+        {
+          "no": "6",
+          "code": "SPEM02.6",
+          "name_en": "Concepts of short circuit and open circuit",
+          "name_zh": "短路與斷路的概念"
+        },
+        {
+          "no": "7",
+          "code": "SPEM02.7",
+          "name_en": "Resistance of ammeters and voltmeters",
+          "name_zh": "安培計與伏特計的電阻"
+        },
+        {
+          "no": "8",
+          "code": "SPEM02.8",
+          "name_en": "Internal resistance",
+          "name_zh": "內電阻"
+        }
+      ]
+    },
+    {
+      "code": "SPEM03",
+      "grade": "S5",
+      "level1_code": "CH4",
+      "level1_en": "Electricity and Magnetism",
+      "level1_zh": "電和磁",
+      "name_en": "Domestic electricity",
+      "name_zh": "家居用電",
+      "legacy_symbol": "EM03",
+      "shorthand": "DomestElec",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "34",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPEM03.1",
+          "name_en": "Electrical power",
+          "name_zh": "電功率"
+        },
+        {
+          "no": "2",
+          "code": "SPEM03.2",
+          "name_en": "Comparison and changes in brightness",
+          "name_zh": "亮度的比較與變化"
+        },
+        {
+          "no": "3",
+          "code": "SPEM03.3",
+          "name_en": "Electrical energy and electricity cost",
+          "name_zh": "電能與電費"
+        },
+        {
+          "no": "4",
+          "code": "SPEM03.4",
+          "name_en": "Domestic electricity",
+          "name_zh": "家居用電"
+        }
+      ]
+    },
+    {
+      "code": "SPEM04",
+      "grade": "S5",
+      "level1_code": "CH4",
+      "level1_en": "Electricity and Magnetism",
+      "level1_zh": "電和磁",
+      "name_en": "Magnetic effect of electric current",
+      "name_zh": "電流的磁效應",
+      "legacy_symbol": "EM04",
+      "shorthand": "MagEffect",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "35",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPEM04.1",
+          "name_en": "Magnets and magnetic field patterns",
+          "name_zh": "磁鐵與磁場圖形"
+        },
+        {
+          "no": "2",
+          "code": "SPEM04.2",
+          "name_en": "Magnetic field due to a long current-carrying wire",
+          "name_zh": "長載電導線的磁場"
+        },
+        {
+          "no": "3",
+          "code": "SPEM04.3",
+          "name_en": "Magnetic field due to a solenoid",
+          "name_zh": "螺線管的磁場"
+        },
+        {
+          "no": "4",
+          "code": "SPEM04.4",
+          "name_en": "Applications of electromagnets",
+          "name_zh": "電磁鐵的應用"
+        }
+      ]
+    },
+    {
+      "code": "SPEM05",
+      "grade": "S5",
+      "level1_code": "CH4",
+      "level1_en": "Electricity and Magnetism",
+      "level1_zh": "電和磁",
+      "name_en": "Magnetic force on current-carrying wires",
+      "name_zh": "磁場對載電導線的作用力",
+      "legacy_symbol": "EM05",
+      "shorthand": "MagForceWire",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "36",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPEM05.1",
+          "name_en": "Direction of magnetic force",
+          "name_zh": "磁力的方向"
+        },
+        {
+          "no": "2",
+          "code": "SPEM05.2",
+          "name_en": "Calculation of magnetic force on a current-carrying wire",
+          "name_zh": "載電導線所受磁力的計算"
+        },
+        {
+          "no": "3",
+          "code": "SPEM05.3",
+          "name_en": "Magnetic force between two parallel current-carrying wires",
+          "name_zh": "兩平行載電導線間的磁力"
+        },
+        {
+          "no": "4",
+          "code": "SPEM05.4",
+          "name_en": "Electric motors",
+          "name_zh": "電動機"
+        },
+        {
+          "no": "5",
+          "code": "SPEM05.5",
+          "name_en": "Turning effect on a coil",
+          "name_zh": "線圈的轉動效應"
+        }
+      ]
+    },
+    {
+      "code": "SPEM06",
+      "grade": "S5",
+      "level1_code": "CH4",
+      "level1_en": "Electricity and Magnetism",
+      "level1_zh": "電和磁",
+      "name_en": "Magnetic force on moving charges",
+      "name_zh": "磁場對運動電荷的作用力",
+      "legacy_symbol": "EM06",
+      "shorthand": "MagForceChg",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "37",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPEM06.1",
+          "name_en": "Magnetic force on moving charges",
+          "name_zh": "運動電荷所受的磁力"
+        },
+        {
+          "no": "2",
+          "code": "SPEM06.2",
+          "name_en": "Circular paths of charges in a magnetic field",
+          "name_zh": "電荷在磁場中的圓形軌跡"
+        },
+        {
+          "no": "3",
+          "code": "SPEM06.3",
+          "name_en": "Charges in both electric and magnetic fields",
+          "name_zh": "電場與磁場中的電荷"
+        }
+      ]
+    },
+    {
+      "code": "SPEM07",
+      "grade": "S5",
+      "level1_code": "CH4",
+      "level1_en": "Electricity and Magnetism",
+      "level1_zh": "電和磁",
+      "name_en": "Electromagnetic induction",
+      "name_zh": "電磁感應",
+      "legacy_symbol": "EM07",
+      "shorthand": "EMInduction",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "38",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPEM07.1",
+          "name_en": "Direction of induced e.m.f. and current",
+          "name_zh": "感應電動勢與感應電流的方向"
+        },
+        {
+          "no": "2",
+          "code": "SPEM07.2",
+          "name_en": "Magnetic flux and flux linkage",
+          "name_zh": "磁通量與磁通匝連數"
+        },
+        {
+          "no": "3",
+          "code": "SPEM07.3",
+          "name_en": "Calculation of induced e.m.f. and current",
+          "name_zh": "感應電動勢與感應電流的計算"
+        }
+      ]
+    },
+    {
+      "code": "SPEM08",
+      "grade": "S5",
+      "level1_code": "CH4",
+      "level1_en": "Electricity and Magnetism",
+      "level1_zh": "電和磁",
+      "name_en": "Applications of electromagnetic induction",
+      "name_zh": "電磁感應的應用",
+      "legacy_symbol": "EM08",
+      "shorthand": "EMInductApp",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "39",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPEM08.1",
+          "name_en": "Generators",
+          "name_zh": "發電機"
+        },
+        {
+          "no": "2",
+          "code": "SPEM08.2",
+          "name_en": "Eddy currents",
+          "name_zh": "渦電流"
+        },
+        {
+          "no": "3",
+          "code": "SPEM08.3",
+          "name_en": "Applications of electromagnetic induction",
+          "name_zh": "電磁感應的應用"
+        },
+        {
+          "no": "4",
+          "code": "SPEM08.4",
+          "name_en": "Search coil",
+          "name_zh": "搜索線圈"
+        }
+      ]
+    },
+    {
+      "code": "SPEM09",
+      "grade": "S5",
+      "level1_code": "CH4",
+      "level1_en": "Electricity and Magnetism",
+      "level1_zh": "電和磁",
+      "name_en": "Alternating current and transformers",
+      "name_zh": "交變電流與變壓器",
+      "legacy_symbol": "EM09",
+      "shorthand": "ACTransform",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "40",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPEM09.1",
+          "name_en": "Root-mean-square values of a.c.",
+          "name_zh": "交變電流的有效值"
+        },
+        {
+          "no": "2",
+          "code": "SPEM09.2",
+          "name_en": "Voltage ratio in a transformer",
+          "name_zh": "變壓器的電壓比"
+        },
+        {
+          "no": "3",
+          "code": "SPEM09.3",
+          "name_en": "Current and efficiency in a transformer",
+          "name_zh": "變壓器中的電流與效率"
+        },
+        {
+          "no": "4",
+          "code": "SPEM09.4",
+          "name_en": "Power loss in transmission cable and efficiency in transformer systems",
+          "name_zh": "輸電電纜的功率損耗與變壓器系統的效率"
+        }
+      ]
+    },
+    {
+      "code": "SPRN01",
+      "grade": "S5",
+      "level1_code": "CH5",
+      "level1_en": "Radioactivity and Nuclear Energy",
+      "level1_zh": "放射現象和核能",
+      "name_en": "Nuclear radiation",
+      "name_zh": "核輻射",
+      "legacy_symbol": "RN01",
+      "shorthand": "NucRadiat",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "41",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPRN01.1",
+          "name_en": "Range in air, ionizing and penetrating power",
+          "name_zh": "在空氣中的射程、電離能力與穿透能力"
+        },
+        {
+          "no": "2",
+          "code": "SPRN01.2",
+          "name_en": "Deflection of radiation in electric and magnetic fields",
+          "name_zh": "輻射在電場與磁場中的偏轉"
+        },
+        {
+          "no": "3",
+          "code": "SPRN01.3",
+          "name_en": "Detection of radiation",
+          "name_zh": "輻射的探測"
+        },
+        {
+          "no": "4",
+          "code": "SPRN01.4",
+          "name_en": "Atomic structure and isotopes",
+          "name_zh": "原子結構與同位素"
+        }
+      ]
+    },
+    {
+      "code": "SPRN02",
+      "grade": "S5",
+      "level1_code": "CH5",
+      "level1_en": "Radioactivity and Nuclear Energy",
+      "level1_zh": "放射現象和核能",
+      "name_en": "Radioactive decay",
+      "name_zh": "放射性衰變",
+      "legacy_symbol": "RN02",
+      "shorthand": "RadioDecay",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "42",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPRN02.1",
+          "name_en": "Three types of decay and decay series",
+          "name_zh": "三種衰變類型與衰變系"
+        },
+        {
+          "no": "2",
+          "code": "SPRN02.2",
+          "name_en": "Activity, half-life and decay constant",
+          "name_zh": "活度、半衰期與衰變常數"
+        },
+        {
+          "no": "3",
+          "code": "SPRN02.3",
+          "name_en": "Exponential decay",
+          "name_zh": "指數衰變"
+        },
+        {
+          "no": "4",
+          "code": "SPRN02.4",
+          "name_en": "Uses of radioisotopes",
+          "name_zh": "放射性同位素的用途"
+        },
+        {
+          "no": "5",
+          "code": "SPRN02.5",
+          "name_en": "Background radiation and radiation safety",
+          "name_zh": "背景輻射與輻射安全"
+        }
+      ]
+    },
+    {
+      "code": "SPRN03",
+      "grade": "S6",
+      "level1_code": "CH5",
+      "level1_en": "Radioactivity and Nuclear Energy",
+      "level1_zh": "放射現象和核能",
+      "name_en": "Nuclear energy",
+      "name_zh": "核能",
+      "legacy_symbol": "RN03",
+      "shorthand": "NuclearEng",
+      "elective": "",
+      "department": "Senior Physics",
+      "order": "43",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPRN03.1",
+          "name_en": "Nuclear reactions",
+          "name_zh": "核反應"
+        },
+        {
+          "no": "2",
+          "code": "SPRN03.2",
+          "name_en": "Energy released in nuclear reactions",
+          "name_zh": "核反應中的能量釋放"
+        },
+        {
+          "no": "3",
+          "code": "SPRN03.3",
+          "name_en": "Nuclear power",
+          "name_zh": "核電"
+        }
+      ]
+    },
+    {
+      "code": "SPE1AS01",
+      "grade": "S6",
+      "level1_code": "CH6",
+      "level1_en": "Astronomy and Space Science",
+      "level1_zh": "天文學和航天科學",
+      "name_en": "The universe as seen at different scales",
+      "name_zh": "以不同尺度看宇宙",
+      "legacy_symbol": "E1AS01",
+      "shorthand": "UnivScale",
+      "elective": "E1",
+      "department": "Senior Physics",
+      "order": "44",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE1AS01.1",
+          "name_en": "Common units in astronomy",
+          "name_zh": "天文學的常用單位"
+        },
+        {
+          "no": "2",
+          "code": "SPE1AS01.2",
+          "name_en": "Layers of structure of the universe",
+          "name_zh": "宇宙結構的層次"
+        }
+      ]
+    },
+    {
+      "code": "SPE1AS02",
+      "grade": "S6",
+      "level1_code": "CH6",
+      "level1_en": "Astronomy and Space Science",
+      "level1_zh": "天文學和航天科學",
+      "name_en": "Astronomy through history",
+      "name_zh": "天文學的歷史",
+      "legacy_symbol": "E1AS02",
+      "shorthand": "AstroHist",
+      "elective": "E1",
+      "department": "Senior Physics",
+      "order": "45",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE1AS02.1",
+          "name_en": "Retrograde motion",
+          "name_zh": "逆行運動"
+        },
+        {
+          "no": "2",
+          "code": "SPE1AS02.2",
+          "name_en": "Motion of Mercury and Venus",
+          "name_zh": "水星與金星的運動"
+        },
+        {
+          "no": "3",
+          "code": "SPE1AS02.3",
+          "name_en": "Features of the Ptolemaic and Copernican models",
+          "name_zh": "托勒密模型與哥白尼模型的特點"
+        }
+      ]
+    },
+    {
+      "code": "SPE1AS03",
+      "grade": "S6",
+      "level1_code": "CH6",
+      "level1_en": "Astronomy and Space Science",
+      "level1_zh": "天文學和航天科學",
+      "name_en": "Orbital motion under gravity",
+      "name_zh": "重力下的軌道運動",
+      "legacy_symbol": "E1AS03",
+      "shorthand": "OrbitMotion",
+      "elective": "E1",
+      "department": "Senior Physics",
+      "order": "46",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE1AS03.1",
+          "name_en": "Kepler's laws",
+          "name_zh": "開普勒定律"
+        },
+        {
+          "no": "2",
+          "code": "SPE1AS03.2",
+          "name_en": "Gravitational potential energy and escape velocity",
+          "name_zh": "重力勢能與逃逸速度"
+        }
+      ]
+    },
+    {
+      "code": "SPE1AS04",
+      "grade": "S6",
+      "level1_code": "CH6",
+      "level1_en": "Astronomy and Space Science",
+      "level1_zh": "天文學和航天科學",
+      "name_en": "Stars and the universe",
+      "name_zh": "恆星與宇宙",
+      "legacy_symbol": "E1AS04",
+      "shorthand": "StarsUniv",
+      "elective": "E1",
+      "department": "Senior Physics",
+      "order": "47",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE1AS04.1",
+          "name_en": "Parallax of stars",
+          "name_zh": "恆星的視差"
+        },
+        {
+          "no": "2",
+          "code": "SPE1AS04.2",
+          "name_en": "Brightness of stars",
+          "name_zh": "恆星的亮度"
+        },
+        {
+          "no": "3",
+          "code": "SPE1AS04.3",
+          "name_en": "Hertzsprung-Russell diagram",
+          "name_zh": "赫羅圖"
+        },
+        {
+          "no": "4",
+          "code": "SPE1AS04.4",
+          "name_en": "Dark matter and expansion of the universe",
+          "name_zh": "暗物質與宇宙的膨脹"
+        },
+        {
+          "no": "5",
+          "code": "SPE1AS04.5",
+          "name_en": "Doppler effect",
+          "name_zh": "多普勒效應"
+        }
+      ]
+    },
+    {
+      "code": "SPE2AW01",
+      "grade": "S6",
+      "level1_code": "CH7",
+      "level1_en": "Atomic World",
+      "level1_zh": "原子世界",
+      "name_en": "Rutherford's atomic model",
+      "name_zh": "盧瑟福原子模型",
+      "legacy_symbol": "E2AW01",
+      "shorthand": "Rutherford",
+      "elective": "E2",
+      "department": "Senior Physics",
+      "order": "48",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE2AW01.1",
+          "name_en": "Rutherford's scattering experiment",
+          "name_zh": "盧瑟福散射實驗"
+        },
+        {
+          "no": "2",
+          "code": "SPE2AW01.2",
+          "name_en": "Rutherford's atomic model",
+          "name_zh": "盧瑟福原子模型"
+        }
+      ]
+    },
+    {
+      "code": "SPE2AW02",
+      "grade": "S6",
+      "level1_code": "CH7",
+      "level1_en": "Atomic World",
+      "level1_zh": "原子世界",
+      "name_en": "Photoelectric effect",
+      "name_zh": "光電效應",
+      "legacy_symbol": "E2AW02",
+      "shorthand": "Photoelec",
+      "elective": "E2",
+      "department": "Senior Physics",
+      "order": "49",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE2AW02.1",
+          "name_en": "Einstein's photoelectric equation",
+          "name_zh": "愛因斯坦光電方程"
+        },
+        {
+          "no": "2",
+          "code": "SPE2AW02.2",
+          "name_en": "Maximum kinetic energy-frequency and stopping potential-frequency graphs",
+          "name_zh": "最大動能-頻率圖與遏止電勢-頻率圖"
+        },
+        {
+          "no": "3",
+          "code": "SPE2AW02.3",
+          "name_en": "Photoelectric current-voltage graph",
+          "name_zh": "光電流-電壓圖"
+        },
+        {
+          "no": "4",
+          "code": "SPE2AW02.4",
+          "name_en": "Numbers of incident photons and emitted photoelectrons",
+          "name_zh": "入射光子數與發射光電子數"
+        }
+      ]
+    },
+    {
+      "code": "SPE2AW03",
+      "grade": "S6",
+      "level1_code": "CH7",
+      "level1_en": "Atomic World",
+      "level1_zh": "原子世界",
+      "name_en": "Energy levels",
+      "name_zh": "能級",
+      "legacy_symbol": "E2AW03",
+      "shorthand": "EnergyLevel",
+      "elective": "E2",
+      "department": "Senior Physics",
+      "order": "50",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE2AW03.1",
+          "name_en": "Continuous and line spectra",
+          "name_zh": "連續光譜與線光譜"
+        },
+        {
+          "no": "2",
+          "code": "SPE2AW03.2",
+          "name_en": "Electron transitions",
+          "name_zh": "電子躍遷"
+        },
+        {
+          "no": "3",
+          "code": "SPE2AW03.3",
+          "name_en": "Energy levels",
+          "name_zh": "能級"
+        },
+        {
+          "no": "4",
+          "code": "SPE2AW03.4",
+          "name_en": "Bohr's model",
+          "name_zh": "玻爾模型"
+        }
+      ]
+    },
+    {
+      "code": "SPE2AW04",
+      "grade": "S6",
+      "level1_code": "CH7",
+      "level1_en": "Atomic World",
+      "level1_zh": "原子世界",
+      "name_en": "de Broglie wavelength",
+      "name_zh": "德布羅意波長",
+      "legacy_symbol": "E2AW04",
+      "shorthand": "DeBroglie",
+      "elective": "E2",
+      "department": "Senior Physics",
+      "order": "51",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE2AW04.1",
+          "name_en": "Wave-particle duality",
+          "name_zh": "波粒二象性"
+        },
+        {
+          "no": "2",
+          "code": "SPE2AW04.2",
+          "name_en": "de Broglie formula",
+          "name_zh": "德布羅意公式"
+        }
+      ]
+    },
+    {
+      "code": "SPE2AW05",
+      "grade": "S6",
+      "level1_code": "CH7",
+      "level1_en": "Atomic World",
+      "level1_zh": "原子世界",
+      "name_en": "Nanomaterials",
+      "name_zh": "納米材料",
+      "legacy_symbol": "E2AW05",
+      "shorthand": "Nanomat",
+      "elective": "E2",
+      "department": "Senior Physics",
+      "order": "52",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE2AW05.1",
+          "name_en": "Differences between bulk and nanoscale materials",
+          "name_zh": "塊狀材料與納米材料的分別"
+        },
+        {
+          "no": "2",
+          "code": "SPE2AW05.2",
+          "name_en": "Applications of nanotechnology",
+          "name_zh": "納米技術的應用"
+        },
+        {
+          "no": "3",
+          "code": "SPE2AW05.3",
+          "name_en": "Potential hazards related to nanotechnology",
+          "name_zh": "納米技術相關的潛在危害"
+        }
+      ]
+    },
+    {
+      "code": "SPE2AW06",
+      "grade": "S6",
+      "level1_code": "CH7",
+      "level1_en": "Atomic World",
+      "level1_zh": "原子世界",
+      "name_en": "Microscopes",
+      "name_zh": "顯微鏡",
+      "legacy_symbol": "E2AW06",
+      "shorthand": "MicroscopeP",
+      "elective": "E2",
+      "department": "Senior Physics",
+      "order": "53",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE2AW06.1",
+          "name_en": "Angular resolution",
+          "name_zh": "角分辨率"
+        },
+        {
+          "no": "2",
+          "code": "SPE2AW06.2",
+          "name_en": "Optical and electron microscopes",
+          "name_zh": "光學顯微鏡與電子顯微鏡"
+        }
+      ]
+    },
+    {
+      "code": "SPE3EN01",
+      "grade": "S6",
+      "level1_code": "CH8",
+      "level1_en": "Energy and Use of Energy",
+      "level1_zh": "能量和能源的使用",
+      "name_en": "Lighting",
+      "name_zh": "照明",
+      "legacy_symbol": "E3EN01",
+      "shorthand": "Lighting",
+      "elective": "E3",
+      "department": "Senior Physics",
+      "order": "54",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE3EN01.1",
+          "name_en": "End-use and overall energy efficiency",
+          "name_zh": "最終用途能源效益與整體能源效益"
+        },
+        {
+          "no": "2",
+          "code": "SPE3EN01.2",
+          "name_en": "Working principles of different light sources",
+          "name_zh": "不同光源的工作原理"
+        },
+        {
+          "no": "3",
+          "code": "SPE3EN01.3",
+          "name_en": "Luminous flux and illuminance",
+          "name_zh": "光通量與照度"
+        },
+        {
+          "no": "4",
+          "code": "SPE3EN01.4",
+          "name_en": "Efficacy",
+          "name_zh": "光效"
+        }
+      ]
+    },
+    {
+      "code": "SPE3EN02",
+      "grade": "S6",
+      "level1_code": "CH8",
+      "level1_en": "Energy and Use of Energy",
+      "level1_zh": "能量和能源的使用",
+      "name_en": "Cooking and cooling",
+      "name_zh": "烹調與冷卻",
+      "legacy_symbol": "E3EN02",
+      "shorthand": "CookCool",
+      "elective": "E3",
+      "department": "Senior Physics",
+      "order": "55",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE3EN02.1",
+          "name_en": "Comparing different electric cookers",
+          "name_zh": "不同電炊具的比較"
+        },
+        {
+          "no": "2",
+          "code": "SPE3EN02.2",
+          "name_en": "Working principles of air conditioners and reverse-cycle air conditioners (RCAC)",
+          "name_zh": "冷氣機與逆循環冷氣機的工作原理"
+        },
+        {
+          "no": "3",
+          "code": "SPE3EN02.3",
+          "name_en": "Cooling capacity, rated power and coefficient of performance (COP)",
+          "name_zh": "製冷量、額定功率與性能係數"
+        }
+      ]
+    },
+    {
+      "code": "SPE3EN03",
+      "grade": "S6",
+      "level1_code": "CH8",
+      "level1_en": "Energy and Use of Energy",
+      "level1_zh": "能量和能源的使用",
+      "name_en": "Energy efficiency in buildings and transportation",
+      "name_zh": "建築物與運輸的能源效益",
+      "legacy_symbol": "E3EN03",
+      "shorthand": "BuildTransEff",
+      "elective": "E3",
+      "department": "Senior Physics",
+      "order": "56",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE3EN03.1",
+          "name_en": "Rate of heat conduction, thermal conductivity and thermal transmittance",
+          "name_zh": "熱傳導速率、熱傳導率與熱傳送系數"
+        },
+        {
+          "no": "2",
+          "code": "SPE3EN03.2",
+          "name_en": "Overall thermal transfer value (OTTV)",
+          "name_zh": "總熱傳送值"
+        },
+        {
+          "no": "3",
+          "code": "SPE3EN03.3",
+          "name_en": "Improving energy efficiency of buildings",
+          "name_zh": "改善建築物的能源效益"
+        },
+        {
+          "no": "4",
+          "code": "SPE3EN03.4",
+          "name_en": "Electric and hybrid vehicles and regenerative braking systems",
+          "name_zh": "電動車、混合動力車與再生制動系統"
+        }
+      ]
+    },
+    {
+      "code": "SPE3EN04",
+      "grade": "S6",
+      "level1_code": "CH8",
+      "level1_en": "Energy and Use of Energy",
+      "level1_zh": "能量和能源的使用",
+      "name_en": "Energy sources and energy consumption",
+      "name_zh": "能源與能源消耗",
+      "legacy_symbol": "E3EN04",
+      "shorthand": "EnergySrcUse",
+      "elective": "E3",
+      "department": "Senior Physics",
+      "order": "57",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE3EN04.1",
+          "name_en": "Solar power and solar cells",
+          "name_zh": "太陽能與太陽電池"
+        },
+        {
+          "no": "2",
+          "code": "SPE3EN04.2",
+          "name_en": "Wind power",
+          "name_zh": "風力發電"
+        },
+        {
+          "no": "3",
+          "code": "SPE3EN04.3",
+          "name_en": "Hydroelectric power",
+          "name_zh": "水力發電"
+        },
+        {
+          "no": "4",
+          "code": "SPE3EN04.4",
+          "name_en": "Nuclear power and binding energy",
+          "name_zh": "核能與結合能"
+        },
+        {
+          "no": "5",
+          "code": "SPE3EN04.5",
+          "name_en": "Fission reactors",
+          "name_zh": "裂變反應堆"
+        }
+      ]
+    },
+    {
+      "code": "SPE4MP01",
+      "grade": "S6",
+      "level1_code": "CH9",
+      "level1_en": "Medical Physics",
+      "level1_zh": "醫學物理學",
+      "name_en": "Human vision and fibre optic endoscopy",
+      "name_zh": "人類視覺與光纖內視鏡",
+      "legacy_symbol": "E4MP01",
+      "shorthand": "VisionEndo",
+      "elective": "E4",
+      "department": "Senior Physics",
+      "order": "58",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE4MP01.1",
+          "name_en": "Human eye",
+          "name_zh": "人眼"
+        },
+        {
+          "no": "2",
+          "code": "SPE4MP01.2",
+          "name_en": "Resolving power",
+          "name_zh": "分辨本領"
+        },
+        {
+          "no": "3",
+          "code": "SPE4MP01.3",
+          "name_en": "Refractive power of a lens",
+          "name_zh": "透鏡的屈光度"
+        },
+        {
+          "no": "4",
+          "code": "SPE4MP01.4",
+          "name_en": "Defects of vision and their corrections",
+          "name_zh": "視覺缺陷及其矯正"
+        },
+        {
+          "no": "5",
+          "code": "SPE4MP01.5",
+          "name_en": "Fibre optic endoscopy",
+          "name_zh": "光纖內視鏡"
+        }
+      ]
+    },
+    {
+      "code": "SPE4MP02",
+      "grade": "S6",
+      "level1_code": "CH9",
+      "level1_en": "Medical Physics",
+      "level1_zh": "醫學物理學",
+      "name_en": "Human hearing and ultrasound scans",
+      "name_zh": "人類聽覺與超聲波掃描",
+      "legacy_symbol": "E4MP02",
+      "shorthand": "HearUltra",
+      "elective": "E4",
+      "department": "Senior Physics",
+      "order": "59",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE4MP02.1",
+          "name_en": "Structure of the human ear and mechanism of hearing",
+          "name_zh": "人耳結構與聽覺機制"
+        },
+        {
+          "no": "2",
+          "code": "SPE4MP02.2",
+          "name_en": "Sound intensity level",
+          "name_zh": "聲強級"
+        },
+        {
+          "no": "3",
+          "code": "SPE4MP02.3",
+          "name_en": "Piezoelectric effect",
+          "name_zh": "壓電效應"
+        },
+        {
+          "no": "4",
+          "code": "SPE4MP02.4",
+          "name_en": "Acoustic impedance of materials and intensity reflection coefficient",
+          "name_zh": "材料的聲阻抗與強度反射系數"
+        },
+        {
+          "no": "5",
+          "code": "SPE4MP02.5",
+          "name_en": "Ultrasound scans",
+          "name_zh": "超聲波掃描"
+        },
+        {
+          "no": "6",
+          "code": "SPE4MP02.6",
+          "name_en": "Choice of ultrasound frequency",
+          "name_zh": "超聲波頻率的選擇"
+        },
+        {
+          "no": "7",
+          "code": "SPE4MP02.7",
+          "name_en": "Advantages and limitations of ultrasound scanning",
+          "name_zh": "超聲波掃描的優點與限制"
+        }
+      ]
+    },
+    {
+      "code": "SPE4MP03",
+      "grade": "S6",
+      "level1_code": "CH9",
+      "level1_en": "Medical Physics",
+      "level1_zh": "醫學物理學",
+      "name_en": "Medical imaging using ionizing radiation",
+      "name_zh": "利用電離輻射的醫學成像",
+      "legacy_symbol": "E4MP03",
+      "shorthand": "MedImaging",
+      "elective": "E4",
+      "department": "Senior Physics",
+      "order": "60",
+      "subtopics": [
+        {
+          "no": "1",
+          "code": "SPE4MP03.1",
+          "name_en": "Attenuation of X-rays",
+          "name_zh": "X射線的衰減"
+        },
+        {
+          "no": "2",
+          "code": "SPE4MP03.2",
+          "name_en": "Formation, advantages and disadvantages of X-ray images",
+          "name_zh": "X射線圖像的形成、優點與缺點"
+        },
+        {
+          "no": "3",
+          "code": "SPE4MP03.3",
+          "name_en": "Producing and analyzing CT images",
+          "name_zh": "電腦斷層掃描圖像的產生與分析"
+        },
+        {
+          "no": "4",
+          "code": "SPE4MP03.4",
+          "name_en": "Comparing CT and X-ray images",
+          "name_zh": "電腦斷層掃描與X射線圖像的比較"
+        },
+        {
+          "no": "5",
+          "code": "SPE4MP03.5",
+          "name_en": "Characteristics of radionuclides used for imaging",
+          "name_zh": "成像用放射性核素的特性"
+        },
+        {
+          "no": "6",
+          "code": "SPE4MP03.6",
+          "name_en": "Effective half-life",
+          "name_zh": "有效半衰期"
+        },
+        {
+          "no": "7",
+          "code": "SPE4MP03.7",
+          "name_en": "Radioisotope tracers",
+          "name_zh": "放射性同位素示蹤劑"
+        },
+        {
+          "no": "8",
+          "code": "SPE4MP03.8",
+          "name_en": "Health risks and safety precautions for ionizing radiation",
+          "name_zh": "電離輻射的健康風險與安全措施"
+        }
+      ]
+    }
+  ],
+  "subtopic_total": 238
+}

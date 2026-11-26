@@ -133,7 +133,15 @@ a whole file from the other repository.
 `jpwm01`, `phy06-force2`, `phy11`, `spem02`, `spem05`. The maths chapter notes (jm*,
 m211-4, p5m07a) stay with their books in the maths repository.
 
-`docs/topics/` — the maths and physics topic registries (`maths.json`, `physics.json`) that
-the book codes and titles must match — is **not** here yet; it still exists only in the
-local clone. Salvage it the same way when it is next needed.
+`docs/topics/` carries the **physics** topic registry — `physics.json`, 60 topics and 238
+subtopics, imported from the official list on 2026-11-26 — with a `README.md` holding the
+level-1 table. `tools/check_topic.py` checks a book's `code` and `title` against it; it
+loads only the registries present in that folder, so each repository checks its own subject
+and the maths registry is never consulted here. The maths registry lives in the maths
+repository.
+
+`docs/topics/consistency.md` was deliberately **not** copied: it is a generated report over
+every book of the old combined tree, and it lists the 15 frozen maths books as
+"CODE NOT IN LIST". That is the maths tidy-up, not this repository's business.
+
 

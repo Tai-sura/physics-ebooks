@@ -760,6 +760,8 @@ function layoutCard(q, qa) {
   qa.style.top = `${spot.top}px`;
   qa.dataset.cardOverlap = `${Math.round(spot.overlap)}`;
   qa.dataset.cardInk = `${Math.round(spot.ink || 0)}`;
+  qa.dataset.cardSide = spot.side || "";
+  qa.dataset.cardGap = `${Math.round((spot.gap || 0) * 10) / 10}`;
   if (spot.moved) qa.dataset.cardMoved = spot.moved;
   else delete qa.dataset.cardMoved;
   placeCtl(qa, [...inner.children]);
@@ -774,11 +776,22 @@ function layoutCard(q, qa) {
  */
 const CARD_FOOTER_Y = 800;
 
-/** The box a card of size w x h may occupy: inside the page, above the footer. */
-function cardLimits(w, h) {
+/**
+ * Layout points -> rendered points on a sheet that has opened room under an answer
+ * (growSheet cuts the page and moves everything below the cut down). A card floats in
+ * rendered points, so the printed rows it dodges must be moved the same way.
+ */
+function sheetShift(sheet) {
+  return (sheet && sheet.shiftY) || ((y) => y);
+}
+
+/** The box a card of size w x h may occupy: inside the sheet, above the printed footer. */
+function cardLimits(w, h, sheet) {
+  const tall = (sheet && sheet.offsetHeight) || PAGE_H;
+  const bottom = Math.min(sheetShift(sheet)(CARD_FOOTER_Y), tall);
   return {
     maxL: Math.max(0, PAGE_W - w - 2),
-    maxT: Math.max(0, Math.min(PAGE_H - h - 2, CARD_FOOTER_Y - h)),
+    maxT: Math.max(0, Math.min(bottom - h, tall - h - 2)),
   };
 }
 
@@ -813,13 +826,22 @@ function inkMap(sheet) {
     const kx = w / PAGE_W;
     const ky = h / PAGE_H;
     const cells = new Float64Array(cols * rows);
+    // A one-page-point mask as well: a card must dodge the question's figure, not just
+    // its words, and a 4 pt cell is too coarse to say where the drawing ends.
+    const fx = Math.ceil(PAGE_W);
+    const fy = Math.ceil(PAGE_H);
+    const dense = new Uint8Array(fx * fy);
     for (let y = 0; y < h; y += 1) {
       const row = Math.min(rows - 1, Math.floor(y / ky / INK_CELL));
       const base = row * cols;
+      const dy = Math.min(fy - 1, Math.floor(y / ky));
       for (let x = 0; x < w; x += 1) {
         const i = (y * w + x) * 4;
         const lum = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
-        if (lum < 170) cells[base + Math.min(cols - 1, Math.floor(x / kx / INK_CELL))] += 1;
+        if (lum < 170) {
+          cells[base + Math.min(cols - 1, Math.floor(x / kx / INK_CELL))] += 1;
+          dense[dy * fx + Math.min(fx - 1, Math.floor(x / kx))] = 1;
+        }
       }
     }
     const sums = new Float64Array((cols + 1) * (rows + 1));
@@ -830,7 +852,7 @@ function inkMap(sheet) {
         sums[(y + 1) * (cols + 1) + (x + 1)] = sums[y * (cols + 1) + (x + 1)] + line;
       }
     }
-    const map = { cols, rows, sums };
+    const map = { cols, rows, sums, fx, fy, dense };
     INK_CACHE.set(img, map);
     return map;
   } catch {
@@ -851,18 +873,74 @@ function inkUnder(map, left, top, w, h) {
   return at(x1, y1) - at(x0, y1) - at(x1, y0) + at(x0, y0);
 }
 
-/** Every printed word of question `q`, plus the footer band, as page-point rectangles. */
-function cardTextRects(q, page) {
-  const out = [];
-  const rows = (page && page.text) || [];
-  const anchorY = q.anchor ? q.anchor[1] : q.region[1];
-  const top = Math.min(anchorY, q.region[1]) - 8;
-  const bottom = q.region[1] + 6;
-  for (const [y0, y1, words] of rows) {
-    if (y1 < top || y0 > bottom) continue;
-    for (const [x0, x1] of words) out.push([x0, y0, x1, y1]);
+/**
+ * Printed ink under a card rectangle given in SHEET points, summed over the page bands
+ * the sheet actually draws (growSheet records them on the sheet). On a page that opened
+ * room the card floats over blank paper, and blank is no ink; sampling the page image at
+ * the sheet's y would have read the wrong band.
+ */
+function inkUnderSheet(map, sheet, left, top, w, h) {
+  const bands = sheet && sheet.bands;
+  if (!bands) return inkUnder(map, left, top, w, h);
+  let n = 0;
+  for (const b of bands) {
+    const y0 = Math.max(top, b.sheet);
+    const y1 = Math.min(top + h, b.sheet + b.height);
+    if (y1 <= y0) continue;
+    n += inkUnder(map, left, b.page + (y0 - b.sheet), w, y1 - y0);
   }
-  out.push([0, CARD_FOOTER_Y, PAGE_W, PAGE_H]);
+  return n;
+}
+
+/**
+ * Bounding box of the printed ink inside a page band, in page points, or null when the
+ * band carries nothing. Taken from the served page bitmap at one point per cell, so a
+ * question's figure and the labels on it are included and not just its words.
+ */
+function inkBandBox(map, top, bottom) {
+  if (!map) return null;
+  const { fx, fy, dense } = map;
+  const y0 = Math.max(0, Math.floor(top));
+  const y1 = Math.min(fy - 1, Math.ceil(bottom));
+  let minX = fx;
+  let maxX = -1;
+  let minY = fy;
+  let maxY = -1;
+  for (let y = y0; y <= y1; y += 1) {
+    const row = y * fx;
+    for (let x = 0; x < fx; x += 1) {
+      if (!dense[row + x]) continue;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  return maxX < 0 ? null : [minX, minY, maxX + 1, maxY + 1];
+}
+
+/**
+ * Everything of question `q` the card must not cover, as page-point rectangles: the
+ * bounding box of ALL printed ink in the question's band — its first line down to its
+ * answer box, the figure and its labels included — plus the answer box itself and the
+ * footer band. Measuring the bitmap rather than the text rows is what a card needs:
+ * text rows said nothing about the drawing, so a card sat on it.
+ */
+function cardAvoidRects(q, page, sy, map) {
+  const out = [];
+  const top = (q.anchor ? q.anchor[0] : q.region[1]) - 2;
+  const bottom = q.region[3] + 2;
+  const box = inkBandBox(map, top, bottom);
+  if (box) out.push([box[0], sy(box[1]), box[2], sy(box[3])]);
+  else {
+    // No bitmap to read (cross-origin): fall back to the printed rows alone.
+    for (const [y0, y1, words] of (page && page.text) || []) {
+      if (y1 < top || y0 > bottom) continue;
+      for (const [x0, x1] of words) out.push([x0, sy(y0), x1, sy(y1)]);
+    }
+  }
+  out.push([q.region[0], sy(q.region[1]), q.region[2], sy(q.region[3])]);
+  out.push([0, sy(CARD_FOOTER_Y), PAGE_W, sy(PAGE_H) + 400]);
   return out;
 }
 
@@ -878,50 +956,108 @@ function cardOverlap(rects, left, top, w, h) {
 }
 
 /**
- * The card's spot in page points: the reader's own drag if there is one, else the
- * place where it covers least of this question's printed text — to the right of
- * the text first, then below it, then wherever the overlap is smallest.
+ * The Answer button a card belongs to, in page points: [x0, y0, x1, y1]. Read from
+ * the button itself, so the card is placed against the thing the reader pressed.
+ */
+function cardChipBox(qa, q) {
+  const chip = qa.parentElement && qa.parentElement.querySelector(`.ans-chip[data-q="${q.id}"]`);
+  if (chip) {
+    const x = chip.offsetLeft;
+    const y = chip.offsetTop;
+    return [x, y, x + chip.offsetWidth, y + chip.offsetHeight];
+  }
+  const [x, y] = q.cardAt || [5, q.region[1]];
+  return [x, y, x + 44, y + 22];
+}
+
+/** Distance in page points between a card rectangle and the Answer button. */
+function chipGap(chip, left, top, w, h) {
+  if (!chip) return 0;
+  const dx = Math.max(0, chip[0] - (left + w), left - chip[2]);
+  const dy = Math.max(0, chip[1] - (top + h), top - chip[3]);
+  return Math.hypot(dx, dy);
+}
+
+/** How far a card is walked away from its Answer button, and in how many steps. */
+const CARD_STEP = 6;
+const CARD_STEPS = 40;
+
+/**
+ * The card's spot in page points. The reader's own drag wins. Otherwise the card
+ * opens beside the Answer button they just pressed — right, left, below, above, a
+ * 6 pt step at a time, clamped inside the page and above the footer — and takes the
+ * first side that has a spot clear of the question's whole printed extent (the ink
+ * bounding box of its band, so its figure counts too) and clear of the button itself.
+ * Within that side the nearest spot wins, unless one within 8 pt of it covers less
+ * printed ink. When all four sides are blocked it takes the spot covering least of the
+ * question and reports that area on the card.
+ *
+ * Nothing here is guessed from a text box: the ink is sampled from the page bitmap
+ * the reader is looking at, and the covered area is written onto the card's dataset
+ * (cardOverlap in pt², cardInk in bitmap px) so a check can read it back.
  */
 function cardSpot(q, qa, h) {
-  const w = qa.offsetWidth || (q.region[2] - q.region[0]);
-  const { maxL, maxT } = cardLimits(w, h);
-  const fit = (left, top) => [Math.min(Math.max(0, left), maxL), Math.min(Math.max(0, top), maxT)];
-  const rects = cardTextRects(q, QA_PAGE.get(qa));
+  const sheet = qa.parentElement && qa.parentElement.parentElement;
+  const sy = sheetShift(sheet);
+  const w = qa.offsetWidth || q.region[2] - q.region[0];
+  const { maxL, maxT } = cardLimits(w, h, sheet);
+  const clamp = (left, top) => [Math.min(Math.max(0, left), maxL), Math.min(Math.max(0, top), maxT)];
+  const chip = cardChipBox(qa, q);
+  const map = inkMap(sheet);
+  const rects = cardAvoidRects(q, QA_PAGE.get(qa), sy, map);
   const saved = CARD_POS.get(cardKey(q.id));
   if (saved) {
-    const [left, top] = fit(saved.left, saved.top);
-    return { left, top, overlap: cardOverlap(rects, left, top, w, h), moved: "reader" };
+    const [left, top] = clamp(saved.left, saved.top);
+    return {
+      left, top, side: "reader", moved: "reader",
+      overlap: cardOverlap(rects, left, top, w, h),
+      ink: inkUnderSheet(map, sheet, left, top, w, h),
+      gap: chipGap(chip, left, top, w, h),
+    };
   }
-  const under = Math.max(q.anchor ? q.anchor[1] + 4 : 0, q.region[1]);
-  const [baseL, baseT] = fit(q.region[0], Math.max(6, under));
-  const map = inkMap(qa.parentElement && qa.parentElement.parentElement);
-  // Score a grid of spots: no printed word first, then the least printed ink,
-  // then the spot nearest the question. Nothing is guessed from a text box alone:
-  // the ink is sampled from the page bitmap the reader is looking at.
-  const spots = [];
-  for (let top = 0; top <= maxT + 0.5; top += 6) {
-    for (let left = 0; left <= maxL + 0.5; left += 6) {
-      spots.push([left, top, cardOverlap(rects, left, top, w, h)]);
+  const offChip = (left, top) =>
+    !chip || left + w <= chip[0] - 4 || left >= chip[2] + 4 || top + h <= chip[1] - 4 || top >= chip[3] + 4;
+  const sides = [
+    ["right", (n, m) => [chip[2] + CARD_STEP + n * CARD_STEP, chip[1] + m * CARD_STEP]],
+    ["left", (n, m) => [chip[0] - CARD_STEP - w - n * CARD_STEP, chip[1] + m * CARD_STEP]],
+    ["below", (n, m) => [chip[0] + m * CARD_STEP, chip[3] + CARD_STEP + n * CARD_STEP]],
+    ["above", (n, m) => [chip[0] + m * CARD_STEP, chip[1] - CARD_STEP - h - n * CARD_STEP]],
+  ];
+  let fallback = null;
+  for (const [side, at] of sides) {
+    const hits = [];
+    for (let n = 0; n <= CARD_STEPS; n += 1) {
+      for (let m = -CARD_STEPS; m <= CARD_STEPS; m += 1) {
+        const [left, top] = clamp(...at(n, m));
+        if (!offChip(left, top)) continue;
+        const overlap = cardOverlap(rects, left, top, w, h);
+        const gap = chipGap(chip, left, top, w, h);
+        if (overlap > 0) {
+          if (!fallback || overlap < fallback.overlap || (overlap === fallback.overlap && gap < fallback.gap)) {
+            fallback = { left, top, overlap, side, gap, ink: inkUnderSheet(map, sheet, left, top, w, h) };
+          }
+          continue;
+        }
+        hits.push({ left, top, gap, ink: inkUnderSheet(map, sheet, left, top, w, h) });
+      }
     }
-  }
-  let minOver = Infinity;
-  for (const s of spots) if (s[2] < minOver) minOver = s[2];
-  const clear = spots.filter((s) => Math.abs(s[2] - minOver) <= 0.5);
-  let minInk = Infinity;
-  for (const s of clear) {
-    s[3] = inkUnder(map, s[0], s[1], w, h);
-    if (s[3] < minInk) minInk = s[3];
-  }
-  let best = null;
-  for (const s of clear) {
-    if (s[3] > minInk * 1.15 + 400) continue;
-    const away = Math.hypot(s[0] - baseL, s[1] - baseT);
-    if (!best || away < best.away) {
-      best = { left: s[0], top: s[1], overlap: s[2], ink: s[3], away };
+    if (!hits.length) continue;
+    // Nearest the button first, and only a spot within 8 pt of that distance may win
+    // on lesser ink: a creeping "a bit farther, a bit less ink" walk ends up far away.
+    let near = Infinity;
+    for (const hit of hits) if (hit.gap < near) near = hit.gap;
+    let pick = null;
+    for (const hit of hits) {
+      if (hit.gap > near + 8) continue;
+      if (!pick || hit.ink < pick.ink - 40 || (Math.abs(hit.ink - pick.ink) <= 40 && hit.gap < pick.gap)) pick = hit;
     }
+    return { ...pick, overlap: 0, side };
   }
-  return best || { left: baseL, top: baseT, overlap: minOver, ink: minInk };
+  return fallback || { left: 0, top: 0, overlap: 0, ink: 0, side: "none", gap: 0 };
 }
+
+/** How far a finger must travel before a press on the card turns into a drag. */
+const DRAG_START = 6;
 
 /**
  * Drag the card: by the grip on its head bar (a plain span, so it is always there
@@ -933,13 +1069,17 @@ function bindCardDrag(qa) {
   const head = qa.querySelector(".card-head");
   const body = qa.querySelector(".qa-in");
   if (!head) return;
+  /**
+   * A press becomes a drag only after the finger travels DRAG_START px. Until then
+   * nothing is captured and nothing is prevented, because the browser needs that
+   * press to end in a real click for ▸ » ◂ ↺ ✕ to work; the pointer is captured at
+   * the moment the drag starts, so a finger that leaves the grip keeps dragging.
+   */
   const startDrag = (ev) => {
     // The card is appended after this runs, so the overlay is looked up now.
     const overlay = qa.parentElement;
     if (!overlay) return;
     if (ev.button > 0) return;
-    // The pointer is captured by the element the press started on, so a finger that
-    // slides off the grip keeps dragging instead of panning the page.
     const host = ev.currentTarget;
     const box = overlay.getBoundingClientRect();
     const k = box.width / PAGE_W || 1;
@@ -949,20 +1089,29 @@ function bindCardDrag(qa) {
     const y0 = ev.clientY;
     const w = qa.offsetWidth;
     const h = qa.offsetHeight;
-    const { maxL, maxT } = cardLimits(w, h);
+    const { maxL, maxT } = cardLimits(w, h, overlay.parentElement);
     let dragged = false;
     const move = (e) => {
+      if (e.pointerId !== ev.pointerId) return;
+      if (!dragged) {
+        if (Math.hypot(e.clientX - x0, e.clientY - y0) < DRAG_START) return;
+        dragged = true;
+        qa.classList.add("dragging");
+        try {
+          host.setPointerCapture?.(e.pointerId);
+        } catch {
+          // The pointer may already be gone; the window listener finishes the drag.
+        }
+      }
       const dx = (e.clientX - x0) / k;
       const dy = (e.clientY - y0) / k;
-      if (!dragged && Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
-      dragged = true;
       qa.style.left = `${Math.min(Math.max(0, startL + dx), maxL)}px`;
       qa.style.top = `${Math.min(Math.max(0, startT + dy), maxT)}px`;
     };
     const end = () => {
-      host.removeEventListener("pointermove", move);
-      host.removeEventListener("pointerup", end);
-      host.removeEventListener("pointercancel", end);
+      window.removeEventListener("pointermove", move, true);
+      window.removeEventListener("pointerup", end, true);
+      window.removeEventListener("pointercancel", end, true);
       qa.classList.remove("dragging");
       if (host.hasPointerCapture?.(ev.pointerId)) host.releasePointerCapture(ev.pointerId);
       if (dragged) {
@@ -976,12 +1125,11 @@ function bindCardDrag(qa) {
         cardJustDragged = true;
       }
     };
-    host.setPointerCapture?.(ev.pointerId);
-    qa.classList.add("dragging");
-    host.addEventListener("pointermove", move);
-    host.addEventListener("pointerup", end);
-    host.addEventListener("pointercancel", end);
-    ev.preventDefault();
+    // Listened on the window, so the move that crosses the threshold is seen even
+    // when the finger has already left the grip or the head.
+    window.addEventListener("pointermove", move, true);
+    window.addEventListener("pointerup", end, true);
+    window.addEventListener("pointercancel", end, true);
     ev.stopPropagation();
   };
   head.addEventListener("pointerdown", (ev) => {
@@ -1494,7 +1642,11 @@ function growSheet(sheet, page) {
   }
   sheet.querySelectorAll(".bg-slice").forEach((s) => s.remove());
   img.hidden = merged.length > 0;
-  if (!merged.length) return;
+  if (!merged.length) {
+    sheet.bands = null;
+    return;
+  }
+  const bands = [];
   let from = 0;
   let off = 0;
   let after = img;
@@ -1516,9 +1668,13 @@ function growSheet(sheet, page) {
     slice.append(part);
     after.after(slice);
     after = slice;
+    bands.push({ page: from, sheet: from + off, height: c.y - from });
     off += c.d;
     from = c.y;
   }
+  // Where each band of the page is drawn, so ink can be sampled in the same space as
+  // the card (a card that sits in opened room floats over blank paper, not over ink).
+  sheet.bands = bands;
 }
 
 /**

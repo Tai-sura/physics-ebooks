@@ -1079,15 +1079,12 @@ body.embed-open { overflow: hidden; }
   user-select: none;
   -webkit-user-select: none;
 }
-/* The bar is 30 pt tall: the hit area reaches 44 pt without changing how it looks. */
-.qa.card .card-head::before {
-  content: "";
-  position: absolute;
-  left: 2px;
-  right: 2px;
-  top: -7px;
-  bottom: -7px;
-}
+/* No invisible overlay may cover this bar. A ::before strip used to stretch the hit
+   area to 44 pt, but a positioned pseudo-element paints above static children, so
+   the strip sat over ◂ ↺ ✕ and the grip: every press landed on the head, was read
+   as a drag and the browser then sent no click at all (silent dead buttons).
+   The bar and the grip are 30 pt = 45 CSS px at 1.5x, and a drag only takes the
+   pointer after 6 px of travel (see bindCardDrag). */
 /* A fixed grip on the left of the bar: the buttons take most of the head, so the
    grip is the one patch that is always there and always draggable. It is a span,
    not a button, and it never scrolls the page (touch-action: none). */
@@ -1114,6 +1111,10 @@ body.embed-open { overflow: hidden; }
 .qa.card.scroll .qa-in { touch-action: pan-y; }
 .qa.card.dragging,
 .qa.card.dragging .card-head { cursor: grabbing; }
+/* A press is no longer prevented on the way down (that is what killed the clicks),
+   so a mouse drag would otherwise start selecting the working as it moves. */
+.qa.card.dragging,
+.qa.card.dragging * { user-select: none; -webkit-user-select: none; }
 .qa.card.dragging { box-shadow: 0 14px 34px rgba(30, 25, 15, 0.3); }
 .qa.card .card-head strong { flex: 1 1 auto; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .qa.card .card-head .ctl {

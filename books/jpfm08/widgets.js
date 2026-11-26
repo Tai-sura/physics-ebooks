@@ -7,7 +7,7 @@
  * template's marble example that shipped here by mistake was removed; nothing of it is left.)
  */
 
-import { C, S, T, H, scene, clear, sector, slider, readout, question, buttonRow } from "../../engine/widgets/kit.js";
+import { C, S, T, H, scene, clear, sector, tabs, slider, readout, question, buttonRow } from "../../engine/widgets/kit.js";
 
 const J_D = 2;          // m, the printed distance from the hinge to the force
 const J_F0 = 20;        // N, the printed force
@@ -564,7 +564,490 @@ function jp1(root) {
   render();
 }
 
-const REGISTRY = { q1: jq1, p1: jp1 };
+/* ---------------- Q2: the moment of a force about a point you can move ----------------
+ *
+ * The teacher's own brief: pick one of four objects, drag the pivot anywhere (inside the object,
+ * on its edge, or right off it), and add up to three forces whose position, direction and size
+ * can all be changed. Every force then shows its line of action, the perpendicular arm from P to
+ * that line (dashed, with a right angle at the foot), its own moment with the sense in words, and
+ * the net moment. Moving P re-solves everything - that is the point of the widget.
+ *
+ * Nothing is written by hand. With r = point - P, the drawn force vector F and screen y down,
+ *   z = r_x F_y - r_y F_x      z > 0 turns clockwise on screen (the same reading q1 uses)
+ *   d = |z| / F                tau = F d, sense = z > 0 ? clockwise : anticlockwise
+ * The numbers below were read back out of the reader, not worked on paper only:
+ *   F = 30 N at d = 0.40 m -> 12.0 N m clockwise;
+ *   F = 18 N at d = 0.50 m -> 9.0 N m clockwise;
+ *   30 N at 0.40 m against 12 N at 1.00 m -> 12.0 and 12.0, net 0, "balanced - does not turn".
+ *
+ * The drawing is 620 x 400 with 150 px per metre. The object sits at (232, 190) and never
+ * moves; the reading column lives at x = 462..614, clear of it. Point targets are 47 px across
+ * at the drawer width an iPad gives (24 viewBox units) so a finger can hold them.
+ */
+const Q2_W = 620, Q2_H = 400;
+const Q2_S = 150;                    // px per metre
+const Q2_CX = 232, Q2_CY = 190;      // centre of the object
+const Q2_COLX = 462;                 // the reading column starts here
+const Q2_COL = [C.red, C.blue, C.green];   // F1, F2, F3
+const Q2_SUB = ["\u2081", "\u2082", "\u2083"];
+const Q2_PIVOT_R = 24, Q2_PT_R = 22, Q2_TIP_R = 22;   // hit radii, viewBox units
+
+function jq2(root) {
+  const svg = scene(Q2_W, Q2_H);
+  svg.style.touchAction = "none";          // dragging inside must not scroll the drawer
+  const r = readout();
+
+  /* The four objects. Each is drawn from metres about the centre, with the state it opens in:
+   * the pivot where the printed figures put P (the rod's end, the box's corner, the door's
+   * hinge, the plate's printed P) and one force to start from. */
+  const SHAPES = {
+    rod: { name: "rod", pivot: [-0.86, 0], at: [0.55, 0], F: 30 },
+    box: { name: "box", pivot: [-0.60, 0.42], at: [0.34, -0.42], F: 30 },
+    door: { name: "flat door", pivot: [-0.85, 0], at: [0.60, 0], F: 30 },
+    plate: { name: "irregular plate", pivot: [-0.42, -0.40], at: [0.12, 0.22], F: 30 },
+  };
+
+  let shape = "rod";
+  let pivot = [0, 0];                  // screen px
+  let forces = [];                     // {x, y, a, F}: screen px, radians (screen), newtons
+
+  const X = (m) => Q2_CX + m * Q2_S;
+  const Y = (m) => Q2_CY + m * Q2_S;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  /* ---- the objects ---- */
+  function drawShape() {
+    if (shape === "rod") {
+      S("rect", { x: X(-0.86), y: Y(-0.055), width: 1.72 * Q2_S, height: 0.11 * Q2_S, rx: 5,
+        fill: C.soft, stroke: C.line, "stroke-width": 2 }, svg);
+      S("line", { x1: X(-0.86) + 6, y1: Y(0), x2: X(0.86) - 6, y2: Y(0), stroke: C.line,
+        "stroke-width": 1, "stroke-opacity": 0.25 }, svg);
+    } else if (shape === "box") {
+      S("rect", { x: X(-0.6), y: Y(-0.42), width: 1.2 * Q2_S, height: 0.84 * Q2_S, rx: 3,
+        fill: C.soft, stroke: C.line, "stroke-width": 2 }, svg);
+    } else if (shape === "door") {
+      /* the flat door, drawn as a door and not as a second rod: a panel with real thickness
+       * (0.34 m against the rod's 0.11 m), an inset panel line, two hinge knuckles straddling
+       * its left edge, and a lever handle high on the free edge - high so the force arrow at
+       * mid-height stays clear of it. Same object box as the other three (x -0.85..0.85 m,
+       * y -0.17..0.17 m), so P, every arm and every moment are unchanged: only the picture
+       * got readable. */
+      const L = X(-0.85), R = X(0.85), TP = Y(-0.17), BT = Y(0.17), HH = BT - TP;
+      S("rect", { x: L, y: TP, width: R - L, height: HH, rx: 3,
+        fill: C.soft, stroke: C.line, "stroke-width": 2.2 }, svg);
+      S("rect", { x: L + 8, y: TP + 8, width: R - L - 16, height: HH - 16, rx: 2,
+        fill: "none", stroke: C.line, "stroke-width": 1.2, "stroke-opacity": 0.3 }, svg);
+      [-1, 1].forEach((s) => {                    // two hinges, centred on the hinge edge
+        S("rect", { x: L - 7, y: Y(0) + s * 17 - 4.5, width: 14, height: 9, rx: 3.5,
+          fill: C.line }, svg);
+      });
+      const hx = R - 12, hy = TP + 14;            // the lever handle: a grey rose and a short
+      S("circle", { cx: hx, cy: hy, r: 4.2, fill: C.grey, "fill-opacity": 0.85 }, svg);
+      S("line", { x1: hx, y1: hy, x2: hx - 16, y2: hy, stroke: C.grey, "stroke-width": 3.4,
+        "stroke-linecap": "round", "stroke-opacity": 0.85 }, svg);
+    } else {
+      // the kidney plate of printed case (e): a smooth outline with the concave left edge
+      const P = (mx, my) => `${X(mx)},${Y(my)}`;
+      S("path", {
+        d: `M${P(-0.55, -0.60)} C${P(-0.28, -0.74)} ${P(0.20, -0.70)} ${P(0.46, -0.48)} `
+          + `C${P(0.74, -0.24)} ${P(0.78, 0.16)} ${P(0.54, 0.44)} `
+          + `C${P(0.30, 0.70)} ${P(-0.06, 0.74)} ${P(-0.20, 0.58)} `
+          + `C${P(-0.36, 0.40)} ${P(-0.26, 0.12)} ${P(-0.40, -0.06)} `
+          + `C${P(-0.52, -0.22)} ${P(-0.62, -0.44)} ${P(-0.55, -0.60)} Z`,
+        fill: C.soft, stroke: C.line, "stroke-width": 2,
+      }, svg);
+    }
+  }
+
+  /* ---- one arrowhead, drawn rather than a marker, so any colour works ---- */
+  function arrow(x1, y1, x2, y2, color, w, head) {
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    const bx = x2 - Math.cos(a) * head, by = y2 - Math.sin(a) * head;
+    const nx = -Math.sin(a) * head * 0.42, ny = Math.cos(a) * head * 0.42;
+    S("line", { x1, y1, x2: bx, y2: by, stroke: color, "stroke-width": w, "stroke-linecap": "round" }, svg);
+    S("polygon", { points: `${x2},${y2} ${bx + nx},${by + ny} ${bx - nx},${by - ny}`, fill: color }, svg);
+  }
+
+  /* ---- the geometry of one force: its arrow tip, its arm, its moment ---- */
+  const lenOf = (F) => clamp(26 + F * 0.58, 26, 84);          // px; never zero, never off the frame
+  const tipOf = (f) => {
+    const L = lenOf(f.F);
+    return [f.x + Math.cos(f.a) * L, f.y + Math.sin(f.a) * L];
+  };
+  const armOf = (f) => {
+    const ux = Math.cos(f.a), uy = Math.sin(f.a);
+    const rx = f.x - pivot[0], ry = f.y - pivot[1];
+    const along = rx * ux + ry * uy;                          // projection of r on the force line
+    const foot = [f.x - ux * along, f.y - uy * along];
+    const z = rx * uy - ry * ux;                              // > 0: clockwise on screen
+    return { foot, z, d: Math.abs(z), ux, uy, along };
+  };
+
+  /* ---- the drawing ---- */
+  function render() {
+    clear(svg);
+    drawShape();
+
+    const sums = [];
+    forces.forEach((f, i) => {
+      const col = Q2_COL[i];
+      const { foot, z, d, ux, uy, along } = armOf(f);
+      const tau = f.F * d / Q2_S;                             // N m: arm in px -> m
+      sums.push({ tau: Math.sign(z) * tau, F: f.F, d: d / Q2_S, col, i });
+
+      if (f.F < 0.5) {
+        // no force: the point stays, so it can be found and turned again, but nothing acts
+        S("circle", { cx: f.x, cy: f.y, r: 5, fill: "#fff", stroke: col, "stroke-width": 2.4 }, svg);
+        T(svg, f.x + 10, f.y - 9, `F${Q2_SUB[i]} = 0 N`, { "font-size": 11.5, "font-weight": 700, fill: col });
+        return;
+      }
+
+      /* the line of action, carried a little past the point and the foot so both sit on it.
+       * Measured, not guessed: the foot lies at t = -along on the u axis measured from the force
+       * point, so the span must be [min(0,-along) - ext, max(0,-along) + ext]. The old form used
+       * |x - foot.x| with a fixed sign and, once the force pointed away from P, drew the dashed
+       * line on the foot side only - seen in the anticlockwise shot at 23:06. */
+      const ext = 26;
+      const t0 = Math.min(0, -along) - ext, t1 = Math.max(0, -along) + ext;
+      S("line", {
+        x1: f.x + ux * t0, y1: f.y + uy * t0,
+        x2: f.x + ux * t1, y2: f.y + uy * t1,
+        stroke: C.grey, "stroke-width": 1.1, "stroke-dasharray": "7 5", "stroke-opacity": 0.8,
+      }, svg);
+
+      // the arm: the perpendicular from P to that line, with a right angle at the foot
+      if (d > 3) {
+        S("line", { x1: pivot[0], y1: pivot[1], x2: foot[0], y2: foot[1], stroke: col,
+          "stroke-width": 2.2, "stroke-dasharray": "8 5" }, svg);
+        if (d > 16) {
+          const wx = (pivot[0] - foot[0]) / d, wy = (pivot[1] - foot[1]) / d, k = 9;
+          S("path", {
+            d: `M${foot[0] - ux * k},${foot[1] - uy * k} L${foot[0] - ux * k + wx * k},${foot[1] - uy * k + wy * k} L${foot[0] + wx * k},${foot[1] + wy * k}`,
+            fill: "none", stroke: col, "stroke-width": 1.4,
+          }, svg);
+        }
+        // the arm's value, set square to the arm so it never lies along it. Its spot along the
+        // arm is staggered by the force's index, so three arms that cross near the middle do not
+        // stack their numbers on top of each other.
+        const tLab = clamp(0.28 + i * 0.11, 0.26, 0.52);
+        const mx = pivot[0] + (foot[0] - pivot[0]) * tLab;
+        const my = pivot[1] + (foot[1] - pivot[1]) * tLab;
+        const ox = (pivot[1] - foot[1]) / d * 26, oy = (foot[0] - pivot[0]) / d * 26;
+        T(svg, mx + ox, my + oy + 4, (d / Q2_S).toFixed(3) + " m",
+          { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: col, "class": "g-arm-lab",
+            stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
+      } else {
+        T(svg, foot[0] + 10, foot[1] + 18, `d${Q2_SUB[i]} = 0 (line through P)`,
+          { "font-size": 11, "font-weight": 700, fill: col });
+      }
+
+      // the force itself, ending at the round knob so the head is not buried in it
+      const [tx, ty] = tipOf(f);
+      arrow(f.x, f.y, tx - Math.cos(f.a) * 8, ty - Math.sin(f.a) * 8, col, 3.4, 11);
+      // the label runs beside the shaft, on the far side from P, and is anchored away from the
+      // shaft: centred 12 px off a vertical shaft the text still crossed it (seen at 22:48)
+      const side = Math.sign((pivot[0] - f.x) * uy - (pivot[1] - f.y) * ux) || 1;
+      const nx = -uy * side, ny = ux * side;
+      const anchor = nx > 0.25 ? "start" : nx < -0.25 ? "end" : "middle";
+      const off = anchor === "middle" ? 18 : 14;
+      const mid = Math.max(20, lenOf(f.F) * 0.55);
+      T(svg, f.x + ux * mid + nx * off, f.y + uy * mid + ny * off + 4,
+        `F${Q2_SUB[i]} ${f.F.toFixed(0)} N`,
+        { "text-anchor": anchor, "font-size": 11.5, "font-weight": 700, fill: col,
+          stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
+
+      // the point it acts at, and a hollow knob on the head: both are drag handles
+      S("circle", { cx: f.x, cy: f.y, r: 5.5, fill: col, stroke: "#fff", "stroke-width": 1.6 }, svg);
+      S("circle", { cx: tx, cy: ty, r: 6.5, fill: "#fff", stroke: col, "stroke-width": 2 }, svg);
+    });
+
+    // the pivot, drawn last so it is always grabbable, and its label
+    S("circle", { cx: pivot[0], cy: pivot[1], r: 8.5, fill: C.ink, stroke: "#fff", "stroke-width": 2.2 }, svg);
+    T(svg, pivot[0], pivot[1] - 15, "P", { "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: C.ink });
+
+    nudgeArmLabels();
+    drawColumn(sums);
+    writeReading(sums);
+  }
+
+  /* ---- keep the arm numbers clear: nudge each one until its box clears every other text and
+   * every drag handle (the dots and knobs are drawn after the labels, so a label under one is
+   * hidden). Gives up and leaves it alone if the widget is not laid out yet. ---- */
+  function nudgeArmLabels() {
+    let texts, circles;
+    try {
+      texts = [...svg.querySelectorAll("text")].map((el) => ({ el, box: el.getBBox(), arm: el.classList.contains("g-arm-lab") }));
+      circles = [...svg.querySelectorAll("circle")].map((c) => {
+        const cx = Number(c.getAttribute("cx")), cy = Number(c.getAttribute("cy")), r = Number(c.getAttribute("r")) || 0;
+        return { x: cx - r - 2, y: cy - r - 2, width: 2 * r + 4, height: 2 * r + 4 };
+      });
+    } catch {
+      return;
+    }
+    const hit = (a, b) => Math.min(a.x + a.width, b.x + b.width) > Math.max(a.x, b.x) + 1
+      && Math.min(a.y + a.height, b.y + b.height) > Math.max(a.y, b.y) + 1;
+    const fixed = [...texts.filter((o) => !o.arm).map((o) => o.box), ...circles];
+    const D = [];
+    for (const dy of [0, 13, -13, 26, -26, 39, -39, 52, -52]) for (const dx of [0, 20, -20, 38, -38]) D.push([dx, dy]);
+    D.sort((a, b) => Math.abs(a[0]) + Math.abs(a[1]) - (Math.abs(b[0]) + Math.abs(b[1])));
+    for (const o of texts.filter((x) => x.arm)) {
+      const x0 = Number(o.el.getAttribute("x")), y0 = Number(o.el.getAttribute("y"));
+      let placed = o.box;
+      for (const [dx, dy] of D) {
+        const b = { x: o.box.x + dx, y: o.box.y + dy, width: o.box.width, height: o.box.height };
+        if (!fixed.some((f) => hit(f, b))) {
+          if (dx) o.el.setAttribute("x", x0 + dx);
+          if (dy) o.el.setAttribute("y", y0 + dy);
+          placed = b;
+          break;
+        }
+      }
+      fixed.push(placed);
+    }
+  }
+
+  /* ---- the reading column: one block per force, then the net ----
+   * Measured on the render: a 12 px line box is 15.5 px tall and a 10.5 px one is 13.4, so the
+   * old 13 px step put the sense line 0.4 px inside the tau line and the old 56 px block pitch
+   * put the next "F2 = ..." line on top of it. The steps below are 17 px inside a block and
+   * 70 px between blocks; the reader showed every gap positive (see the bbox report). */
+  function drawColumn(sums) {
+    const x = Q2_COLX;
+    T(svg, x, 34, "about P", { "font-size": 11, fill: C.grey });
+    sums.forEach((s, k) => {
+      const y = 60 + k * 70;
+      T(svg, x, y, `F${Q2_SUB[s.i]} = ${s.F.toFixed(0)} N`, { "font-size": 12, "font-weight": 700, fill: s.col });
+      T(svg, x, y + 17, `d${Q2_SUB[s.i]} = ${s.d.toFixed(3)} m`, { "font-size": 11.5, fill: C.amber });
+      if (s.F < 0.5) {
+        T(svg, x, y + 34, "no force", { "font-size": 11, fill: C.grey });
+      } else {
+        T(svg, x, y + 34, `\u03C4${Q2_SUB[s.i]} = ${Math.abs(s.tau).toFixed(1)} N m`,
+          { "font-size": 11.5, "font-weight": 700, fill: s.col });
+        T(svg, x + 2, y + 51, Math.abs(s.tau) < 0.05 ? "\u2014" : s.tau > 0 ? "clockwise" : "anticlockwise",
+          { "font-size": 10.5, fill: C.grey });
+      }
+    });
+
+    /* ---- the net, on the canvas: it is the answer, so it must not sit below the fold (the
+     * drawer scrolls, and the reading used to be outside the picture) ---- */
+    const live = sums.filter((s) => s.F >= 0.5);
+    const net = live.reduce((a, s) => a + s.tau, 0);
+    const y0 = Math.max(232, 60 + sums.length * 70 + 16);
+    S("line", { x1: x, y1: y0, x2: Q2_W - 14, y2: y0, stroke: C.grey, "stroke-width": 1, "stroke-opacity": 0.45 }, svg);
+    T(svg, x, y0 + 22, live.length ? `\u03A3\u03C4 = ${Math.abs(net).toFixed(1)} N m` : "\u03A3\u03C4 = 0 N m",
+      { "font-size": 14, "font-weight": 700, fill: C.ink });
+    const flat = !live.length ? "no force"
+      : Math.abs(net) < 0.05 ? "balanced \u2014 does not turn"
+        : net > 0 ? "clockwise" : "anticlockwise";
+    T(svg, x, y0 + 40, flat,
+      { "font-size": 11, "font-weight": 700, fill: !live.length || Math.abs(net) < 0.05 ? C.green : C.grey });
+  }
+
+  function writeReading(sums) {
+    const live = sums.filter((s) => s.F >= 0.5);
+    const net = live.reduce((a, s) => a + s.tau, 0);
+    const cw = live.filter((s) => s.tau > 0);
+    const acw = live.filter((s) => s.tau < 0);
+    const tot = (list) => list.reduce((a, s) => a + Math.abs(s.tau), 0);
+    const names = (list) => list.map((s) => `F${Q2_SUB[s.i]}`).join(" and ");
+    const parts = live.map((s) => `${Math.abs(s.tau).toFixed(1)}\\ (${s.tau > 0 ? "cw" : "acw"})`);
+    const latex = live.length
+      ? `\\Sigma\\tau = ${parts.join(" + ")} = ${Math.abs(net).toFixed(1)}\\ \\text{N m}`
+      : `\\Sigma\\tau = 0\\ \\text{N m}`;
+    let caption;
+    if (!live.length) {
+      caption = "No force acting: add one by tapping the object, then drag its dot to move it, its knob to turn it, or use the slider for its size. Drag P anywhere \u2014 the arms and moments follow.";
+    } else if (Math.abs(net) < 0.05) {
+      // Say how the two senses cancel, never "the same size in opposite senses" unless that is true.
+      const sides = [cw.length ? `${tot(cw).toFixed(1)} N m clockwise from ${names(cw)}` : "",
+        acw.length ? `${tot(acw).toFixed(1)} N m anticlockwise from ${names(acw)}` : ""].filter(Boolean);
+      caption = `The moments cancel: ${sides.join(" against ")} give a net moment of zero, so the object does not turn.`;
+    } else {
+      // Name the forces that act each way and add up each side. Never say a force "wins": the
+      // moment is what is being summed, and two equal moments are not a contest.
+      const phrase = cw.length && acw.length
+        ? `${names(cw)} ${cw.length > 1 ? "give" : "gives"} ${tot(cw).toFixed(1)} N m clockwise against ${names(acw)} (${tot(acw).toFixed(1)} N m anticlockwise)`
+        : (() => {
+          const one = cw.length ? cw : acw;
+          const w = cw.length ? "clockwise" : "anticlockwise";
+          return one.length > 1
+            ? `${names(one)} all act ${w}, adding to ${tot(one).toFixed(1)} N m`
+            : `${names(one)} acts ${w}, ${tot(one).toFixed(1)} N m`;
+        })();
+      caption = `Net moment ${Math.abs(net).toFixed(1)} N m ${net > 0 ? "clockwise" : "anticlockwise"}: ${phrase}. Move P and watch every arm and moment change \u2014 the moment is F times the perpendicular distance from P to the line of action, not the distance to the point of application.`;
+    }
+    r.set(latex, null, caption);
+  }
+
+  /* ---- the controls ---- */
+  const sfc = [0, 1, 2].map((i) => slider({
+    label: `F${Q2_SUB[i]} (N)`, min: 0, max: 100, step: 1, value: 30, play: false,
+    fmt: (v) => v.toFixed(0) + " N",
+  }));
+  let syncing = false;
+  const rows = sfc.map((s, i) => {
+    s.on((v) => {
+      if (syncing) return;
+      if (!forces[i]) return;
+      forces[i].F = v;
+      render();
+    });
+    const del = H("button", { type: "button", class: "g-nudge", title: `remove F${i + 1}`, onclick: () => removeForce(i) }, ["\u2715"]);
+    s.el.append(del);
+    s.el.hidden = true;
+    return s.el;
+  });
+
+  const addBtn = H("button", { type: "button", onclick: () => addForce() }, ["+ add a force"]);
+  const resetBtn = H("button", { type: "button", onclick: () => reset() }, ["reset this object"]);
+  const tools = H("div", { class: "g-btns" }, [addBtn, resetBtn]);
+
+  function syncUI() {
+    syncing = true;
+    sfc.forEach((s, i) => {
+      const on = i < forces.length;
+      s.el.hidden = !on;
+      if (on) s.set(clamp(Math.round(forces[i].F), 0, 100));
+    });
+    syncing = false;
+    addBtn.disabled = forces.length >= 3;
+    addBtn.title = forces.length >= 3 ? "three forces is the limit" : "add a force at the middle of the object";
+  }
+
+  /* two forces on the same spot bury each other's dot, knob, arm and label: step a new one
+   * sideways until it is clear of every force already there */
+  function clearSpot(x, y) {
+    let nx = clamp(x, 52, 402), ny = clamp(y, 42, 356);
+    for (let k = 0; k < 6 && forces.some((f) => Math.hypot(f.x - nx, f.y - ny) < 46); k++) {
+      nx = clamp(nx + 44, 52, 402);
+      if (k % 2) ny = clamp(ny + 34, 42, 356);
+    }
+    return [nx, ny];
+  }
+
+  function addForce(at) {
+    if (forces.length >= 3) return;
+    const p = at ?? [Q2_CX + 0.2 * Q2_S, Q2_CY];
+    const [nx, ny] = clearSpot(p[0], p[1]);
+    forces.push({ x: nx, y: ny, a: Math.PI / 2, F: 30 });
+    syncUI();
+    render();
+  }
+
+  function removeForce(i) {
+    if (i >= forces.length) return;
+    forces.splice(i, 1);
+    syncUI();
+    render();
+  }
+
+  function reset() {
+    const s = SHAPES[shape];
+    pivot = [X(s.pivot[0]), Y(s.pivot[1])];
+    forces = [{ x: X(s.at[0]), y: Y(s.at[1]), a: Math.PI / 2, F: s.F }];
+    syncUI();
+    render();
+  }
+
+  const shapeTabs = tabs(["rod", "box", "flat door", "irregular plate"], (i) => {
+    shape = Object.keys(SHAPES)[i];
+    reset();
+  });
+
+  /* ---- dragging: one handler on the svg, hit-tested by distance so a finger has 47 px ---- */
+  let drag = null;
+  let down = null;
+  const at = (e) => {
+    const b = svg.getBoundingClientRect();
+    const k = Q2_W / b.width;
+    return [(e.clientX - b.left) * k, (e.clientY - b.top) * k];
+  };
+  const hit = (x, y) => {
+    let best = null, bestD = Infinity;
+    const see = (kind, i, hx, hy, rad) => {
+      const d = Math.hypot(x - hx, y - hy);
+      if (d <= rad && d < bestD) { bestD = d; best = { kind, i }; }
+    };
+    for (let i = forces.length - 1; i >= 0; i--) {
+      const f = forces[i];
+      if (f.F >= 0.5) {
+        const t = tipOf(f);
+        see("tip", i, t[0], t[1], Q2_TIP_R);
+      }
+      see("pt", i, f.x, f.y, Q2_PT_R);
+    }
+    see("pivot", -1, pivot[0], pivot[1], Q2_PIVOT_R);
+    return best;
+  };
+
+  svg.addEventListener("pointerdown", (e) => {
+    const [x, y] = at(e);
+    drag = null;                    // never inherit a drag whose pointerup went missing
+    const h = hit(x, y);
+    down = [x, y];
+    if (h) {
+      drag = h;
+      try { svg.setPointerCapture(e.pointerId); } catch { /* no capture: the moves still arrive */ }
+      e.preventDefault();
+    }
+  });
+  svg.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const [x, y] = at(e);
+    if (drag.kind === "pivot") {
+      pivot = [clamp(x, 26, 432), clamp(y, 26, 374)];
+    } else {
+      const f = forces[drag.i];
+      if (!f) { drag = null; return; }
+      if (drag.kind === "pt") {
+        f.x = clamp(x, 52, 402);
+        f.y = clamp(y, 42, 356);
+      } else {
+        f.a = Math.atan2(y - f.y, x - f.x);          // the head sets the direction
+      }
+    }
+    render();
+    e.preventDefault();
+  });
+  const up = (e) => {
+    if (drag) {
+      drag = null;
+      try { svg.releasePointerCapture(e.pointerId); } catch { /* already gone */ }
+      return;
+    }
+    // a tap that never became a drag adds a force where it landed
+    if (!down) return;
+    const [x, y] = at(e);
+    const moved = Math.hypot(x - down[0], y - down[1]);
+    down = null;
+    if (moved < 6 && forces.length < 3) {
+      const [nx, ny] = clearSpot(x, y);
+      forces.push({ x: nx, y: ny, a: Math.PI / 2, F: 30 });
+      syncUI();
+      render();
+    }
+  };
+  svg.addEventListener("pointerup", up);
+  svg.addEventListener("pointercancel", () => { drag = null; down = null; });
+
+  root.append(
+    question("In each case below, find the net moment of force F about point P. Here you can move P, add up to three forces, and change any force's position, direction and size.", [
+      "Moment about P: $\\tau = F d$, where $d$ is the perpendicular distance from P to the line of action",
+      "The arm is measured to the line of action, never to the point where the force is applied",
+      "Net moment: add the moments, clockwise against anticlockwise",
+      "Drag P anywhere (even off the object) \u00B7 tap the object to add a force \u00B7 drag a force's dot to move it, its round knob to turn it",
+    ]),
+    shapeTabs,
+    svg,
+    tools,
+    ...rows,
+    r.el,
+  );
+
+  reset();
+}
+
+const REGISTRY = { q1: jq1, q2: jq2, p1: jp1 };
 
 export function hasGraphic(id) {
   return Boolean(REGISTRY[id]);

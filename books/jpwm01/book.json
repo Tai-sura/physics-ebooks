@@ -1,0 +1,417 @@
+{
+  "id": "jpwm01",
+  "form": "S4",
+  "code": "JPWM01",
+  "title": "Nature of waves",
+  "topic": "Nature of waves",
+  "year": 2026,
+  "status": "live",
+  "storage": "jpwm01",
+  "source": {
+    "que": "source/Chapter 1 Wave Motion - regular 2026-27 @Uni.pdf",
+    "ans": "source/Chapter 1 Wave Motion - regular 2026-27 (Ans) @Uni.pdf",
+    "ansPageOffset": 0
+  },
+  "sections": [
+    {
+      "id": "wave",
+      "label": "Wave motion"
+    },
+    {
+      "id": "direction",
+      "label": "Direction of motion of particles"
+    },
+    {
+      "id": "phase",
+      "label": "Phase"
+    },
+    {
+      "id": "graphical",
+      "label": "Graphical description of wave motion"
+    }
+  ],
+  "continuation": {
+    "top": 96,
+    "x": 48,
+    "width": 499,
+    "bottom": 812
+  },
+  "extract": {
+    "zoom": 3,
+    "regionX": [
+      66,
+      546
+    ],
+    "footer": 790,
+    "questions": [
+      {
+        "id": "q1",
+        "page": 1,
+        "label": "1",
+        "section": "wave"
+      },
+      {
+        "id": "q2",
+        "page": 2,
+        "label": "2",
+        "section": "wave"
+      },
+      {
+        "id": "q3",
+        "page": 2,
+        "label": "3",
+        "section": "wave"
+      },
+      {
+        "id": "q4",
+        "page": 3,
+        "label": "4",
+        "section": "wave"
+      },
+      {
+        "id": "q5",
+        "page": 3,
+        "label": "5",
+        "section": "wave"
+      },
+      {
+        "id": "q6",
+        "page": 3,
+        "label": "6",
+        "section": "wave"
+      },
+      {
+        "id": "q7",
+        "page": 4,
+        "label": "7",
+        "section": "wave"
+      },
+      {
+        "id": "q8",
+        "page": 4,
+        "label": "8",
+        "section": "wave"
+      },
+      {
+        "id": "q9",
+        "page": 4,
+        "label": "9",
+        "section": "wave"
+      },
+      {
+        "id": "q10",
+        "page": 5,
+        "label": "10",
+        "section": "wave"
+      },
+      {
+        "id": "q11",
+        "page": 5,
+        "label": "11",
+        "section": "wave"
+      },
+      {
+        "id": "q12",
+        "page": 5,
+        "label": "12",
+        "section": "wave"
+      },
+      {
+        "id": "q13",
+        "page": 5,
+        "label": "13",
+        "section": "wave"
+      },
+      {
+        "id": "q14",
+        "page": 6,
+        "label": "14",
+        "section": "wave"
+      },
+      {
+        "id": "q15",
+        "page": 6,
+        "label": "15",
+        "section": "wave"
+      },
+      {
+        "id": "q16",
+        "page": 6,
+        "label": "16",
+        "section": "wave"
+      },
+      {
+        "id": "q17",
+        "page": 6,
+        "label": "17",
+        "section": "wave"
+      },
+      {
+        "id": "q18",
+        "page": 7,
+        "label": "18",
+        "section": "wave"
+      },
+      {
+        "id": "q19",
+        "page": 7,
+        "label": "19",
+        "section": "wave"
+      },
+      {
+        "id": "q20",
+        "page": 7,
+        "label": "20",
+        "section": "wave"
+      },
+      {
+        "id": "q21",
+        "page": 7,
+        "label": "21",
+        "section": "wave"
+      },
+      {
+        "id": "q22",
+        "page": 8,
+        "label": "22",
+        "section": "direction"
+      },
+      {
+        "id": "q23",
+        "page": 8,
+        "label": "23",
+        "section": "phase"
+      },
+      {
+        "id": "q24",
+        "page": 9,
+        "label": "24",
+        "section": "phase"
+      },
+      {
+        "id": "q25",
+        "page": 9,
+        "label": "25",
+        "section": "phase"
+      },
+      {
+        "id": "q26",
+        "page": 9,
+        "label": "26",
+        "section": "phase"
+      },
+      {
+        "id": "q27",
+        "page": 9,
+        "label": "27",
+        "section": "phase"
+      },
+      {
+        "id": "q28",
+        "page": 9,
+        "label": "28",
+        "section": "phase"
+      },
+      {
+        "id": "q29",
+        "page": 10,
+        "label": "29",
+        "section": "graphical"
+      },
+      {
+        "id": "q30",
+        "page": 11,
+        "label": "30",
+        "section": "graphical"
+      },
+      {
+        "id": "q31",
+        "page": 12,
+        "label": "31",
+        "section": "graphical"
+      },
+      {
+        "id": "q32",
+        "page": 13,
+        "label": "32",
+        "section": "graphical"
+      },
+      {
+        "id": "q33",
+        "page": 14,
+        "label": "33",
+        "section": "graphical"
+      },
+      {
+        "id": "q34",
+        "page": 15,
+        "label": "34",
+        "section": "graphical"
+      },
+      {
+        "id": "q35",
+        "page": 16,
+        "label": "35",
+        "section": "graphical"
+      },
+      {
+        "id": "q36",
+        "page": 17,
+        "label": "36",
+        "section": "graphical"
+      }
+    ],
+    "anchors": {},
+    "fixedAnchors": {},
+    "overrides": {
+      "q7": {
+        "region": [
+          66,
+          220.9,
+          546,
+          223.0
+        ],
+        "space": 63
+      },
+      "q22": {
+        "region": [
+          93,
+          363.5,
+          396,
+          404.0
+        ],
+        "space": 96
+      },
+      "q27": {
+        "region": [
+          66,
+          623.3,
+          546,
+          626.0
+        ],
+        "space": 111
+      },
+      "q28": {
+        "region": [
+          190,
+          714.2,
+          374,
+          780.5
+        ],
+        "space": 237
+      },
+      "q1": {
+        "region": [
+          66,
+          764.0,
+          224,
+          786.0
+        ]
+      },
+      "q6": {
+        "region": [
+          66,
+          758.0,
+          250,
+          786.0
+        ]
+      },
+      "q23": {
+        "region": [
+          66,
+          752.0,
+          546,
+          785.2
+        ],
+        "space": 105
+      },
+      "q4": {
+        "region": [
+          66,
+          388,
+          218,
+          531.5
+        ]
+      },
+      "q13": {
+        "region": [
+          66,
+          750.5,
+          236,
+          779.0
+        ],
+        "space": 194
+      },
+      "q2": {
+        "space": 68
+      },
+      "q3": {
+        "space": 76
+      },
+      "q5": {
+        "space": 104
+      },
+      "q8": {
+        "space": 80
+      },
+      "q10": {
+        "space": 43
+      },
+      "q11": {
+        "space": 35
+      },
+      "q12": {
+        "space": 71
+      },
+      "q14": {
+        "space": 145
+      },
+      "q15": {
+        "space": 136
+      },
+      "q16": {
+        "space": 123
+      },
+      "q17": {
+        "space": 147
+      },
+      "q18": {
+        "space": 33
+      },
+      "q19": {
+        "space": 47
+      },
+      "q20": {
+        "space": 147
+      },
+      "q21": {
+        "space": 110
+      },
+      "q24": {
+        "space": 144
+      },
+      "q25": {
+        "space": 130
+      },
+      "q26": {
+        "space": 89
+      },
+      "q29": {
+        "space": 236
+      },
+      "q30": {
+        "space": 85
+      },
+      "q32": { "space": 84 },
+      "q35": { "space": 100 },
+      "q36": {
+        "space": 151
+      }
+    }
+  },
+  "answerCards": [
+    "q1",
+    "q6",
+    "q9"
+  ]
+}

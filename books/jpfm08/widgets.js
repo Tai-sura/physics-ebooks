@@ -627,7 +627,7 @@ const Q2_CASES = [
     note: "30 N at 0.4 m from P, 60\u00B0 to the bar",
     answer: "\u03C4 = 30 \u00D7 0.4 \u00D7 sin 60\u00B0 = 10.4 N m clockwise" },
   { label: "(c)", S: 220, bar: [[80, 200], [450, 200]], pivot: [80, 200],
-    forces: [{ x: 410, y: 200, deg: 130, F: 120, ref: -1 }],
+    forces: [{ x: 410, y: 200, deg: 130, F: 120, ref: -1, arcOff: 180 }],
     note: "120 N at 1.5 m from P",
     answer: "\u03C4 = 120 \u00D7 1.5 \u00D7 cos 40\u00B0 = 138 N m clockwise" },
   { label: "(d)", S: 300, bar: [[110, 290], [355.746, 117.927]], pivot: [110, 290],
@@ -897,20 +897,20 @@ function jq2(root) {
   function drawCaseAngles(k) {
     const c = Q2_CASES[k];
     const label = (text, at) => dimLabel(text, at, { cls: "g-ang" });
+    /* a printed arc belongs to the force it was drawn for: once that force has been turned away
+     * from the printed angle the arc is no longer true, so it steps aside and the live arc takes
+     * over (see the theta drawing in render). Nothing else on the printed picture moves. */
+    const at = (i) => !movedFromPrint(k, i);
     switch (c.label) {
       case "(b)":   // the bar towards P runs right; the force points up-right
-        drawArc(120, 250, 46, 0, -60);
-        label("60\u00B0", [168, 232]);
+        if (at(0)) { drawArc(120, 250, 46, 0, -60); label("60\u00B0", [168, 232]); }
         break;
       case "(c)":   // from the bar's left direction, over the top, to the up-right line of action
-        drawArc(410, 200, 52, 180, 310);
-        label("130\u00B0", [352, 158]);
+        if (at(0)) { drawArc(410, 200, 52, 180, 310); label("130\u00B0", [352, 158]); }
         break;
       case "(f)":
-        drawArc(40, 200, 44, 0, 70);
-        label("70\u00B0", [84, 236]);
-        drawArc(320, 200, 44, 180, 120);
-        label("60\u00B0", [268, 236]);
+        if (at(0)) { drawArc(40, 200, 44, 0, 70); label("70\u00B0", [84, 236]); }
+        if (at(1)) { drawArc(320, 200, 44, 180, 120); label("60\u00B0", [268, 236]); }
         break;
       default:
         break;
@@ -999,10 +999,9 @@ function jq2(root) {
    * towards P (ref = +1, the sandbox default) or the ray from P out to the force point (ref = -1,
    * which is what the printed (c), (d) and (f)-second arcs mark). Either way theta = 0 means the
    * force lies along the rod, i.e. its line of action runs through P and the arm is 0.
-   * The side the force is on is kept in f.side: dragging the knob is free, but the slider must
-   * not flip the force to the other side of the rod just because the number passed through 0.
-   * This folded 0..180 form is what case mode prints (it reproduces the printed numbers); the
-   * sandbox's slider uses the 0..360 protractor below, and the column follows whichever is on. */
+   * Both sliders are 0..360: the sandbox counts from the ray P -> point below, and a printed case
+   * counts from this reference, in the direction its printed arc sweeps (see caseTheta). The sign
+   * of the moment is the sign of sin(theta) either way, so d = r sin(theta) holds in both. */
   const refAngle = (f) => {
     const dx = f.x - pivot[0], dy = f.y - pivot[1];
     return f.ref < 0 ? Math.atan2(dy, dx) : Math.atan2(-dy, -dx);
@@ -1013,13 +1012,7 @@ function jq2(root) {
     while (p <= -Math.PI) p += 2 * Math.PI;
     return p;
   };
-  const thetaOf = (f) => Math.abs(phiOf(f)) * 180 / Math.PI;      // 0..180 deg
-  const setTheta = (f, deg) => {               // from the slider: keep the side the force is on
-    const ph = phiOf(f);
-    if (Math.abs(ph) > 1e-6) f.side = Math.sign(ph);
-    const sgn = f.side || 1;
-    f.a = refAngle(f) + sgn * (deg * Math.PI) / 180;
-  };
+
 
   /* ---- the sandbox's theta is a protractor angle, 0..360 ----
    * Measured at the force's point from the ray P -> point (the rod pointing AWAY from P), counted
@@ -1030,7 +1023,9 @@ function jq2(root) {
    * The printed cases keep their own reference (ref) because their printed arcs mark the angle on
    * whichever side of the rod their figure chose: (b) and (f)-first mark it from the rod towards
    * P, (c) and (f)-second from the rod away from P. Those arcs must keep reading 60/130/70/60, so
-   * case mode uses thetaOf() and only the sandbox uses the protractor. */
+   * case mode measures from that reference instead (see caseTheta below) and the sandbox uses the
+   * protractor. Both are 0..360 sliders; only the ray they count from differs, and each printed
+   * case shows that ray as the arc its page already draws. */
   const outAngle = (f) => Math.atan2(f.y - pivot[1], f.x - pivot[0]);
   const theta360 = (f) => {
     let d = ((f.a - outAngle(f)) * 180) / Math.PI;
@@ -1038,7 +1033,32 @@ function jq2(root) {
     return d;
   };
   const setTheta360 = (f, deg) => { f.a = outAngle(f) + (deg * Math.PI) / 180; };
-  const thetaShow = (f) => (caseIdx >= 0 ? thetaOf(f) : theta360(f));    // what the column prints
+
+  /* ---- the printed cases carry the same 0..360 slider, but measured from their own arc ----
+   * Each printed case marks its angle from the ray its own figure chose, and in the direction its
+   * arc sweeps, so the number on the slider is the number on the page while the force still sits
+   * where the page puts it: (a) 90, (b) 60, (c) 130, (d) 0, (e) 126.9, (f) 70 and 60. `caseSign`
+   * is fixed when the case is built (the sign of phi at that moment), so dragging the slider on
+   * past 180 keeps going the way the printed arc sweeps instead of flipping to the short way
+   * round. Nothing here changes d = r sin(theta): the sign of the sweep does not touch an angle's
+   * sine, and the reference only says where the arc starts. */
+  const caseTheta = (f) => {
+    let d = ((phiOf(f) * (f.caseSign || 1)) * 180) / Math.PI;
+    d = ((d % 360) + 360) % 360;
+    return d;
+  };
+  const setCaseTheta = (f, deg) => {
+    f.a = refAngle(f) + ((f.caseSign || 1) * deg * Math.PI) / 180;
+  };
+  function movedFromPrint(k, i) {
+    const c = Q2_CASES[k], fp = c.forces[i], f = forces[i];
+    if (!fp || !f) return true;
+    let d = f.a - (fp.deg * Math.PI) / 180;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d <= -Math.PI) d += 2 * Math.PI;
+    return Math.abs(d) > 0.001;            // 0.057 deg: above the 0.03 deg a displayed angle rounds by
+  }
+  const thetaShow = (f) => (caseIdx >= 0 ? caseTheta(f) : theta360(f));    // what the column prints
 
   /* Every force carries its own id, the reference its theta is measured from and the side of the
    * rod it sits on, so neither control can act on the wrong force or flip it across the rod. */
@@ -1125,8 +1145,16 @@ function jq2(root) {
             "class": "g-arm-lab", stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke",
             "stroke-linejoin": "round" });
       }
-      if (caseIdx < 0) {
-        const tDeg = theta360(f), oDeg = (outAngle(f) * 180) / Math.PI;
+      /* ---- the angle on the drawing ----
+       * In the sandbox it is always shown, from the ray P -> point. In a printed case the picture
+       * starts exactly as the page draws it, and the live arc appears only once that force has been
+       * turned away from its printed angle (the printed arc steps aside at the same moment), so a
+       * case at rest is the printed picture and a case being edited is an honest live one. */
+      const inCase = caseIdx >= 0;
+      if (!inCase || movedFromPrint(caseIdx, i)) {
+        const tDeg = inCase ? caseTheta(f) : theta360(f);
+        const base = ((inCase ? refAngle(f) : outAngle(f)) * 180) / Math.PI + (inCase ? (f.arcOff || 0) : 0);
+        const sweep = (inCase ? (f.caseSign || 1) : 1) * tDeg;
         /* "(through P)" is a claim about the arm, so it is made from the arm and not from the
          * angle: within half a pixel the line of action really does pass through P and there is
          * no wedge to draw. At 357 deg the arm is still 0.074 m and the picture draws it, so
@@ -1139,8 +1167,8 @@ function jq2(root) {
         } else {
           /* a 0..360 angle can be reflex: the arc has to take the long way round, so it needs the
            * large-arc flag - drawArc folds anything past 180 back to the short way */
-          arcSweep(f.x, f.y, 30, oDeg, Math.min(tDeg, 359), C.grey, 1.1, meas);
-          const bis = ((oDeg + tDeg / 2) * Math.PI) / 180;
+          arcSweep(f.x, f.y, 30, base, sweep, C.grey, 1.1, meas);
+          const bis = ((base + sweep / 2) * Math.PI) / 180;
           T(meas, f.x + 45 * Math.cos(bis), f.y + 45 * Math.sin(bis) + 4, `\u03B8 = ${degStr(tDeg)}`,
             { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.grey,
               "class": "g-arm-lab", stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke",
@@ -1231,12 +1259,13 @@ function jq2(root) {
     sceneG = g;
 
     /* the angle slider and its chips follow the picture: the knob on an arrow's head is the same
-     * state, so a drag has to move them too. Guarded, or set() would write the rounded value back
-     * into the geometry and the force would creep by half a degree on every redraw. */
-    if (forces.length && caseIdx < 0) {
+     * state, so a drag has to move them too, and the printed cases carry the slider as well.
+     * Guarded, or set() would write the rounded value back into the geometry and the force would
+     * creep by a half degree on every redraw. */
+    if (forces.length) {
       syncing = true;
       const f = forces.find((z) => z.id === selId);
-      if (f) thS.set(clamp(Math.round(theta360(f)), 0, 360));
+      if (f) thS.set(clamp(Math.round(thetaShow(f) * 10) / 10, 0, 360));
       syncing = false;
       /* the chips print each force's theta, so they follow a drag as well as a click. syncUI()
        * rebuilds them, but rebuilding mid-drag would throw away the button under the finger and
@@ -1509,7 +1538,7 @@ function jq2(root) {
             ? `${names(one)} all act ${w}, adding to ${sig3(tot(one))} N m`
             : `${names(one)} acts ${w}, ${sig3(tot(one))} N m`;
         })();
-      caption = `Net moment ${sig3(net)} N m ${net > 0 ? "clockwise" : "anticlockwise"}: ${phrase}. Move P and watch every arm and moment change \u2014 the moment is F times the perpendicular distance from P to the line of action, not the distance to the point of application. On the picture r is the distance from P to the point the force acts at, \u03B8 is the angle between that rod and the force, and d = r sin\u03B8.`;
+      caption = `Net moment ${sig3(net)} N m ${net > 0 ? "clockwise" : "anticlockwise"}: ${phrase}. Move P and watch every arm and moment change \u2014 the moment is F times the perpendicular distance from P to the line of action, not the distance to the point of application. On the picture r is the distance from P to the point the force acts at, \u03B8 is the angle between that rod and the force\u2019s line of action, and d = r sin\u03B8.`;
     }
     r.set(latex, null, caption);
   }
@@ -1518,9 +1547,10 @@ function jq2(root) {
    * Each force has two: its size, then its angle. The angle slider is the same state as the knob
    * on the arrow's head - dragging either one turns the force about its point, and whichever one
    * the reader touches, the other follows (the knob writes back through render(), the slider
-   * through setTheta). In a printed case the geometry is printed, so the angle slider is hidden
-   * there (the F slider still works: size is not geometry) - the same hidden-plus-display rule
-   * the F rows already needed, because .g-slider is display:flex and beats [hidden]. */
+   * through setCaseTheta in a printed case and setTheta360 in the sandbox). The printed cases now
+   * carry the slider too: their geometry is the starting point, not a cage, and the page's own arc
+   * steps aside the moment a force is turned away from it. Hidden only when there is no force at
+   * all - hidden plus display, because .g-slider is display:flex and beats [hidden]. */
   const sfc = [0, 1, 2].map((i) => slider({
     label: `F${Q2_SUB[i]} (N)`, min: 0, max: 150, step: 1, value: 30, play: false,
     fmt: (v) => v.toFixed(0) + " N",
@@ -1532,8 +1562,11 @@ function jq2(root) {
    * the slider both follow the force's id, never its slot, so deleting the middle force cannot
    * leave a chip or a slider editing a different one. */
   const thS = slider({
-    label: "angle \u03B8 (degrees)", min: 0, max: 360, step: 1, value: 90, play: false,
-    fmt: (v) => v.toFixed(0) + "\u00B0",
+    /* a tenth of a degree, not a whole one: case (e)'s printed angle is 126.87 deg, and a slider
+     * that could only show 127 would sit next to a column printing 126.9 - the two-number problem
+     * in one picture. At a tenth the slider, the chip and the column can print the same number. */
+    label: "angle \u03B8 (degrees)", min: 0, max: 360, step: 0.1, value: 90, play: false,
+    fmt: (v) => degStr(v),
   });
   let selId = 0;                        // the force the angle slider is editing, by id
   const chipRow = H("div", { class: "g-btns g-chips" });
@@ -1541,7 +1574,7 @@ function jq2(root) {
     if (syncing) return;
     const f = forces.find((x) => x.id === selId);
     if (!f) return;
-    setTheta360(f, v);
+    if (caseIdx >= 0) setCaseTheta(f, v); else setTheta360(f, v);
     render();
   });
   thS.el.hidden = true;
@@ -1598,11 +1631,13 @@ function jq2(root) {
       s.el.style.display = on ? "" : "none";
       if (on) s.set(clamp(Math.round(forces[i].F), 0, 150));
     });
-    /* the chips and the one angle slider: a printed case keeps its printed geometry, so both are
-     * hidden there - hidden plus display, because .g-slider is display:flex and beats [hidden] */
+    /* the chips and the one angle slider: they are shown in the printed cases too, because the
+     * printed geometry is now the starting point a reader can turn away from - the page's own arc
+     * steps aside when they do, and "reset this object" puts the case back. Hidden only when there
+     * is no force to turn; hidden plus display, because .g-slider is display:flex and beats it. */
     if (!forces.some((f) => f.id === selId)) selId = forces.length ? forces[0].id : 0;
     const sel = forces.find((f) => f.id === selId) || null;
-    const chipsOff = caseIdx >= 0 || !forces.length;
+    const chipsOff = !forces.length;
     chipRow.textContent = "";
     if (!chipsOff) {
       forces.forEach((f, i) => {
@@ -1618,7 +1653,7 @@ function jq2(root) {
     chipRow.style.display = chipsOff ? "none" : "";
     thS.el.hidden = chipsOff;
     thS.el.style.display = chipsOff ? "none" : "";
-    if (sel) thS.set(clamp(Math.round(thetaShow(sel)), 0, 360));
+    if (sel) thS.set(clamp(Math.round(thetaShow(sel) * 10) / 10, 0, 360));
     syncing = false;
     addBtn.disabled = forces.length >= 3;
     addBtn.title = forces.length >= 3 ? "three forces is the limit" : "add a force at the middle of the object";
@@ -1665,7 +1700,10 @@ function jq2(root) {
     Q2_S = c.S;
     shape = "case";
     pivot = [c.pivot[0], c.pivot[1]];
-    forces = c.forces.map((f) => newForce(f.x, f.y, f.deg * Math.PI / 180, f.F, { ref: f.ref || 1 }));
+    forces = c.forces.map((f) => newForce(f.x, f.y, f.deg * Math.PI / 180, f.F, { ref: f.ref || 1, arcOff: f.arcOff || 0 }));
+    /* the direction this case's printed arc sweeps, captured from the printed angle itself, so the
+     * slider starts on the printed number and keeps that direction past 180 degrees */
+    forces.forEach((f) => { f.caseSign = Math.sign(phiOf(f)) || 1; });
     selId = forces[0].id;
     clearTabs(shapeTabs);              // the object tabs stop being lit: this is a case now
     printed.textContent = "Printed answer: " + c.answer;

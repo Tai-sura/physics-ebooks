@@ -100,8 +100,40 @@ The maths repository has older copies of some of these scripts and they have dri
 (`check_book`, `measure_ctl`, `check_media` all differ in content). The copies here are the
 ones the physics work is gated on; do not overwrite them with the maths copies.
 
-## 7. Process docs
+## 7. Process docs — now carried here too
 
-`docs/01-workflow.md` … `06-layout-controls-and-media.md` live in the **maths** repository
-(`tools/`), not here. That is an asymmetry of history, not a decision: they are shared
-process material and apply to both subjects. Read them there when authoring here.
+`docs/01-workflow.md` … `06-layout-controls-and-media.md`, `docs/tools.md` and
+`docs/chapters/` used to exist only in the maths repository and in a local clone that could
+never be pushed. They were committed here on 2026-11-27, so the rules they carry are
+published instead of sitting on one machine:
+
+| file | copied from | last edit in that source |
+|---|---|---|
+| `01-workflow.md` | the local physics clone | 2026-11-27 01:15 |
+| `02-book-format.md` | the local physics clone | 2026-11-27 00:19 |
+| `03-authoring-style.md` | the maths repository | 2026-11-25 17:17 |
+| `04-qa-and-release.md` | the local physics clone | 2026-11-27 01:15 |
+| `05-engine-notes.md` | the local physics clone | 2026-11-27 00:19 |
+| `06-layout-controls-and-media.md` | the local physics clone | 2026-11-26 13:13 |
+| `tools.md` | the local physics clone | 2026-11-25 22:16 |
+| `chapters/` | the local physics clone, physics books only | — |
+
+Each file came from whichever copy had the newer edit: `03` was newer in the maths
+repository, everything else was newer in the local physics clone — which is where the
+physics rules were written (a widget must match the printed figure; the physics-lead
+sign-off at Stage 0 and Stage 7; the image rule for figures that must not be judged from
+memory).
+
+The maths repository keeps its own copy of the same six documents, so from now on they
+drift exactly like `engine/` does and are handled the same way: change the copy you are
+working in, port as a patch only when the other site really needs it, and never overwrite
+a whole file from the other repository.
+
+`docs/chapters/` here holds the notes for physics books only — `_template`, `jpfm08`,
+`jpwm01`, `phy06-force2`, `phy11`, `spem02`, `spem05`. The maths chapter notes (jm*,
+m211-4, p5m07a) stay with their books in the maths repository.
+
+`docs/topics/` — the maths and physics topic registries (`maths.json`, `physics.json`) that
+the book codes and titles must match — is **not** here yet; it still exists only in the
+local clone. Salvage it the same way when it is next needed.
+

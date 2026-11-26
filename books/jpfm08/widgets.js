@@ -664,7 +664,19 @@ function jq2(root) {
   let shape = "rod";
   let caseIdx = -1;                    // >= 0 while a printed case (a)-(f) is showing
   let pivot = [0, 0];                  // screen px
-  let forces = [];                     // {x, y, a, F}: screen px, radians (screen), newtons
+  let forces = [];                     // {id, x, y, a, F}: screen px, radians (screen), newtons
+  let nextFid = 1;                     // every force carries its own id, so a row's control can
+                                       // never act on whatever happens to sit at that index now
+
+  /* the 30 degree swing. The whole picture turns about P, the reading column does not, and the
+   * swing is timed by the clock rather than by the moment: the six cases run from 0 to 227 N m,
+   * so torque timing would flash (f) past and crawl (e) - it would teach the wrong thing. */
+  let phi = 0;                         // live swing angle, degrees; +phi is clockwise on screen
+  let swingK = 1;                      // camera zoom about P while swinging (see fitScale)
+  let raf = 0;                         // the running requestAnimationFrame id, 0 when idle
+  let sceneG = null, ghostG = null;    // the swinging group and the dashed rest outline
+  const SWING = 30;                    // degrees, as asked
+  const SW_UP = 900, SW_HOLD = 150, SW_DOWN = 900;   // ms
 
   const X = (m) => Q2_CX + m * Q2_S;
   const Y = (m) => Q2_CY + m * Q2_S;
@@ -711,17 +723,18 @@ function jq2(root) {
     }
   }
 
-  /* the kidney plate of printed case (e): a smooth outline with the concave left edge */
-  function drawPlate() {
+  /* the kidney plate of printed case (e): a smooth outline with the concave left edge. The path
+   * lives in its own function so the rest outline can trace exactly the same curve. */
+  const plateD = () => {
     const P = (mx, my) => `${X(mx)},${Y(my)}`;
-    S("path", {
-      d: `M${P(-0.55, -0.60)} C${P(-0.28, -0.74)} ${P(0.20, -0.70)} ${P(0.46, -0.48)} `
-        + `C${P(0.74, -0.24)} ${P(0.78, 0.16)} ${P(0.54, 0.44)} `
-        + `C${P(0.30, 0.70)} ${P(-0.06, 0.74)} ${P(-0.20, 0.58)} `
-        + `C${P(-0.36, 0.40)} ${P(-0.26, 0.12)} ${P(-0.40, -0.06)} `
-        + `C${P(-0.52, -0.22)} ${P(-0.62, -0.44)} ${P(-0.55, -0.60)} Z`,
-      fill: C.soft, stroke: C.line, "stroke-width": 2,
-    }, svg);
+    return `M${P(-0.55, -0.60)} C${P(-0.28, -0.74)} ${P(0.20, -0.70)} ${P(0.46, -0.48)} `
+      + `C${P(0.74, -0.24)} ${P(0.78, 0.16)} ${P(0.54, 0.44)} `
+      + `C${P(0.30, 0.70)} ${P(-0.06, 0.74)} ${P(-0.20, 0.58)} `
+      + `C${P(-0.36, 0.40)} ${P(-0.26, 0.12)} ${P(-0.40, -0.06)} `
+      + `C${P(-0.52, -0.22)} ${P(-0.62, -0.44)} ${P(-0.55, -0.60)} Z`;
+  };
+  function drawPlate() {
+    S("path", { d: plateD(), fill: C.soft, stroke: C.line, "stroke-width": 2 }, svg);
   }
 
   /* a printed case's bar: 10 px thick with round ends, C.soft fill and a 2 px C.line edge, drawn
@@ -732,6 +745,180 @@ function jq2(root) {
     S("line", { x1, y1, x2, y2, stroke: C.line, "stroke-width": 10, "stroke-linecap": "round" }, svg);
     S("line", { x1, y1, x2, y2, stroke: C.soft, "stroke-width": 6, "stroke-linecap": "round" }, svg);
     S("line", { x1, y1, x2, y2, stroke: C.line, "stroke-width": 1, "stroke-opacity": 0.25 }, svg);
+  }
+
+  /* ---- the printed distance markers ----
+   * Grey and double-headed on purpose: a coloured, single-headed dashed line is a d-perpendicular
+   * arm, and these must never be read as one. Values are the printed ones word for word
+   * (40 cm, 40 cm, 1.5 m, 1 m, 0.40 m, 0.30 m, 7 m, 3 m - cm and m are not unified).
+   * Only the six printed cases carry them; the sandbox objects do not. */
+  function dimHead(x, y, ang, size) {
+    const bx = x - Math.cos(ang) * size, by = y - Math.sin(ang) * size;
+    const nx = -Math.sin(ang) * size * 0.42, ny = Math.cos(ang) * size * 0.42;
+    S("polygon", { points: `${x},${y} ${bx + nx},${by + ny} ${bx - nx},${by - ny}`,
+      fill: C.grey, "fill-opacity": 0.85 }, svg);
+  }
+  function dimLine(p, q) {
+    const ang = Math.atan2(q[1] - p[1], q[0] - p[0]);
+    const hs = 7;
+    S("line", {
+      x1: p[0] + Math.cos(ang) * hs, y1: p[1] + Math.sin(ang) * hs,
+      x2: q[0] - Math.cos(ang) * hs, y2: q[1] - Math.sin(ang) * hs,
+      stroke: C.grey, "stroke-width": 1.2, "stroke-opacity": 0.8,
+    }, svg);
+    dimHead(p[0], p[1], ang + Math.PI, hs);
+    dimHead(q[0], q[1], ang, hs);
+  }
+  function dimLabel(text, at, opts = {}) {
+    const rot = opts.rotate == null ? {} : { transform: `rotate(${opts.rotate} ${at[0]} ${at[1]})` };
+    T(svg, at[0], at[1], text, {
+      "text-anchor": opts.anchor || "middle", "font-size": 11, "font-weight": 700, fill: C.grey,
+      stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round",
+      "class": opts.cls || "g-dim", ...rot,
+    });
+  }
+  function extLine(x1, y1, x2, y2, dashed) {
+    S("line", {
+      x1, y1, x2, y2, stroke: C.grey, "stroke-width": 1, "stroke-opacity": 0.55,
+      ...(dashed ? { "stroke-dasharray": "4 3" } : {}),
+    }, svg);
+  }
+  function drawCaseDims(k) {
+    const c = Q2_CASES[k];
+    switch (c.label) {
+      case "(a)":   // the bar is 10 px thick: the extensions start at its top edge, not the centre
+        extLine(120, 185, 120, 143); extLine(400, 185, 400, 143);
+        dimLine([120, 148], [400, 148]);
+        dimLabel("40 cm", [260, 141]);
+        break;
+      case "(b)":   // measured below the bar: the force points up-right, so that side is empty
+        extLine(120, 255, 120, 304); extLine(400, 255, 400, 304);
+        dimLine([120, 300], [400, 300]);
+        dimLabel("40 cm", [260, 315]);
+        break;
+      case "(c)":   // above the bar: the force is drawn down-left from its point
+        extLine(80, 195, 80, 143); extLine(410, 195, 410, 143);
+        dimLine([80, 148], [410, 148]);
+        dimLabel("1.5 m", [245, 141]);
+        break;
+      case "(d)": {
+        /* the slanted bar of (d), its own endpoints and angle (it is at -35 deg now, not -30), and
+         * a parallel line 26 px away on its upper-left side - the force label sits on the
+         * lower-right side, so a "below the bar" line would run through it */
+        const [p0, p1] = c.bar;
+        const L = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+        const ux = (p1[0] - p0[0]) / L, uy = (p1[1] - p0[1]) / L;
+        const nx = -uy, ny = ux;                    // perpendicular, pointing down-right
+        const a0 = [p0[0] - nx * 26, p0[1] - ny * 26];
+        const a1 = [p1[0] - nx * 26, p1[1] - ny * 26];
+        extLine(p0[0], p0[1], a0[0], a0[1]);
+        extLine(p1[0], p1[1], a1[0], a1[1]);
+        const mid = [(a0[0] + a1[0]) / 2, (a0[1] + a1[1]) / 2];
+        dimLine(a0, a1);
+        dimLabel("1 m", [mid[0] - nx * 13, mid[1] - ny * 13],
+          { rotate: (Math.atan2(uy, ux) * 180 / Math.PI).toFixed(1) });
+        break;
+      }
+      case "(e)":   // the two guide lines from P, then one arm each way
+        extLine(169, 130, 229, 130, true); extLine(169, 130, 169, 175, true);
+        /* the two dimensions hang off the pair rather than floating: the 0.40 m line needs a
+         * line down from P's guide and a short one up from the force point (starting below the
+         * knob, so it does not run along the arrow), and the 0.30 m line needs one across from
+         * each guide. Without them the arrows measured nothing visible. */
+        extLine(169, 175, 169, 217);
+        extLine(229, 212, 229, 217);
+        dimLine([169, 213], [229, 213]);
+        dimLabel("0.40 m", [199, 229]);
+        extLine(229, 130, 269, 130);
+        extLine(229, 175, 269, 175);
+        dimLine([265, 130], [265, 175]);
+        dimLabel("0.30 m", [272, 156], { anchor: "start" });
+        break;
+      case "(f)": {
+        // one dimension line broken by a tick where the 7 m meets the 3 m
+        extLine(40, 195, 40, 153); extLine(320, 195, 320, 153); extLine(440, 195, 440, 153);
+        S("line", { x1: 47, y1: 158, x2: 433, y2: 158, stroke: C.grey, "stroke-width": 1.2,
+          "stroke-opacity": 0.8 }, svg);
+        dimHead(40, 158, Math.PI, 7);
+        dimHead(440, 158, 0, 7);
+        S("line", { x1: 320, y1: 151, x2: 320, y2: 165, stroke: C.grey, "stroke-width": 1.2,
+          "stroke-opacity": 0.8 }, svg);
+        dimLabel("7 m", [180, 150]);
+        dimLabel("3 m", [380, 150]);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  /* ---- the printed angles ----
+   * The same grey language as the distances, but an open arc drawn with the A command: a whole
+   * circle would read as a protractor rather than "this is the angle between these two lines".
+   * (c) marks the 130 deg between the bar towards P and the line of action - which is why
+   * d = 1.5 sin 130 = 1.5 cos 40, so the printed 40 deg and the drawn 130 deg agree. */
+  function drawArc(cx, cy, r, a0, a1) {
+    const A0 = (a0 * Math.PI) / 180, A1 = (a1 * Math.PI) / 180;
+    let d = A1 - A0;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d <= -Math.PI) d += 2 * Math.PI;
+    const x0 = cx + r * Math.cos(A0), y0 = cy + r * Math.sin(A0);
+    const x1 = cx + r * Math.cos(A1), y1 = cy + r * Math.sin(A1);
+    S("path", {
+      d: `M${x0.toFixed(2)},${y0.toFixed(2)} A${r},${r} 0 0 ${d > 0 ? 1 : 0} ${x1.toFixed(2)},${y1.toFixed(2)}`,
+      fill: "none", stroke: C.grey, "stroke-width": 1.2, "stroke-opacity": 0.85,
+    }, svg);
+  }
+  function drawCaseAngles(k) {
+    const c = Q2_CASES[k];
+    const label = (text, at) => dimLabel(text, at, { cls: "g-ang" });
+    switch (c.label) {
+      case "(b)":   // the bar towards P runs right; the force points up-right
+        drawArc(120, 250, 46, 0, -60);
+        label("60\u00B0", [168, 232]);
+        break;
+      case "(c)":   // from the bar's left direction, over the top, to the up-right line of action
+        drawArc(410, 200, 52, 180, 310);
+        label("130\u00B0", [352, 158]);
+        break;
+      case "(f)":
+        drawArc(40, 200, 44, 0, 70);
+        label("70\u00B0", [84, 236]);
+        drawArc(320, 200, 44, 180, 120);
+        label("60\u00B0", [268, 236]);
+        break;
+      default:
+        break;
+    }
+  }
+
+  /* ---- where the object rests, drawn only while it is swinging ----
+   * A dashed outline of the shape in its rest position, so the 30 deg it has turned is visible.
+   * It is a separate, static layer: it must not turn, but it must take the same camera zoom the
+   * swinging group takes (see applySwing), or the comparison would be between two scales. */
+  function drawGhost(parent) {
+    const at = { fill: "none", stroke: C.grey, "stroke-width": 1.2, "stroke-dasharray": "5 4",
+      "stroke-opacity": 0.7 };
+    if (caseIdx >= 0) {
+      const c = Q2_CASES[caseIdx];
+      if (c.plate) { S("path", { d: plateD(), ...at }, parent); return; }
+      const [p, q] = c.bar;
+      const L = Math.hypot(q[0] - p[0], q[1] - p[1]);
+      const ux = (q[0] - p[0]) / L, uy = (q[1] - p[1]) / L, h = 5;
+      const box = [[p[0] - uy * h, p[1] + ux * h], [q[0] - uy * h, q[1] + ux * h],
+        [q[0] + uy * h, q[1] - ux * h], [p[0] + uy * h, p[1] - ux * h]];
+      S("polygon", { points: box.map((pt) => pt.join(",")).join(" "), ...at }, parent);
+      return;
+    }
+    if (shape === "rod") {
+      S("rect", { x: X(-0.86), y: Y(-0.055), width: 1.72 * Q2_S, height: 0.11 * Q2_S, ...at }, parent);
+    } else if (shape === "box") {
+      S("rect", { x: X(-0.6), y: Y(-0.42), width: 1.2 * Q2_S, height: 0.84 * Q2_S, ...at }, parent);
+    } else if (shape === "door") {
+      S("rect", { x: X(-0.85), y: Y(-0.17), width: 1.7 * Q2_S, height: 0.34 * Q2_S, ...at }, parent);
+    } else {
+      S("path", { d: plateD(), ...at }, parent);
+    }
   }
 
   /* ---- one arrowhead, drawn rather than a marker, so any colour works ---- */
@@ -761,13 +948,23 @@ function jq2(root) {
   /* ---- the drawing ---- */
   function render() {
     clear(svg);
-    drawShape();
+    phi = 0; swingK = 1;                 // a redraw always starts from rest
 
-    // which printed case is on show: a thin line in the empty top-left corner of the canvas
+    // which printed case is on show: a thin line in the empty top-left corner of the canvas.
+    // Drawn first and outside the swinging group: it is a label, not part of the picture, so it
+    // must neither tilt nor leave the frame.
     if (caseIdx >= 0) {
       const c = Q2_CASES[caseIdx];
       T(svg, 14, 20, `${c.label} ${c.note}`,
         { "font-size": 11.5, "font-weight": 700, fill: C.grey, "class": "g-case-tag" });
+    }
+
+    ghostG = S("g", { class: "g-ghost", style: "display:none" }, svg);
+    const mark = S("g", { class: "g-mark" }, svg);
+    drawShape();
+    if (caseIdx >= 0) {                  // the printed distances and angles, under the forces
+      drawCaseDims(caseIdx);
+      drawCaseAngles(caseIdx);
     }
 
     const sums = [];
@@ -789,24 +986,29 @@ function jq2(root) {
        * point, so the span must be [min(0,-along) - ext, max(0,-along) + ext]. The old form used
        * |x - foot.x| with a fixed sign and, once the force pointed away from P, drew the dashed
        * line on the foot side only - seen in the anticlockwise shot at 23:06. */
+      /* the measuring layer: the line of action, the arm from P, its right angle and its value.
+       * It turns with the picture, but fades while the picture swings (see applySwing): the arm
+       * of (f) is 9.397 m long, so at 30 deg its foot would sweep some 90 px below the frame, and
+       * shrinking the whole picture to fit would take the 11 px labels down to 6 px. */
+      const meas = S("g", { class: "g-meas" }, svg);
       const ext = 26;
       const t0 = Math.min(0, -along) - ext, t1 = Math.max(0, -along) + ext;
       S("line", {
         x1: f.x + ux * t0, y1: f.y + uy * t0,
         x2: f.x + ux * t1, y2: f.y + uy * t1,
         stroke: C.grey, "stroke-width": 1.1, "stroke-dasharray": "7 5", "stroke-opacity": 0.8,
-      }, svg);
+      }, meas);
 
       // the arm: the perpendicular from P to that line, with a right angle at the foot
       if (d > 3) {
         S("line", { x1: pivot[0], y1: pivot[1], x2: foot[0], y2: foot[1], stroke: col,
-          "stroke-width": 2.2, "stroke-dasharray": "8 5" }, svg);
+          "stroke-width": 2.2, "stroke-dasharray": "8 5" }, meas);
         if (d > 16) {
           const wx = (pivot[0] - foot[0]) / d, wy = (pivot[1] - foot[1]) / d, k = 9;
           S("path", {
             d: `M${foot[0] - ux * k},${foot[1] - uy * k} L${foot[0] - ux * k + wx * k},${foot[1] - uy * k + wy * k} L${foot[0] + wx * k},${foot[1] + wy * k}`,
             fill: "none", stroke: col, "stroke-width": 1.4,
-          }, svg);
+          }, meas);
         }
         // the arm's value, set square to the arm so it never lies along it. Its spot along the
         // arm is staggered by the force's index, so three arms that cross near the middle do not
@@ -815,11 +1017,11 @@ function jq2(root) {
         const mx = pivot[0] + (foot[0] - pivot[0]) * tLab;
         const my = pivot[1] + (foot[1] - pivot[1]) * tLab;
         const ox = (pivot[1] - foot[1]) / d * 28, oy = (foot[0] - pivot[0]) / d * 28;
-        T(svg, mx + ox, my + oy + 4, (d / Q2_S).toFixed(3) + " m",
+        T(meas, mx + ox, my + oy + 4, (d / Q2_S).toFixed(3) + " m",
           { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: col, "class": "g-arm-lab",
             stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
       } else {
-        T(svg, foot[0] + 10, foot[1] + 18, `d${Q2_SUB[i]} = 0 (line through P)`,
+        T(meas, foot[0] + 10, foot[1] + 18, `d${Q2_SUB[i]} = 0 (line through P)`,
           { "font-size": 11, "font-weight": 700, fill: col });
       }
 
@@ -854,13 +1056,133 @@ function jq2(root) {
       S("circle", { cx: tx, cy: ty, r: 6.5, fill: "#fff", stroke: col, "stroke-width": 2 }, svg);
     });
 
-    // the pivot, drawn last so it is always grabbable, and its label
+    // the pivot, drawn last so it is always grabbable, and its label. Case (c) hangs its P up
+    // and left: its 1.5 m extension line has to run up x = 80, and below the bar the label sat
+    // on the pivot dot itself (text box 75..85 x 175..188 against a dot at 80,200 with r 8.5).
     S("circle", { cx: pivot[0], cy: pivot[1], r: 8.5, fill: C.ink, stroke: "#fff", "stroke-width": 2.2 }, svg);
-    T(svg, pivot[0], pivot[1] - 15, "P", { "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: C.ink });
+    const isC = caseIdx >= 0 && Q2_CASES[caseIdx].label === "(c)";
+    T(svg, pivot[0] + (isC ? -9 : 0), pivot[1] + (isC ? -12 : -15), "P",
+      { "text-anchor": isC ? "end" : "middle", "font-size": 13, "font-weight": 700, fill: C.ink });
 
     nudgeArmLabels();
+
+    /* everything drawn since the marker swings about P as one piece: the object, every force,
+     * P itself, the arms, the printed distances and the printed angles. The reading column is
+     * drawn afterwards on the static layer, so no number ever tilts or leaves the frame. */
+    const g = S("g", { class: "g-scene" });
+    for (let n = mark.nextSibling; n;) { const nx = n.nextSibling; g.append(n); n = nx; }
+    svg.replaceChild(g, mark);
+    sceneG = g;
+
     drawColumn(sums);
     writeReading(sums);
+
+    /* the play button greys out when there is nothing to turn: |sum| < 0.05, i.e. case (d) and
+     * any sandbox arrangement whose lines of action all pass through P */
+    const liveNow = sums.filter((s) => s.F >= 0.5);
+    const netNow = liveNow.reduce((a, s) => a + s.tau, 0);
+    const can = liveNow.length > 0 && Math.abs(netNow) >= 0.05;
+    playBtn.disabled = !can;
+    playBtn.style.cursor = can ? "pointer" : "default";
+    playBtn.title = can
+      ? "swing the picture 30\u00B0 about P and back"
+      : "the net moment is zero, so nothing would turn";
+
+    drawGhost(ghostG);
+    applySwing();
+  }
+
+  /* ---- the swing itself: rotate about P, hold, come back ----
+   * 900 ms out + 150 ms hold + 900 ms back, smoothstep, the direction taken from the net moment:
+   * clockwise (positive SVG angle) when the net is positive, anticlockwise when it is negative,
+   * and no movement at all within 0.05 N m of zero. Nothing here touches the readings: the
+   * numbers are re-derived from the unrotated state, so d, tau and the net cannot change. */
+  function applySwing() {
+    if (!sceneG) return;
+    const px = pivot[0], py = pivot[1];
+    const zoom = swingK === 1 ? ""
+      : ` translate(${px} ${py}) scale(${swingK}) translate(${-px} ${-py})`;
+    sceneG.setAttribute("transform", `rotate(${phi} ${px} ${py})${zoom}`);
+    if (ghostG) {
+      ghostG.setAttribute("transform", zoom.trim());
+      ghostG.style.display = Math.abs(phi) > 0.5 ? "" : "none";
+    }
+    /* the measuring layer goes before the picture does: it is the only part that reaches far
+     * past the object, and at 30 deg its arm would either leave the frame or force a zoom that
+     * shrinks every label. It is back the moment the swing is over; the readings never move. */
+    const op = Math.max(0, 1 - Math.abs(phi) / 6);
+    for (const el of sceneG.querySelectorAll(".g-meas")) el.style.opacity = String(op.toFixed(3));
+  }
+
+  /* How far the picture may turn before a corner of 620 x 400 is crossed, measured on the
+   * drawn geometry: each element's own box, turned about P, and the smallest zoom that keeps
+   * every corner inside a 7 px margin. Most cases need none (k = 1); case (f) is a 10 m bar
+   * pivoted at one end, so its far end would otherwise dip about 24 px below the frame. The
+   * zoom is uniform and about P, so it is a camera, not a change of shape: every angle and
+   * every ratio on the picture stays true, and P itself does not move. */
+  function fitScale(dir) {
+    if (!sceneG) return 1;
+    const px = pivot[0], py = pivot[1];
+    const a = (dir * SWING * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+    const PAD = 7;
+    let k = 1;
+    const kids = [...sceneG.children];
+    for (const el of kids) {
+      if (el.classList && el.classList.contains("g-meas")) continue;   // faded out while swinging
+      let b;
+      try { b = el.getBBox(); } catch { continue; }
+      if (!b || !(b.width || b.height)) continue;
+      const corners = [[b.x, b.y], [b.x + b.width, b.y],
+        [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]];
+      for (const [x, y] of corners) {
+        const dx = x - px, dy = y - py;
+        const rx = dx * c - dy * s, ry = dx * s + dy * c;
+        if (rx > 1e-6) k = Math.min(k, (Q2_W - PAD - px) / rx);
+        if (rx < -1e-6) k = Math.min(k, (px - PAD) / -rx);
+        if (ry > 1e-6) k = Math.min(k, (Q2_H - PAD - py) / ry);
+        if (ry < -1e-6) k = Math.min(k, (py - PAD) / -ry);
+      }
+    }
+    return Math.max(0.55, Math.min(1, k));
+  }
+
+  function spin() {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    const live = forces.filter((f) => f.F >= 0.5);
+    const net = live.reduce((a, f) => {
+      const { z, d } = armOf(f);
+      return a + Math.sign(z) * f.F * d / Q2_S;
+    }, 0);
+    if (!live.length || Math.abs(net) < 0.05) { phi = 0; swingK = 1; applySwing(); return; }
+    const dir = net > 0 ? 1 : -1;
+    const kFull = fitScale(dir);         // how far the camera must pull back at the full 30 deg
+    swingK = 1;
+    const total = SW_UP + SW_HOLD + SW_DOWN;
+    const t0 = performance.now();
+    const step = (now) => {
+      const ms = Math.min(total, now - t0);
+      let k;
+      if (ms <= SW_UP) k = ms / SW_UP;
+      else if (ms <= SW_UP + SW_HOLD) k = 1;
+      else k = 1 - (ms - SW_UP - SW_HOLD) / SW_DOWN;
+      k = Math.max(0, Math.min(1, k));
+      k = k * k * (3 - 2 * k);            // smoothstep: eases out of rest and back into it
+      phi = dir * SWING * k;
+      /* the camera pulls back faster than the picture turns: the zoom needed at 30 deg is already
+       * enough at every smaller angle, so reaching it by 6 deg keeps every frame inside the
+       * frame - a zoom that merely kept pace let (c) reach y = 413 at 15 deg - and the picture
+       * never jumps smaller before it starts to move. */
+      swingK = 1 + (kFull - 1) * Math.min(1, k / 0.2);
+      applySwing();
+      if (ms < total) {
+        raf = requestAnimationFrame(step);
+      } else {
+        raf = 0;
+        phi = 0; swingK = 1;
+        applySwing();
+      }
+    };
+    raf = requestAnimationFrame(step);
   }
 
   /* ---- keep the arm numbers clear: nudge each one until its box clears every other text and
@@ -910,7 +1232,12 @@ function jq2(root) {
     sums.forEach((s, k) => {
       const y = 60 + k * 70;
       T(svg, x, y, `F${Q2_SUB[s.i]} = ${s.F.toFixed(0)} N`, { "font-size": 12, "font-weight": 700, fill: s.col });
-      T(svg, x, y + 17, `d${Q2_SUB[s.i]} = ${s.d.toFixed(3)} m`, { "font-size": 11.5, fill: C.amber });
+      /* a force of zero has no line of action, and so no arm: printing "d1 = 1.410 m" next to
+       * "F1 = 0 N" reads as "the force is there, its moment just happens to be zero". The arm of
+       * a force that is not acting is not a number, so it prints the same dash the sense line
+       * uses for a zero moment - which keeps the block's rhythm and its 17 px step unchanged. */
+      T(svg, x, y + 17, s.F < 0.5 ? `d${Q2_SUB[s.i]} = \u2014` : `d${Q2_SUB[s.i]} = ${s.d.toFixed(3)} m`,
+        { "font-size": 11.5, fill: C.amber });
       if (s.F < 0.5) {
         T(svg, x, y + 34, "no force", { "font-size": 11, fill: C.grey });
       } else {
@@ -945,10 +1272,19 @@ function jq2(root) {
     const cw = acts.filter((s) => s.tau > 0);
     const acw = acts.filter((s) => s.tau < 0);
     const tot = (list) => list.reduce((a, s) => a + Math.abs(s.tau), 0);
-    const names = (list) => list.map((s) => `F${Q2_SUB[s.i]}`).join(" and ");
+    /* "F₁ and F₂" reads well, "F₁ and F₂ and F₃" does not: join a longer list properly */
+    const names = (list) => (list.length > 2
+      ? list.slice(0, -1).map((s) => `F${Q2_SUB[s.i]}`).join(", ") + ` and F${Q2_SUB[list[list.length - 1].i]}`
+      : list.map((s) => `F${Q2_SUB[s.i]}`).join(" and "));
     const parts = acts.map((s) => `${sig3(s.tau)}\\ (${s.tau > 0 ? "cw" : "acw"})`);
+    /* the terms are rounded for printing, so with three forces they no longer add up exactly
+     * (42.3 + 43.4 + 31.8 = 117.5 against a net of 118): print an approximation then, the same
+     * way q30's moment line does, and keep the plain "=" whenever the terms do add up - which is
+     * every printed case, including (f)'s 188 + 39. */
+    const shownSum = acts.reduce((a, s) => a + Number(sig3(s.tau)), 0);
+    const eq = acts.length > 1 && Math.abs(shownSum - Number(sig3(net))) > 0.05 ? "\\approx" : "=";
     const latex = acts.length
-      ? `\\Sigma\\tau = ${parts.join(" + ")} = ${sig3(net)}\\ \\text{N m}`
+      ? `\\Sigma\\tau = ${parts.join(" + ")} ${eq} ${sig3(net)}\\ \\text{N m}`
       : `\\Sigma\\tau = 0\\ \\text{N m}`;
     let caption;
     if (!live.length) {
@@ -984,14 +1320,25 @@ function jq2(root) {
     fmt: (v) => v.toFixed(0) + " N",
   }));
   let syncing = false;
+  const rowFid = [0, 0, 0];            // which force each visible row is editing
   const rows = sfc.map((s, i) => {
+    /* Resolve the force by id, never by index: after a delete the array shifts under the rows,
+     * and a row that still pointed at slot i would edit - or remove - a different force. */
     s.on((v) => {
       if (syncing) return;
-      if (!forces[i]) return;
-      forces[i].F = v;
+      const f = forces.find((x) => x.id === rowFid[i]);
+      if (!f) return;
+      f.F = v;
       render();
     });
-    const del = H("button", { type: "button", class: "g-nudge", title: `remove F${i + 1}`, onclick: () => removeForce(i) }, ["\u2715"]);
+    const del = H("button", {
+      type: "button",
+      /* its own class as well as the nudge look: .g-nudge is also the slider's - and + buttons,
+       * so a test (or a stray selector) could not tell "remove this force" from "one newton up" */
+      class: "g-nudge g-del",
+      title: `remove F${i + 1}`,
+      onclick: () => removeForce(rowFid[i]),
+    }, ["\u2715"]);
     s.el.append(del);
     s.el.hidden = true;
     return s.el;
@@ -1000,6 +1347,10 @@ function jq2(root) {
   const addBtn = H("button", { type: "button", onclick: () => addForce() }, ["+ add a force"]);
   const resetBtn = H("button", { type: "button", onclick: () => reset() }, ["reset this object"]);
   const tools = H("div", { class: "g-btns" }, [addBtn, resetBtn]);
+
+  /* the swing button: its own row under the case tabs and above the canvas, as asked */
+  const playBtn = H("button", { type: "button", onclick: () => spin() }, ["\u25B6 play 30\u00B0 swing"]);
+  const playRow = H("div", { class: "g-btns" }, [playBtn]);
 
   /* the printed answer, kept visually apart from the live reading below the canvas: a static
    * line on a tinted card, so a student can compare their own sum with the book's */
@@ -1014,7 +1365,11 @@ function jq2(root) {
     syncing = true;
     sfc.forEach((s, i) => {
       const on = i < forces.length;
+      rowFid[i] = on ? forces[i].id : 0;
       s.el.hidden = !on;
+      /* the hidden attribute alone is not enough: .g-slider is display:flex, which beats it, so
+       * a one-force case still showed F2 and F3 sliders reading 30 N (seen 00:34 in case (c)) */
+      s.el.style.display = on ? "" : "none";
       if (on) s.set(clamp(Math.round(forces[i].F), 0, 150));
     });
     syncing = false;
@@ -1037,14 +1392,17 @@ function jq2(root) {
     if (forces.length >= 3) return;
     const p = at ?? [Q2_CX + 0.2 * Q2_S, Q2_CY];
     const [nx, ny] = clearSpot(p[0], p[1]);
-    forces.push({ x: nx, y: ny, a: Math.PI / 2, F: 30 });
+    forces.push({ id: nextFid++, x: nx, y: ny, a: Math.PI / 2, F: 30 });
     syncUI();
     render();
   }
 
-  function removeForce(i) {
-    if (i >= forces.length) return;
-    forces.splice(i, 1);
+  /* by id, not by slot: the row that asked is pinned to the force it was showing when it was
+   * built, so a delete can never take out a different force than the one the reader saw */
+  function removeForce(id) {
+    const k = forces.findIndex((f) => f.id === id);
+    if (k < 0) return;
+    forces.splice(k, 1);
     syncUI();
     render();
   }
@@ -1057,7 +1415,7 @@ function jq2(root) {
     Q2_S = c.S;
     shape = "case";
     pivot = [c.pivot[0], c.pivot[1]];
-    forces = c.forces.map((f) => ({ x: f.x, y: f.y, a: f.deg * Math.PI / 180, F: f.F }));
+    forces = c.forces.map((f) => ({ id: nextFid++, x: f.x, y: f.y, a: f.deg * Math.PI / 180, F: f.F }));
     clearTabs(shapeTabs);              // the object tabs stop being lit: this is a case now
     printed.textContent = "Printed answer: " + c.answer;
     printed.hidden = false;
@@ -1069,7 +1427,7 @@ function jq2(root) {
     if (caseIdx >= 0) { applyCase(caseIdx); return; }      // "reset" here = back to this case
     const s = SHAPES[shape];
     pivot = [X(s.pivot[0]), Y(s.pivot[1])];
-    forces = [{ x: X(s.at[0]), y: Y(s.at[1]), a: Math.PI / 2, F: s.F }];
+    forces = [{ id: nextFid++, x: X(s.at[0]), y: Y(s.at[1]), a: Math.PI / 2, F: s.F }];
     syncUI();
     render();
   }
@@ -1118,6 +1476,12 @@ function jq2(root) {
   svg.addEventListener("pointerdown", (e) => {
     const [x, y] = at(e);
     drag = null;                    // never inherit a drag whose pointerup went missing
+
+    /* the finger wins over the animation: stop the swing dead at rest, so what is dragged is
+     * the picture where the reader sees it, not a turned copy of it */
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    if (phi || swingK !== 1) { phi = 0; swingK = 1; applySwing(); }
+
     const h = hit(x, y);
     down = [x, y];
     if (h) {
@@ -1159,7 +1523,7 @@ function jq2(root) {
     down = null;
     if (moved < 6 && forces.length < 3) {
       const [nx, ny] = clearSpot(x, y);
-      forces.push({ x: nx, y: ny, a: Math.PI / 2, F: 30 });
+      forces.push({ id: nextFid++, x: nx, y: ny, a: Math.PI / 2, F: 30 });
       syncUI();
       render();
     }
@@ -1176,6 +1540,7 @@ function jq2(root) {
     ]),
     shapeTabs,
     caseTabs,
+    playRow,
     printed,
     svg,
     tools,
@@ -1645,7 +2010,10 @@ function jq30(root) {
 
   function writeReading(N, f, st) {
     const latex = `N = ${sig3(N)}\\ \\text{N}\\qquad f = ${sig3(f)}\\ \\text{N}`;
-    const moment = `${sig3(N)} \u00D7 ${arm.toFixed(3)} = ${sig3(bodyTerm)} + ${sig3(personPerM * x)}`;
+    /* the two sides are both rounded for display (N to 3 s.f., the arm to 3 d.p.), so the line is
+     * an approximation, not an identity: 577 x 3.464 = 1998.7 against 1000 + 1000, and
+     * 400 x 3.464 = 1385.6 against 1000 + 385. An "=" there is a 1.3 N m lie. */
+    const moment = `${sig3(N)} \u00D7 ${arm.toFixed(3)} \u2248 ${sig3(bodyTerm)} + ${sig3(personPerM * x)}`;
     let caption;
     if (st === "empty") {
       caption = `Nobody on the ladder: N(4 sin 60\u00B0) = 1000(2 cos 60\u00B0) gives N = ${sig3(N)} N, and horizontal balance makes f = N = ${sig3(f)} N, far below the ${Q30_LIMIT} N the floor can supply.`;

@@ -1029,18 +1029,23 @@ body.embed-open { overflow: hidden; }
 
 /* ---------- answers in a card (book.json "answers": "cards") ----------
    A worksheet's page has no blank paper for the working, so each answer waits in
-   a card over the page: a small ? chip in the left margin opens it, the printed
-   page is never cut, and the card is as tall as the working needs. */
+   a card over the page: a labelled "Answer" pill at the right of the line opens it,
+   the printed page is never cut, and the card is as tall as the working needs. The
+   label is spelled out on purpose — a "?" roundel hid what the control did. */
 .ans-chip {
   position: absolute;
-  width: 15px;
-  height: 15px;
-  padding: 0;
-  border-radius: 50%;
+  width: auto;
+  height: 22px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 6px;
+  border-radius: 11px;
   border: 1px solid #a9bcd8;
   background: #eef3fb;
   color: #2f5d9e;
-  font: 600 10px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 600 9.5px/20px system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
   cursor: pointer;
   z-index: 9;
   touch-action: manipulation;

@@ -668,7 +668,9 @@ export function buildOverlay(page, overlay) {
       chip.type = "button";
       chip.className = "ans-chip";
       chip.dataset.q = q.id;
-      chip.textContent = "?";
+      // A label, not a "?" icon: the chip must say what it does. The page geometry
+      // (layout.json cardAt) reserves a 44 pt pill, so the label never covers print.
+      chip.textContent = "Answer";
       chip.title = `Show the worked solution for question ${q.label || q.id}`;
       chip.setAttribute("aria-label", chip.title);
       Object.assign(chip.style, {

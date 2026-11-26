@@ -161,8 +161,9 @@ export function strip(x, y, h, parts, o = {}) {
 
 /**
  * Quantities as bars with labelled arrows between them, e.g. Cathy → Baron → Amy.
- * nodes: [{ name, v, text, color, ask, reveal }], steps: [{ label, sub, color } | null].
- * `ask` shows "?" above the bar; `reveal` writes the found value under the name at the end.
+ * nodes: [{ name, v, text, color, reveal }], steps: [{ label, sub, color } | null].
+ * Never print a placeholder glyph for a quantity: a bar told nothing above it is simply
+ * labelled by its height, and `reveal` writes the found value under the name at the end.
  * Returns items with `.geo` = { xs, tops, base, barW, y(v), mid(i) } for extra marks.
  */
 export function flow(o) {
@@ -184,9 +185,8 @@ export function flow(o) {
     items.push(bar(xs[i], base, barW, base - tops[i], {
       color: d.color || "blue",
       name: d.name,
-      value: d.ask ? "?" : d.text,
-      ask: d.ask,
-      valueColor: d.ask ? "red" : d.valueColor,
+      value: d.text,
+      valueColor: d.valueColor,
     }));
     if (d.reveal) later.push(text(xs[i] + barW / 2, base + (d.name2 ? 74 : 52), d.reveal, { anchor: "middle", color: "red", size: 22, mark: "yellow" }));
     const s = steps[i];
@@ -471,7 +471,7 @@ function drawBar(item, del, layer) {
   let used = DUR.bar;
   const state = {};
   if (item.value) {
-    used += writeText({ str: item.value, x: x + w / 2, y: y - 10, size: item.valueSize || (item.ask ? 30 : 24), color: item.valueColor || item.color, anchor: "middle", ring: item.ask ? "red" : null }, del + used * 0.7, layer, state);
+    used += writeText({ str: item.value, x: x + w / 2, y: y - 10, size: item.valueSize || 24, color: item.valueColor || item.color, anchor: "middle" }, del + used * 0.7, layer, state);
   }
   if (item.name) {
     const [n1, n2] = String(item.name).split("\n");

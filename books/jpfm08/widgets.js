@@ -1848,26 +1848,54 @@ function jq26(root) {
  *   x = 2.00  -> N = 433, f = 433   slips
  *   x = 4.00  -> N = 577, f = 577   slips   (the printed (c) gives x = 1.54 m for f = 400 N)
  *
- * The drawing is 620 x 400 at 80 px per metre, the foot P at (110, 358), so the wall stands at
- * x = 110 + 4 cos 60 * 80 = 270 and the ladder top is at y = 358 - 4 sin 60 * 80 = 80.9. The N
- * and f bars share one scale, 400 N = 110 px, so f can be read straight against the limit tick.
+ * The drawing is 620 x 400 at 80 px per metre, with the wall on the LEFT and the foot P on the
+ * RIGHT, as the printed figures have it: P at (430, 358), the wall standing at x = 430 - 4 cos 60
+ * * 80 = 270, the ladder top at y = 358 - 4 sin 60 * 80 = 80.9. N is drawn from the wall towards
+ * the ladder (rightwards), f from P towards the wall (leftwards) with the 400 N limit tick on
+ * that same side, and the 60 deg at P opens towards the wall. The N and f bars share one scale,
+ * 400 N = 110 px, so f can be read straight against the limit tick.
+ *
+ * Three details of the printed figures (measured off the 3x / 4x crops of page 12, Fig.a-c):
+ *   - R, the ground's normal reaction at P: a vertical arrow up from P, label "R" to its right at
+ *     the arrow's shoulder. Fig.b draws it as R and Fig.c as R' (the limiting case); this widget
+ *     steps through every x in one drawing, so it always writes R. It has no moment about P, so
+ *     it changes no number. Fixed length 44 px - it is a reaction at P, not one of the scaled
+ *     N / f bars, so it is deliberately not drawn at 0.275 px per newton.
+ *   - "smooth wall" beside the wall's top (Fig.a: grey, with a short leader touching the wall) and
+ *     "rough ground" above the ground to the right of P. The labels matter physically: the wall is
+ *     smooth, so N has no vertical companion; the ground is rough, so it can supply f.
+ *   - "4 m" as bare text beside the ladder's middle, no dimension line and no arrows: that is what
+ *     the printed Fig.a has (6x crop of the ladder's middle). An earlier version drew a thin line
+ *     parallel to the ladder with an arrowhead at each end, but it had to stop 0.15 m short at both
+ *     ends to stay out of the wall hatching and the ground, i.e. it under-measured the 4 m it
+ *     labelled - worse than no line at all.
+ *   - the person's "500 N" label moves itself out of the way (see nudgePersonLabel): it is the only
+ *     label that travels, so it yields to the fixed ones instead of covering them.
  */
 const Q30_W = 620, Q30_H = 400;
-const Q30_GX = 110, Q30_GY = 358;                 // the foot of the ladder, P
+/* The printed figure (page 12, Fig.a-c) has the wall on the LEFT and the foot P on the RIGHT: the
+ * ladder runs from the wall at the top left down to P at the bottom right, N pushes away from the
+ * wall (to the right) and the friction acts to the left, back towards the wall. So the unit vector
+ * up the ladder has a NEGATIVE x component. P sits at x = 430, which keeps the wall at x = 270 -
+ * the same place it has always been - and leaves the longest N bar (577 N at x = 4 m, 158.7 px)
+ * ending at x = 428.7, clear of the reading column at 462. */
+const Q30_GX = 430, Q30_GY = 358;                 // the foot of the ladder, P
 const Q30_S = 80;                                 // px per metre
 const Q30_A = Math.PI / 3;                        // 60 deg to the ground
-const Q30_UX = Math.cos(Q30_A), Q30_UY = -Math.sin(Q30_A);   // up the ladder (screen y is down)
+const Q30_UX = -Math.cos(Q30_A), Q30_UY = -Math.sin(Q30_A);   // up the ladder: up and LEFT
 const Q30_LEN = 4, Q30_BODY = 1000, Q30_PERSON = 500, Q30_LIMIT = 400;
 const Q30_FPX = 110 / Q30_LIMIT;                  // px per newton for the N and f bars
 const Q30_WPX = 70 / Q30_BODY;                    // px per newton for the weights
-const Q30_TOPX = Q30_GX + Q30_LEN * Q30_UX * Q30_S;   // 270
+const Q30_TOPX = Q30_GX + Q30_LEN * Q30_UX * Q30_S;   // 270, where the ladder meets the wall
 const Q30_TOPY = Q30_GY + Q30_LEN * Q30_UY * Q30_S;   // 80.87
+const Q30_RLEN = 44;                               // R, the ground's reaction at P, fixed length px
 
 function jq30(root) {
   const svg = scene(Q30_W, Q30_H);
   svg.style.touchAction = "none";
   const r = readout();
   let x = 0;                                      // how far up the ladder the person stands, m
+  let personLab = null;                           // the "500 N" text, nudged after everything is drawn
 
   /* ---- the physics, derived from the four printed numbers ---- */
   const arm = Q30_LEN * Math.sin(Q30_A);                                 // 4 sin 60 = 3.4641 m
@@ -1898,9 +1926,10 @@ function jq30(root) {
 
   /* ---- the stage: wall, ground and the ladder itself ---- */
   function drawStage() {
+    // the wall, with its hatching on the far side (the left), as the printed figure has it
     S("line", { x1: Q30_TOPX, y1: 24, x2: Q30_TOPX, y2: Q30_GY, stroke: C.line, "stroke-width": 3 }, svg);
     for (let yy = 30; yy < Q30_GY - 4; yy += 16) {
-      S("line", { x1: Q30_TOPX, y1: yy, x2: Q30_TOPX + 9, y2: yy + 9,
+      S("line", { x1: Q30_TOPX, y1: yy, x2: Q30_TOPX - 9, y2: yy + 9,
         stroke: C.line, "stroke-width": 1.4, "stroke-opacity": 0.4 }, svg);
     }
     S("line", { x1: 36, y1: Q30_GY, x2: Q30_W - 20, y2: Q30_GY, stroke: C.line, "stroke-width": 2.4 }, svg);
@@ -1918,17 +1947,112 @@ function jq30(root) {
       S("line", { x1: px(k) - nx * 8, y1: py(k) - ny * 8, x2: px(k) + nx * 8, y2: py(k) + ny * 8,
         stroke: C.line, "stroke-width": 1.6, "stroke-opacity": 0.55 }, svg);
     }
+
+    /* ---- the 60 deg at P, opening towards the wall, exactly as Fig.a draws it: an open arc from
+     * the ground pointed at the wall (180 deg on screen) round to the ladder (240 deg) ---- */
+    const AR = 46;
+    const ex = Q30_GX + AR * Math.cos((4 * Math.PI) / 3), ey = Q30_GY + AR * Math.sin((4 * Math.PI) / 3);
+    S("path", {
+      d: `M${Q30_GX - AR},${Q30_GY} A${AR},${AR} 0 0 1 ${ex.toFixed(2)},${ey.toFixed(2)}`,
+      fill: "none", stroke: C.line, "stroke-width": 1.1, "stroke-opacity": 0.5,
+    }, svg);
+    T(svg, Q30_GX - 54, Q30_GY - 30, "60\u00B0",
+      { "text-anchor": "middle", "font-size": 11.5, fill: C.grey,
+        stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round" });
+
+    /* ---- "4 m" beside the ladder's middle, on the wall side. The printed Fig.a carries the bare
+     * text only - no dimension line, no arrows, no end ticks (checked on the 6x crop of the
+     * ladder's middle) - so the line this widget first drew has gone: it had to stop 0.15 m short
+     * of each end to keep clear of the wall hatching and the ground, and a student could measure
+     * it against the 4 m it claims. 30 px inside the ladder keeps it clear of both weight labels
+     * and reads as the ladder's own length rather than the wall's height. ---- */
+    T(svg, px(2) + nx * 30, py(2) + ny * 30 + 4, "4 m",
+      { "text-anchor": "middle", "font-size": 11.5, "font-weight": 700, fill: C.grey,
+        stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round" });
+
+    /* ---- the two surfaces: "smooth wall" (so N has no vertical companion) beside the wall's
+     * top, and "rough ground" (so the floor can supply f) above the ground right of P, both as
+     * Fig.a prints them: grey, each with a short leader touching the surface it names. The wall
+     * text sits at y = 34, right of the moment equation and above the N label, because the
+     * person's "500 N" label reaches (281..313, 42..60) at x = 4 and collided with it at y = 46. ---- */
+    T(svg, 300, 34, "smooth wall",
+      { "font-size": 9.5, fill: C.grey });
+    S("line", { x1: 298, y1: 33, x2: 271.5, y2: 41, stroke: C.grey, "stroke-width": 1,
+      "stroke-opacity": 0.6 }, svg);
+    T(svg, 470, 298, "rough ground",
+      { "font-size": 9.5, fill: C.grey });
+    // the leader runs almost straight down to the ground right of P, clear of R's arrow and label
+    S("line", { x1: 473, y1: 304, x2: 471, y2: 351, stroke: C.grey, "stroke-width": 1,
+      "stroke-opacity": 0.6 }, svg);
   }
 
   function drawPerson() {
+    // nobody on the ladder at all (Fig.b has no figure): the ghost head sat exactly on R's shaft
+    if (x < 0.005) return;
     const cx = px(x), cy = py(x);
-    const on = x >= 0.005;
-    const col = on ? C.ink : C.grey;
+    const col = C.ink;
     S("circle", { cx, cy: cy - 21, r: 4.6, fill: "none", stroke: col, "stroke-width": 2 }, svg);
     S("line", { x1: cx, y1: cy - 16.4, x2: cx, y2: cy - 6, stroke: col, "stroke-width": 2.2, "stroke-linecap": "round" }, svg);
     S("line", { x1: cx - 6, y1: cy - 13, x2: cx + 6, y2: cy - 13, stroke: col, "stroke-width": 1.8, "stroke-linecap": "round" }, svg);
     S("line", { x1: cx, y1: cy - 6, x2: cx - 5.5, y2: cy, stroke: col, "stroke-width": 1.8, "stroke-linecap": "round" }, svg);
     S("line", { x1: cx, y1: cy - 6, x2: cx + 5.5, y2: cy, stroke: col, "stroke-width": 1.8, "stroke-linecap": "round" }, svg);
+  }
+
+  /* ---- the person's "500 N" label yields when it would touch another label ----
+   * It sits 30 px above the person's feet, so as x runs 0 -> 4 it sweeps a band roughly 22..50 px
+   * outside the ladder. Two labels that never move sit in that band: R at the shoulder of the
+   * ground reaction (hit at x = 0.01..0.17) and the canvas "N = ..." at the ladder's top (hit at
+   * x = 3.52..3.71). Same approach as q2's nudgeArmLabels: the moving label tries a fixed list of
+   * offsets - first along the ladder it belongs to, then square to it - and takes the first one
+   * whose box touches neither a text nor a dot (2 px of slack, so the halos do not kiss). If every
+   * offset touches something it stays where it is; the QA sweep then reports the overlap instead
+   * of this function hiding it. Returns the offset it used, or null when nothing was clear. */
+  function nudgePersonLabel(el) {
+    let fixed;
+    try {
+      fixed = [
+        ...[...svg.querySelectorAll("text")].filter((t) => t !== el)
+          .map((t) => { const b = t.getBBox(); return { x: b.x, y: b.y, width: b.width, height: b.height }; }),
+        ...[...svg.querySelectorAll("circle")].map((c) => {
+          const ccx = Number(c.getAttribute("cx")), ccy = Number(c.getAttribute("cy")), r = Number(c.getAttribute("r")) || 0;
+          return { x: ccx - r - 2, y: ccy - r - 2, width: 2 * r + 4, height: 2 * r + 4 };
+        }),
+      ];
+      el.getBBox();
+    } catch { return null; }
+    const hit = (a, b) => Math.min(a.x + a.width, b.x + b.width) > Math.max(a.x, b.x) + 1
+      && Math.min(a.y + a.height, b.y + b.height) > Math.max(a.y, b.y) + 1;
+    const GAP = 2;                                   // wanted clearance, so the two halos do not kiss
+    const own = el.getBBox();
+    const box = { x: own.x, y: own.y, width: own.width, height: own.height };
+    const clearAt = (dx, dy) => {
+      const b = { x: box.x + dx - GAP, y: box.y + dy - GAP,
+        width: box.width + 2 * GAP, height: box.height + 2 * GAP };
+      return !fixed.some((f) => hit(f, b));
+    };
+    const here = fixed.filter((f) => hit(f, box));
+    const x0 = Number(el.getAttribute("x")), y0 = Number(el.getAttribute("y"));
+    const place = (dx, dy) => {
+      if (dx) el.setAttribute("x", x0 + dx);
+      if (dy) el.setAttribute("y", y0 + dy);
+      return [dx, dy];
+    };
+    if (!here.length) return [0, 0];
+
+    /* Which way to move: away from what it touches. A neighbour above means go down the ladder,
+     * a neighbour below means go up it - that is what puts the label under the canvas N label at
+     * x = 3.52 and above R at x = 0.01, while staying beside the person who owns it. */
+    const above = here.some((f) => f.y + f.height / 2 < box.y + box.height / 2);
+    const dirs = above
+      ? [[-Q30_UX, -Q30_UY], [Q30_UX, Q30_UY], [-Q30_UY, Q30_UX], [Q30_UY, -Q30_UX]]
+      : [[Q30_UX, Q30_UY], [-Q30_UX, -Q30_UY], [Q30_UY, -Q30_UX], [-Q30_UY, Q30_UX]];
+    for (const k of [13, 26, 39, 52, 65]) {
+      for (const [ux, uy] of dirs) {
+        const dx = Math.round(ux * k), dy = Math.round(uy * k);
+        if (clearAt(dx, dy)) return place(dx, dy);
+      }
+    }
+    return null;                                     // nothing clear: stays put, and QA says so
   }
 
   function render() {
@@ -1939,33 +2063,51 @@ function jq30(root) {
     /* ---- the two weights, drawn from the point on the ladder where each one acts ---- */
     const mwx = px(Q30_LEN / 2), mwy = py(Q30_LEN / 2);       // the ladder's weight, at its middle
     arrow(mwx, mwy, mwx, mwy + Q30_BODY * Q30_WPX, C.ink, 3, 10);
-    // the label goes on the far side of the arrow from the ladder, which crosses the near side
-    T(svg, mwx + 9, mwy + Q30_BODY * Q30_WPX - 4, "1000 N",
-      { "text-anchor": "start", "font-size": 10.5, "font-weight": 700, fill: C.ink,
+    // the label goes on the far side of the arrow from the ladder, which crosses the near side.
+    // With the wall on the left the ladder runs down-right, so the far side is now the left one.
+    T(svg, mwx - 9, mwy + Q30_BODY * Q30_WPX - 4, "1000 N",
+      { "text-anchor": "end", "font-size": 10.5, "font-weight": 700, fill: C.ink,
         stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round" });
-    if (x >= 0.02) {
+    /* the figure and its weight arrow share one threshold, x >= 0.005: the moment equation counts
+     * the person from x > 0, so the drawing must never show the person without the 500 N arrow (or
+     * the arrow without the person). The slider steps in 0.01, so x = 0.01 is the first step that
+     * has a person - and it used to draw the figure with no arrow at all. */
+    if (x >= 0.005) {
       const cx = px(x), cy = py(x);
       arrow(cx, cy, cx, cy + Q30_PERSON * Q30_WPX, C.ink, 3, 10);
-      /* the person's label sits above their head, not beside the arrow: the middle of the ladder
-       * is where the person crosses the ladder's own weight arrow (x = 1.5-2 measured at 00:12),
-       * and two "N" labels on one line there read as a single number. */
-      T(svg, cx - 9, cy - 30, "500 N",
-        { "text-anchor": "end", "font-size": 10.5, "font-weight": 700, fill: C.ink,
+      /* the person's label sits above their head and on the open side of the ladder: the middle
+       * of the ladder is where the person crosses the ladder's own weight arrow, and two "N"
+       * labels on one line there read as a single number. It is the one label that travels, so it
+       * is the one that yields: nudgePersonLabel moves it clear of R and of the canvas N label. */
+      personLab = T(svg, cx + 8, cy - 30, "500 N",
+        { "text-anchor": "start", "font-size": 10.5, "font-weight": 700, fill: C.ink,
           stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round" });
-    }
+    } else personLab = null;
 
-    /* ---- the wall's reaction N, and the friction f it forces on the floor ---- */
-    arrow(Q30_TOPX, Q30_TOPY, Q30_TOPX - N * Q30_FPX, Q30_TOPY, C.blue, 3.4, 11);
-    T(svg, Q30_TOPX - N * Q30_FPX / 2, Q30_TOPY - 9, `N = ${sig3(N)} N`,
+    /* ---- the wall's reaction N, and the friction f it forces on the floor ----
+     * N pushes away from the wall (to the right, into the ladder), as the printed Fig.b draws it;
+     * f acts back towards the wall (to the left). The printed f sits ON the ground line, a little
+     * above it - this drawing instead puts the f bar 9 px BELOW the line, and the label 17 px
+     * lower still. That is a deliberate difference, not a copy of the print: the 60 deg arc and
+     * its "60 deg" label need the space just above the ground at P, and the bar cannot share it. */
+    arrow(Q30_TOPX, Q30_TOPY, Q30_TOPX + N * Q30_FPX, Q30_TOPY, C.blue, 3.4, 11);
+    T(svg, Q30_TOPX + N * Q30_FPX / 2, Q30_TOPY - 9, `N = ${sig3(N)} N`,
       { "text-anchor": "middle", "font-size": 11.5, "font-weight": 700, fill: C.blue,
         stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round" });
-    arrow(Q30_GX, Q30_GY, Q30_GX + f * Q30_FPX, Q30_GY, C.red, 3.4, 11);
-    T(svg, Q30_GX + f * Q30_FPX / 2, Q30_GY - 9, `f = ${sig3(f)} N`,
+    arrow(Q30_GX, Q30_GY + 9, Q30_GX - f * Q30_FPX, Q30_GY + 9, C.red, 3.4, 11);
+    T(svg, Q30_GX - f * Q30_FPX / 2, Q30_GY + 26, `f = ${sig3(f)} N`,
       { "text-anchor": "middle", "font-size": 11.5, "font-weight": 700, fill: C.red,
         stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round" });
 
-    /* ---- the 400 N limit, on the same scale as the two bars above ---- */
-    const lx = Q30_GX + Q30_LIMIT * Q30_FPX;
+    /* ---- R, the ground's normal reaction at P. Vertical, so it has no moment about P and changes
+     * no number, but Fig.b (R) and Fig.c (R') both draw it and a student reading the book will look
+     * for it. Fixed length, label at the arrow's shoulder on its right, as the print has it. ---- */
+    arrow(Q30_GX, Q30_GY, Q30_GX, Q30_GY - Q30_RLEN, C.ink, 3, 10);
+    T(svg, Q30_GX + 9, Q30_GY - Q30_RLEN + 16, "R",
+      { "text-anchor": "start", "font-size": 12.5, "font-weight": 700, fill: C.ink });
+
+    /* ---- the 400 N limit, on the same scale as the two bars above, on f's side ---- */
+    const lx = Q30_GX - Q30_LIMIT * Q30_FPX;
     S("line", { x1: lx, y1: Q30_GY - 10, x2: lx, y2: Q30_GY + 10, stroke: C.red, "stroke-width": 1.6,
       "stroke-dasharray": "4 3" }, svg);
     // the label sits above the tick: beside it, the f label (centred on a bar that ends at the
@@ -1975,23 +2117,25 @@ function jq30(root) {
 
     drawPerson();
 
-    // P, the point every moment is taken about
+    // P, the point every moment is taken about, labelled below and to the right as printed
     S("circle", { cx: Q30_GX, cy: Q30_GY, r: 4.5, fill: C.ink, stroke: "#fff", "stroke-width": 1.6 }, svg);
-    T(svg, Q30_GX - 11, Q30_GY + 13, "P", { "text-anchor": "end", "font-size": 12.5, "font-weight": 700, fill: C.ink });
+    T(svg, Q30_GX + 11, Q30_GY + 13, "P", { "text-anchor": "start", "font-size": 12.5, "font-weight": 700, fill: C.ink });
 
     // the moment equation, split over two lines the way the printed solution splits it
     T(svg, 14, 18, "Take moments about P:", { "font-size": 10.5, fill: C.grey });
     T(svg, 14, 34, "N(4 sin 60\u00B0) = 1000(2 cos 60\u00B0)", { "font-size": 12, "font-weight": 700, fill: C.ink });
     T(svg, 14, 50, "+ 500(x cos 60\u00B0)", { "font-size": 12, "font-weight": 700, fill: C.ink });
 
-    /* ---- the state, written under the ground line ---- */
+    /* ---- the state, written under the ground line on the left, clear of the friction label ---- */
     const talk = st === "empty" ? ["no one on the ladder", C.grey]
       : st === "limit" ? ["limiting equilibrium \u2014 about to slip", C.amber]
         : st === "slip" ? ["slips", C.red]
           : ["equilibrium", C.green];
-    T(svg, Q30_GX, Q30_H - 11, talk[0], { "font-size": 12.5, "font-weight": 700, fill: talk[1] });
+    T(svg, 14, Q30_H - 8, talk[0], { "font-size": 12.5, "font-weight": 700, fill: talk[1] });
 
     drawColumn(N, f, st);
+    // last, so the nudge sees every label and both dots (P and the person's head)
+    if (personLab) nudgePersonLabel(personLab);
     writeReading(N, f, st);
   }
 

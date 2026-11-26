@@ -680,19 +680,6 @@
       "src": "media/q25-lever-2.mp4",
       "poster": "media/q25-lever-2-poster.png",
       "title": "F1L1 = F2L2: with L1 < L2 the hand must push harder than the jaw"
-    },
-    {
-      "page": 14,
-      "region": [
-        411.7,
-        115,
-        546.7,
-        274
-      ],
-      "scene": "jpfm08:LadderLimit",
-      "src": "media/q30-ladder.mp4",
-      "poster": "media/q30-ladder-poster.png",
-      "title": "The higher he climbs the more friction is needed: at x = 1.54 m it reaches 400 N"
     }
   ],
   "embeds": [

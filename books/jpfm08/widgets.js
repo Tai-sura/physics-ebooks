@@ -1466,7 +1466,260 @@ function jq26(root) {
   render();
 }
 
-const REGISTRY = { q1: jq1, q2: jq2, p1: jp1, q26: jq26 };
+/* ---------------- Q30: the ladder against a wall ----------------
+ *
+ * This replaces the small play-video panel on page 14 with the model behind it. A 4 m ladder
+ * rests at 60 deg against a wall, its foot on the ground at P. The ladder weighs 1000 N and a
+ * 500 N person stands x metres up it (x = 0 means nobody is on it). Nothing is written by hand:
+ *
+ *   moments about P:   N (4 sin 60) = 1000 (2 cos 60) + 500 (x cos 60)
+ *   so                 N = (1000 + 250 x) / (4 sin 60),  with 4 sin 60 = 3.4641
+ *   horizontal balance f = N, and the floor can supply at most 400 N
+ *
+ * Read back out of the reader (x in m, N and f in N):
+ *   x = 0     -> N = 289, f = 289   (the printed answers (a) and (b))
+ *   x = 1.00  -> N = 361, f = 361
+ *   x = 1.54  -> N = 400, f = 400   limiting equilibrium - about to slip
+ *   x = 2.00  -> N = 433, f = 433   slips
+ *   x = 4.00  -> N = 577, f = 577   slips   (the printed (c) gives x = 1.54 m for f = 400 N)
+ *
+ * The drawing is 620 x 400 at 80 px per metre, the foot P at (110, 358), so the wall stands at
+ * x = 110 + 4 cos 60 * 80 = 270 and the ladder top is at y = 358 - 4 sin 60 * 80 = 80.9. The N
+ * and f bars share one scale, 400 N = 110 px, so f can be read straight against the limit tick.
+ */
+const Q30_W = 620, Q30_H = 400;
+const Q30_GX = 110, Q30_GY = 358;                 // the foot of the ladder, P
+const Q30_S = 80;                                 // px per metre
+const Q30_A = Math.PI / 3;                        // 60 deg to the ground
+const Q30_UX = Math.cos(Q30_A), Q30_UY = -Math.sin(Q30_A);   // up the ladder (screen y is down)
+const Q30_LEN = 4, Q30_BODY = 1000, Q30_PERSON = 500, Q30_LIMIT = 400;
+const Q30_FPX = 110 / Q30_LIMIT;                  // px per newton for the N and f bars
+const Q30_WPX = 70 / Q30_BODY;                    // px per newton for the weights
+const Q30_TOPX = Q30_GX + Q30_LEN * Q30_UX * Q30_S;   // 270
+const Q30_TOPY = Q30_GY + Q30_LEN * Q30_UY * Q30_S;   // 80.87
+
+function jq30(root) {
+  const svg = scene(Q30_W, Q30_H);
+  svg.style.touchAction = "none";
+  const r = readout();
+  let x = 0;                                      // how far up the ladder the person stands, m
+
+  /* ---- the physics, derived from the four printed numbers ---- */
+  const arm = Q30_LEN * Math.sin(Q30_A);                                 // 4 sin 60 = 3.4641 m
+  const bodyTerm = Q30_BODY * (Q30_LEN / 2) * Math.cos(Q30_A);           // 1000 (2 cos 60) = 1000
+  const personPerM = Q30_PERSON * Math.cos(Q30_A);                       // 500 cos 60 = 250 per m
+  const NAt = (xx) => (bodyTerm + personPerM * xx) / arm;
+  const fAt = (xx) => NAt(xx);                                           // horizontal balance: f = N
+  const xLimit = (Q30_LIMIT * arm - bodyTerm) / personPerM;              // 1.5426 m
+  const px = (xx) => Q30_GX + xx * Q30_UX * Q30_S;
+  const py = (xx) => Q30_GY + xx * Q30_UY * Q30_S;
+
+  /* "limiting" is the one slider step whose friction lands on 400 N: x = 1.54 gives 399.8 N and
+   * x = 1.55 gives 400.5 N, so a half-newton band around the limit separates the three states. */
+  const stateOf = (xx) => {
+    const f = fAt(xx);
+    if (xx < 0.005) return "empty";
+    if (Math.abs(f - Q30_LIMIT) <= 0.4) return "limit";
+    return f > Q30_LIMIT ? "slip" : "ok";
+  };
+
+  function arrow(x1, y1, x2, y2, color, w, head) {
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    const bx = x2 - Math.cos(a) * head, by = y2 - Math.sin(a) * head;
+    const nx = -Math.sin(a) * head * 0.42, ny = Math.cos(a) * head * 0.42;
+    S("line", { x1, y1, x2: bx, y2: by, stroke: color, "stroke-width": w, "stroke-linecap": "round" }, svg);
+    S("polygon", { points: `${x2},${y2} ${bx + nx},${by + ny} ${bx - nx},${by - ny}`, fill: color }, svg);
+  }
+
+  /* ---- the stage: wall, ground and the ladder itself ---- */
+  function drawStage() {
+    S("line", { x1: Q30_TOPX, y1: 24, x2: Q30_TOPX, y2: Q30_GY, stroke: C.line, "stroke-width": 3 }, svg);
+    for (let yy = 30; yy < Q30_GY - 4; yy += 16) {
+      S("line", { x1: Q30_TOPX, y1: yy, x2: Q30_TOPX + 9, y2: yy + 9,
+        stroke: C.line, "stroke-width": 1.4, "stroke-opacity": 0.4 }, svg);
+    }
+    S("line", { x1: 36, y1: Q30_GY, x2: Q30_W - 20, y2: Q30_GY, stroke: C.line, "stroke-width": 2.4 }, svg);
+    for (let xx = 44; xx < Q30_W - 24; xx += 16) {
+      S("line", { x1: xx, y1: Q30_GY, x2: xx - 9, y2: Q30_GY + 9,
+        stroke: C.line, "stroke-width": 1.4, "stroke-opacity": 0.4 }, svg);
+    }
+    // the ladder, drawn as a bar with rungs so it is not mistaken for a plank
+    S("line", { x1: Q30_GX, y1: Q30_GY, x2: Q30_TOPX, y2: Q30_TOPY,
+      stroke: C.line, "stroke-width": 9, "stroke-linecap": "round" }, svg);
+    S("line", { x1: Q30_GX, y1: Q30_GY, x2: Q30_TOPX, y2: Q30_TOPY,
+      stroke: C.soft, "stroke-width": 5, "stroke-linecap": "round" }, svg);
+    const nx = Q30_UY, ny = -Q30_UX;               // square to the ladder
+    for (let k = 0.5; k < Q30_LEN; k += 0.5) {
+      S("line", { x1: px(k) - nx * 8, y1: py(k) - ny * 8, x2: px(k) + nx * 8, y2: py(k) + ny * 8,
+        stroke: C.line, "stroke-width": 1.6, "stroke-opacity": 0.55 }, svg);
+    }
+  }
+
+  function drawPerson() {
+    const cx = px(x), cy = py(x);
+    const on = x >= 0.005;
+    const col = on ? C.ink : C.grey;
+    S("circle", { cx, cy: cy - 21, r: 4.6, fill: "none", stroke: col, "stroke-width": 2 }, svg);
+    S("line", { x1: cx, y1: cy - 16.4, x2: cx, y2: cy - 6, stroke: col, "stroke-width": 2.2, "stroke-linecap": "round" }, svg);
+    S("line", { x1: cx - 6, y1: cy - 13, x2: cx + 6, y2: cy - 13, stroke: col, "stroke-width": 1.8, "stroke-linecap": "round" }, svg);
+    S("line", { x1: cx, y1: cy - 6, x2: cx - 5.5, y2: cy, stroke: col, "stroke-width": 1.8, "stroke-linecap": "round" }, svg);
+    S("line", { x1: cx, y1: cy - 6, x2: cx + 5.5, y2: cy, stroke: col, "stroke-width": 1.8, "stroke-linecap": "round" }, svg);
+  }
+
+  function render() {
+    clear(svg);
+    const N = NAt(x), f = fAt(x), st = stateOf(x);
+    drawStage();
+
+    /* ---- the two weights, drawn from the point on the ladder where each one acts ---- */
+    const mwx = px(Q30_LEN / 2), mwy = py(Q30_LEN / 2);       // the ladder's weight, at its middle
+    arrow(mwx, mwy, mwx, mwy + Q30_BODY * Q30_WPX, C.ink, 3, 10);
+    // the label goes on the far side of the arrow from the ladder, which crosses the near side
+    T(svg, mwx + 9, mwy + Q30_BODY * Q30_WPX - 4, "1000 N",
+      { "text-anchor": "start", "font-size": 10.5, "font-weight": 700, fill: C.ink,
+        stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round" });
+    if (x >= 0.02) {
+      const cx = px(x), cy = py(x);
+      arrow(cx, cy, cx, cy + Q30_PERSON * Q30_WPX, C.ink, 3, 10);
+      /* the person's label sits above their head, not beside the arrow: the middle of the ladder
+       * is where the person crosses the ladder's own weight arrow (x = 1.5-2 measured at 00:12),
+       * and two "N" labels on one line there read as a single number. */
+      T(svg, cx - 9, cy - 30, "500 N",
+        { "text-anchor": "end", "font-size": 10.5, "font-weight": 700, fill: C.ink,
+          stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round" });
+    }
+
+    /* ---- the wall's reaction N, and the friction f it forces on the floor ---- */
+    arrow(Q30_TOPX, Q30_TOPY, Q30_TOPX - N * Q30_FPX, Q30_TOPY, C.blue, 3.4, 11);
+    T(svg, Q30_TOPX - N * Q30_FPX / 2, Q30_TOPY - 9, `N = ${sig3(N)} N`,
+      { "text-anchor": "middle", "font-size": 11.5, "font-weight": 700, fill: C.blue,
+        stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round" });
+    arrow(Q30_GX, Q30_GY, Q30_GX + f * Q30_FPX, Q30_GY, C.red, 3.4, 11);
+    T(svg, Q30_GX + f * Q30_FPX / 2, Q30_GY - 9, `f = ${sig3(f)} N`,
+      { "text-anchor": "middle", "font-size": 11.5, "font-weight": 700, fill: C.red,
+        stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round" });
+
+    /* ---- the 400 N limit, on the same scale as the two bars above ---- */
+    const lx = Q30_GX + Q30_LIMIT * Q30_FPX;
+    S("line", { x1: lx, y1: Q30_GY - 10, x2: lx, y2: Q30_GY + 10, stroke: C.red, "stroke-width": 1.6,
+      "stroke-dasharray": "4 3" }, svg);
+    // the label sits above the tick: beside it, the f label (centred on a bar that ends at the
+    // tick once f reaches the limit) runs into it - seen at x = 2.00 m, 00:16
+    T(svg, lx, Q30_GY - 24, "400 N limit",
+      { "text-anchor": "middle", "font-size": 9.5, fill: C.red });
+
+    drawPerson();
+
+    // P, the point every moment is taken about
+    S("circle", { cx: Q30_GX, cy: Q30_GY, r: 4.5, fill: C.ink, stroke: "#fff", "stroke-width": 1.6 }, svg);
+    T(svg, Q30_GX - 11, Q30_GY + 13, "P", { "text-anchor": "end", "font-size": 12.5, "font-weight": 700, fill: C.ink });
+
+    // the moment equation, split over two lines the way the printed solution splits it
+    T(svg, 14, 18, "Take moments about P:", { "font-size": 10.5, fill: C.grey });
+    T(svg, 14, 34, "N(4 sin 60\u00B0) = 1000(2 cos 60\u00B0)", { "font-size": 12, "font-weight": 700, fill: C.ink });
+    T(svg, 14, 50, "+ 500(x cos 60\u00B0)", { "font-size": 12, "font-weight": 700, fill: C.ink });
+
+    /* ---- the state, written under the ground line ---- */
+    const talk = st === "empty" ? ["no one on the ladder", C.grey]
+      : st === "limit" ? ["limiting equilibrium \u2014 about to slip", C.amber]
+        : st === "slip" ? ["slips", C.red]
+          : ["equilibrium", C.green];
+    T(svg, Q30_GX, Q30_H - 11, talk[0], { "font-size": 12.5, "font-weight": 700, fill: talk[1] });
+
+    drawColumn(N, f, st);
+    writeReading(N, f, st);
+  }
+
+  function drawColumn(N, f, st) {
+    const cx = 462;
+    T(svg, cx, 42, "at the wall", { "font-size": 10.5, fill: C.grey });
+    T(svg, cx, 68, `N = ${sig3(N)} N`, { "font-size": 13, "font-weight": 700, fill: C.blue });
+    T(svg, cx, 88, `f = ${sig3(f)} N`, { "font-size": 12.5, "font-weight": 700, fill: C.red });
+    T(svg, cx, 104, `limit ${Q30_LIMIT} N`, { "font-size": 10.5, fill: C.grey });
+    T(svg, cx, 132, `x = ${x.toFixed(2)} m`, { "font-size": 13, "font-weight": 700, fill: C.ink });
+    T(svg, cx, 156, "N = (1000 + 250x) / 3.464", { "font-size": 10.5, fill: C.grey });
+    T(svg, cx, 172, "f = N (horizontal balance)", { "font-size": 10.5, fill: C.grey });
+    T(svg, cx, 194, `slips once x > ${xLimit.toFixed(2)} m`, { "font-size": 10.5,
+      fill: st === "slip" ? C.red : C.grey });
+  }
+
+  function writeReading(N, f, st) {
+    const latex = `N = ${sig3(N)}\\ \\text{N}\\qquad f = ${sig3(f)}\\ \\text{N}`;
+    const moment = `${sig3(N)} \u00D7 ${arm.toFixed(3)} = ${sig3(bodyTerm)} + ${sig3(personPerM * x)}`;
+    let caption;
+    if (st === "empty") {
+      caption = `Nobody on the ladder: N(4 sin 60\u00B0) = 1000(2 cos 60\u00B0) gives N = ${sig3(N)} N, and horizontal balance makes f = N = ${sig3(f)} N, far below the ${Q30_LIMIT} N the floor can supply.`;
+    } else if (st === "limit") {
+      caption = `The floor is at its limit: f has reached ${Q30_LIMIT} N, so N = ${sig3(N)} N and the moment equation gives x = ${xLimit.toFixed(2)} m. One step further and the foot needs more friction than the floor has.`;
+    } else if (st === "slip") {
+      caption = `At x = ${x.toFixed(2)} m the balance needs f = N = ${sig3(f)} N, more than the ${Q30_LIMIT} N the floor can supply, so the foot slides out and the ladder slips.`;
+    } else {
+      caption = `x = ${x.toFixed(2)} m: taking moments about P, ${moment} gives N = ${sig3(N)} N, and horizontal balance gives f = N = ${sig3(f)} N \u2014 still below the ${Q30_LIMIT} N limit.`;
+    }
+    r.set(latex, null, caption);
+  }
+
+  /* ---- the controls: a slider for x, and the person can be dragged up the ladder ---- */
+  const sfc = slider({
+    label: "x (m)", min: 0, max: Q30_LEN, step: 0.01, value: 0, play: false,
+    fmt: (v) => v.toFixed(2) + " m",
+  });
+  let syncing = false;
+  function setX(v) {
+    x = Math.max(0, Math.min(Q30_LEN, Math.round(v * 100) / 100));
+    syncing = true;
+    sfc.set(x);
+    syncing = false;
+    render();
+  }
+  sfc.on((v) => { if (!syncing) { x = v; render(); } });
+
+  let drag = false;
+  const at = (e) => {
+    const b = svg.getBoundingClientRect();
+    const k = Q30_W / b.width;
+    return [(e.clientX - b.left) * k, (e.clientY - b.top) * k];
+  };
+  svg.addEventListener("pointerdown", (e) => {
+    const [mx, my] = at(e);
+    // the grab area is a 46 px circle round the person's body, not the 9 px head
+    if (Math.hypot(mx - px(x), my - (py(x) - 12)) <= 23) {
+      drag = true;
+      try { svg.setPointerCapture(e.pointerId); } catch { /* the moves still arrive */ }
+      e.preventDefault();
+    }
+  });
+  svg.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const [mx, my] = at(e);
+    const along = ((mx - Q30_GX) * Q30_UX + (my - Q30_GY) * Q30_UY) / Q30_S;
+    setX(along);
+    e.preventDefault();
+  });
+  const up = (e) => {
+    if (!drag) return;
+    drag = false;
+    try { svg.releasePointerCapture(e.pointerId); } catch { /* already gone */ }
+  };
+  svg.addEventListener("pointerup", up);
+  svg.addEventListener("pointercancel", () => { drag = false; });
+
+  root.append(
+    question("A 4 m ladder rests against a wall at 60\u00B0 to the ground; the ladder weighs 1000 N and a 500 N person stands x metres up it. Find the wall's reaction N, the friction f at the foot, and how high the person can climb before the foot slips (the floor supplies at most 400 N of friction).", [
+      "Take moments about the foot P: only N, the ladder's weight and the person's weight have moments there",
+      "The wall's reaction and the friction are the only two horizontal forces, so they are equal",
+      "Slide x up and watch f grow until it reaches the 400 N the floor can give",
+      "Drag the person up the ladder, or use the slider",
+    ]),
+    svg,
+    sfc.el,
+    r.el,
+  );
+
+  setX(0);
+}
+
+const REGISTRY = { q1: jq1, q2: jq2, p1: jp1, q26: jq26, q30: jq30 };
 
 export function hasGraphic(id) {
   return Boolean(REGISTRY[id]);

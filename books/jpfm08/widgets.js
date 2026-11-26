@@ -609,7 +609,14 @@ const Q2_PIVOT_R = 24, Q2_PT_R = 22, Q2_TIP_R = 22;   // hit radii, viewBox unit
  * the line of action exactly through P, so d reads 0.000 rather than 0.001.
  * (e) keeps the sandbox plate and its 150 px/m frame; P = (-0.42, -0.40) m = (169, 130) and the
  * force acts at P + (0.40, 0.30) m = (229, 175), straight down.
- */
+ *
+ * `ref` says which direction theta is measured from at the force's point: +1 is the rod seen from
+ * the force point back towards P (the sandbox default), -1 is the ray from P out to the force
+ * point. The printed arcs do not use one convention: (b) marks 60 deg between the rod towards P
+ * and the force itself, while (c) marks 130 deg between the rod away from P and the force (and
+ * (f)'s second force does the same). Each case therefore carries the reference its own arc uses,
+ * so the live theta prints exactly the printed number; sin is the same either way, which is why
+ * d = r sin(theta) comes out on the printed value in all six. */
 const Q2_CASES = [
   { label: "(a)", S: 700, bar: [[120, 190], [400, 190]], pivot: [400, 190],
     forces: [{ x: 120, y: 190, deg: 90, F: 30 }],
@@ -620,11 +627,11 @@ const Q2_CASES = [
     note: "30 N at 0.4 m from P, 60\u00B0 to the bar",
     answer: "\u03C4 = 30 \u00D7 0.4 \u00D7 sin 60\u00B0 = 10.4 N m clockwise" },
   { label: "(c)", S: 220, bar: [[80, 200], [450, 200]], pivot: [80, 200],
-    forces: [{ x: 410, y: 200, deg: 130, F: 120 }],
+    forces: [{ x: 410, y: 200, deg: 130, F: 120, ref: -1 }],
     note: "120 N at 1.5 m from P",
     answer: "\u03C4 = 120 \u00D7 1.5 \u00D7 cos 40\u00B0 = 138 N m clockwise" },
   { label: "(d)", S: 300, bar: [[110, 290], [355.746, 117.927]], pivot: [110, 290],
-    forces: [{ x: 355.746, y: 117.927, deg: -35, F: 50 }],
+    forces: [{ x: 355.746, y: 117.927, deg: -35, F: 50, ref: -1 }],
     note: "50 N, its line of action passes through P",
     answer: "\u03C4 = 50 \u00D7 1 \u00D7 sin 0\u00B0 = 0" },
   { label: "(e)", S: 150, plate: true, pivot: [169, 130],
@@ -632,7 +639,7 @@ const Q2_CASES = [
     note: "6 N at 0.4 m from P",
     answer: "\u03C4 = 6 \u00D7 0.4 = 2.4 N m clockwise" },
   { label: "(f)", S: 40, bar: [[40, 200], [440, 200]], pivot: [440, 200],
-    forces: [{ x: 40, y: 200, deg: 70, F: 20 }, { x: 320, y: 200, deg: 120, F: 15 }],
+    forces: [{ x: 40, y: 200, deg: 70, F: 20 }, { x: 320, y: 200, deg: 120, F: 15, ref: -1 }],
     note: "20 N at 10 m and 15 N at 3 m from P",
     answer: "\u03C4 = 20(7+3) sin 70\u00B0 + 15(3) sin 60\u00B0 = 227 N m anticlockwise" },
 ];
@@ -681,6 +688,13 @@ function jq2(root) {
   const X = (m) => Q2_CX + m * Q2_S;
   const Y = (m) => Q2_CY + m * Q2_S;
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  /* An angle is shown to the precision that keeps the picture's own arithmetic readable: a whole
+   * degree when it is whole, one decimal when it is not. Case (e) is the reason - the arm reads
+   * r = 0.500 m and r sin(theta) = 0.400 m, so theta printed as 127 makes 0.500 sin 127 = 0.399
+   * and the three numbers on the drawing no longer multiply back; 126.9 gives 0.4000. The five
+   * angles the printed page marks are whole (90, 60, 130, 0, 70, 60) and print unchanged. */
+  const degStr = (v) => (Math.abs(v - Math.round(v)) < 0.05 ? v.toFixed(0) : v.toFixed(1)) + "\u00B0";
 
   /* ---- the objects ---- */
   function drawShape() {
@@ -857,7 +871,7 @@ function jq2(root) {
    * circle would read as a protractor rather than "this is the angle between these two lines".
    * (c) marks the 130 deg between the bar towards P and the line of action - which is why
    * d = 1.5 sin 130 = 1.5 cos 40, so the printed 40 deg and the drawn 130 deg agree. */
-  function drawArc(cx, cy, r, a0, a1) {
+  function drawArc(cx, cy, r, a0, a1, stroke = C.grey, w = 1.2, parent = svg) {
     const A0 = (a0 * Math.PI) / 180, A1 = (a1 * Math.PI) / 180;
     let d = A1 - A0;
     while (d > Math.PI) d -= 2 * Math.PI;
@@ -866,8 +880,19 @@ function jq2(root) {
     const x1 = cx + r * Math.cos(A1), y1 = cy + r * Math.sin(A1);
     S("path", {
       d: `M${x0.toFixed(2)},${y0.toFixed(2)} A${r},${r} 0 0 ${d > 0 ? 1 : 0} ${x1.toFixed(2)},${y1.toFixed(2)}`,
-      fill: "none", stroke: C.grey, "stroke-width": 1.2, "stroke-opacity": 0.85,
-    }, svg);
+      fill: "none", stroke, "stroke-width": w, "stroke-opacity": 0.85,
+    }, parent);
+  }
+  /* the same arc, but keeping the sweep it is given: a 0..360 theta needs the large-arc flag past
+   * 180 instead of being folded back to the short way. Used only by the sandbox protractor. */
+  function arcSweep(cx, cy, r, a0deg, sweepDeg, stroke = C.grey, w = 1.2, parent = svg) {
+    const A0 = (a0deg * Math.PI) / 180, A1 = ((a0deg + sweepDeg) * Math.PI) / 180;
+    const x0 = cx + r * Math.cos(A0), y0 = cy + r * Math.sin(A0);
+    const x1 = cx + r * Math.cos(A1), y1 = cy + r * Math.sin(A1);
+    S("path", {
+      d: `M${x0.toFixed(2)},${y0.toFixed(2)} A${r},${r} 0 ${Math.abs(sweepDeg) > 180 ? 1 : 0} ${sweepDeg >= 0 ? 1 : 0} ${x1.toFixed(2)},${y1.toFixed(2)}`,
+      fill: "none", stroke, "stroke-width": w, "stroke-opacity": 0.85,
+    }, parent);
   }
   function drawCaseAngles(k) {
     const c = Q2_CASES[k];
@@ -890,6 +915,28 @@ function jq2(root) {
       default:
         break;
     }
+  }
+
+  /* ---- the rod from P out to the point the force acts at, in a printed case ----
+   * Five of the six cases put P on one end of the bar and the force on the other, so the bar
+   * itself already is that segment and the printed distance (40 cm, 1.5 m, 1 m, 7 m/3 m) already
+   * gives its length - a second line over the bar would only thicken it, and a second number
+   * would repeat the printed one in different units. Case (e) is the one where P is off the
+   * point the force acts at: the printed figure gives the two legs (0.40 m and 0.30 m) but never
+   * the diagonal the moment is measured along, so that case gets the line and its length,
+   * r = hypot(0.40, 0.30) = 0.500 m. */
+  function drawCaseRod(k) {
+    const c = Q2_CASES[k];
+    if (!c.plate) return;
+    const meas = S("g", { class: "g-meas" }, svg);
+    const [px0, py0] = c.pivot, f = c.forces[0];
+    S("line", { x1: px0, y1: py0, x2: f.x, y2: f.y, stroke: C.grey, "stroke-width": 1.1,
+      "stroke-opacity": 0.55 }, meas);
+    const rr = Math.hypot(f.x - px0, f.y - py0) / c.S;
+    T(meas, (px0 + f.x) / 2 - 7, (py0 + f.y) / 2 - 7, `r = ${rr.toFixed(3)} m`,
+      { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.grey,
+        stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round",
+        "class": "g-arm-lab" });
   }
 
   /* ---- where the object rests, drawn only while it is swinging ----
@@ -945,6 +992,60 @@ function jq2(root) {
     return { foot, z, d: Math.abs(z), ux, uy, along };
   };
 
+  /* ---- theta: the angle between the rod and the force ----
+   * The arm and theta carry the same information twice: d = r sin(theta) exactly, because
+   * |z| = |r| |u| sin(theta) with |u| = 1. theta is measured at the force's point from a reference
+   * ray into the force's direction; the reference is the rod seen from the force point back
+   * towards P (ref = +1, the sandbox default) or the ray from P out to the force point (ref = -1,
+   * which is what the printed (c), (d) and (f)-second arcs mark). Either way theta = 0 means the
+   * force lies along the rod, i.e. its line of action runs through P and the arm is 0.
+   * The side the force is on is kept in f.side: dragging the knob is free, but the slider must
+   * not flip the force to the other side of the rod just because the number passed through 0.
+   * This folded 0..180 form is what case mode prints (it reproduces the printed numbers); the
+   * sandbox's slider uses the 0..360 protractor below, and the column follows whichever is on. */
+  const refAngle = (f) => {
+    const dx = f.x - pivot[0], dy = f.y - pivot[1];
+    return f.ref < 0 ? Math.atan2(dy, dx) : Math.atan2(-dy, -dx);
+  };
+  const phiOf = (f) => {                       // signed angle from the reference, (-PI, PI]
+    let p = f.a - refAngle(f);
+    while (p > Math.PI) p -= 2 * Math.PI;
+    while (p <= -Math.PI) p += 2 * Math.PI;
+    return p;
+  };
+  const thetaOf = (f) => Math.abs(phiOf(f)) * 180 / Math.PI;      // 0..180 deg
+  const setTheta = (f, deg) => {               // from the slider: keep the side the force is on
+    const ph = phiOf(f);
+    if (Math.abs(ph) > 1e-6) f.side = Math.sign(ph);
+    const sgn = f.side || 1;
+    f.a = refAngle(f) + sgn * (deg * Math.PI) / 180;
+  };
+
+  /* ---- the sandbox's theta is a protractor angle, 0..360 ----
+   * Measured at the force's point from the ray P -> point (the rod pointing AWAY from P), counted
+   * the way screen angles count, i.e. clockwise on the page. That is the only rule a 0..360 slider
+   * can show without a sign flip at 180: theta = 0 and 180 put the line of action through P, so
+   * d = 0; 90 and 270 are the two perpendiculars, d = r, with opposite senses; 360 is 0 again.
+   * The sign of sin(theta) is the sense, which is why the slider may run the whole way round.
+   * The printed cases keep their own reference (ref) because their printed arcs mark the angle on
+   * whichever side of the rod their figure chose: (b) and (f)-first mark it from the rod towards
+   * P, (c) and (f)-second from the rod away from P. Those arcs must keep reading 60/130/70/60, so
+   * case mode uses thetaOf() and only the sandbox uses the protractor. */
+  const outAngle = (f) => Math.atan2(f.y - pivot[1], f.x - pivot[0]);
+  const theta360 = (f) => {
+    let d = ((f.a - outAngle(f)) * 180) / Math.PI;
+    d = ((d % 360) + 360) % 360;
+    return d;
+  };
+  const setTheta360 = (f, deg) => { f.a = outAngle(f) + (deg * Math.PI) / 180; };
+  const thetaShow = (f) => (caseIdx >= 0 ? thetaOf(f) : theta360(f));    // what the column prints
+
+  /* Every force carries its own id, the reference its theta is measured from and the side of the
+   * rod it sits on, so neither control can act on the wrong force or flip it across the rod. */
+  function newForce(x, y, a, F, extra = {}) {
+    return { id: nextFid++, x, y, a, F, ref: 1, side: 1, ...extra };
+  }
+
   /* ---- the drawing ---- */
   function render() {
     clear(svg);
@@ -965,6 +1066,7 @@ function jq2(root) {
     if (caseIdx >= 0) {                  // the printed distances and angles, under the forces
       drawCaseDims(caseIdx);
       drawCaseAngles(caseIdx);
+      drawCaseRod(caseIdx);
     }
 
     const sums = [];
@@ -972,7 +1074,7 @@ function jq2(root) {
       const col = Q2_COL[i];
       const { foot, z, d, ux, uy, along } = armOf(f);
       const tau = f.F * d / Q2_S;                             // N m: arm in px -> m
-      sums.push({ tau: Math.sign(z) * tau, F: f.F, d: d / Q2_S, col, i });
+      sums.push({ tau: Math.sign(z) * tau, F: f.F, d: d / Q2_S, theta: thetaShow(f), col, i });
 
       if (f.F < 0.5) {
         // no force: the point stays, so it can be found and turned again, but nothing acts
@@ -999,6 +1101,53 @@ function jq2(root) {
         stroke: C.grey, "stroke-width": 1.1, "stroke-dasharray": "7 5", "stroke-opacity": 0.8,
       }, meas);
 
+      /* ---- the rod from P to the point the force acts at, and theta ----
+       * Thin, solid and grey against the arm's thick coloured dashes: the rod is a length to the
+       * point, the arm is a distance to the line, and the two must never be read as one line.
+       * The rod is also the first edge of the theta arc - the arc runs from it round to the force
+       * itself, so the number always measures the two lines it is drawn between. In case mode the
+       * printed arc already marks theta, and where the bar itself is the rod (five of the six
+       * cases), the bar is that line: no second arc and no second number go on top of it. */
+      const rr = Math.hypot(f.x - pivot[0], f.y - pivot[1]);
+      const rBase = refAngle(f), ph = phiOf(f), thDeg = Math.abs(ph) * 180 / Math.PI;
+      /* in a printed case the printed distance already IS r (40 cm, 1.5 m, 1 m, 7 m/3 m), so a
+       * second "r = 0.400 m" beside it would only repeat the printed number in other units; case
+       * (e), where the rod is not a printed distance, draws its own line in drawCaseRod */
+      if (rr > 2 && caseIdx < 0) {
+        S("line", { x1: pivot[0], y1: pivot[1], x2: f.x, y2: f.y, stroke: C.grey,
+          "stroke-width": 1.1, "stroke-opacity": 0.55 }, meas);
+        // its length, set off the rod's middle on the far side from the arm
+        const rmx = (pivot[0] + f.x) / 2, rmy = (pivot[1] + f.y) / 2;
+        const rnx = -(f.y - pivot[1]) / rr, rny = (f.x - pivot[0]) / rr;
+        const rside = Math.sign((foot[0] - pivot[0]) * rnx + (foot[1] - pivot[1]) * rny) || 1;
+        T(meas, rmx - rnx * rside * 16, rmy - rny * rside * 16 + 4, `r = ${(rr / Q2_S).toFixed(3)} m`,
+          { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.grey,
+            "class": "g-arm-lab", stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke",
+            "stroke-linejoin": "round" });
+      }
+      if (caseIdx < 0) {
+        const tDeg = theta360(f), oDeg = (outAngle(f) * 180) / Math.PI;
+        /* "(through P)" is a claim about the arm, so it is made from the arm and not from the
+         * angle: within half a pixel the line of action really does pass through P and there is
+         * no wedge to draw. At 357 deg the arm is still 0.074 m and the picture draws it, so
+         * writing "through P" there would contradict the arm shown on the same drawing. */
+        if (d < 0.5) {
+          if (rr > 2) {
+            T(meas, f.x + 10, f.y + 24, `\u03B8 = ${degStr(tDeg)} (through P)`,
+              { "font-size": 10.5, "font-weight": 700, fill: C.grey, "class": "g-arm-lab" });
+          }
+        } else {
+          /* a 0..360 angle can be reflex: the arc has to take the long way round, so it needs the
+           * large-arc flag - drawArc folds anything past 180 back to the short way */
+          arcSweep(f.x, f.y, 30, oDeg, Math.min(tDeg, 359), C.grey, 1.1, meas);
+          const bis = ((oDeg + tDeg / 2) * Math.PI) / 180;
+          T(meas, f.x + 45 * Math.cos(bis), f.y + 45 * Math.sin(bis) + 4, `\u03B8 = ${degStr(tDeg)}`,
+            { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: C.grey,
+              "class": "g-arm-lab", stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke",
+              "stroke-linejoin": "round" });
+        }
+      }
+
       // the arm: the perpendicular from P to that line, with a right angle at the foot
       if (d > 3) {
         S("line", { x1: pivot[0], y1: pivot[1], x2: foot[0], y2: foot[1], stroke: col,
@@ -1017,9 +1166,16 @@ function jq2(root) {
         const mx = pivot[0] + (foot[0] - pivot[0]) * tLab;
         const my = pivot[1] + (foot[1] - pivot[1]) * tLab;
         const ox = (pivot[1] - foot[1]) / d * 28, oy = (foot[0] - pivot[0]) / d * 28;
-        T(meas, mx + ox, my + oy + 4, (d / Q2_S).toFixed(3) + " m",
+        /* the arm's value, with the relation the whole widget is about: the arm is the rod r times
+         * sin theta. The reading column keeps the short "d1 = ..." form the printed answers use;
+         * the canvas carries the relation, and both print the same number (the arm in px over
+         * Q2_S, never a second calculation). The full "d-perp = r sin theta = 9.397 m" form was
+         * measured on case (f) and ran 130 px wide, into the reading column: two bbox hits of 9.8
+         * and 11.8 px. "r sin theta = 9.397 m" is 95 px and clears it. */
+        const armLab = T(meas, mx + ox, my + oy + 4, `r sin\u03B8 = ${(d / Q2_S).toFixed(3)} m`,
           { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: col, "class": "g-arm-lab",
             stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
+        armLab.dataset.short = `${(d / Q2_S).toFixed(3)} m`;   // see nudgeArmLabels: (f) needs it
       } else {
         T(meas, foot[0] + 10, foot[1] + 18, `d${Q2_SUB[i]} = 0 (line through P)`,
           { "font-size": 11, "font-weight": 700, fill: col });
@@ -1074,8 +1230,32 @@ function jq2(root) {
     svg.replaceChild(g, mark);
     sceneG = g;
 
+    /* the angle slider and its chips follow the picture: the knob on an arrow's head is the same
+     * state, so a drag has to move them too. Guarded, or set() would write the rounded value back
+     * into the geometry and the force would creep by half a degree on every redraw. */
+    if (forces.length && caseIdx < 0) {
+      syncing = true;
+      const f = forces.find((z) => z.id === selId);
+      if (f) thS.set(clamp(Math.round(theta360(f)), 0, 360));
+      syncing = false;
+      /* the chips print each force's theta, so they follow a drag as well as a click. syncUI()
+       * rebuilds them, but rebuilding mid-drag would throw away the button under the finger and
+       * the click that is still in progress, so the text and the "on" ring are updated in place. */
+      const btns = [...chipRow.children];
+      if (btns.length === forces.length) {
+        forces.forEach((z, i) => {
+          btns[i].textContent = `F${Q2_SUB[i]} ${degStr(thetaShow(z))}`;
+          btns[i].classList.toggle("on", z.id === selId);
+        });
+      }
+    }
+
     drawColumn(sums);
     writeReading(sums);
+    /* the arm labels are nudged only now: the reading column is part of what they must clear, and
+     * the first nudge above runs before it is drawn - that is how case (f)'s 2.598 m label came to
+     * sit on top of "F2 = 15 N" (measured: 356.8..473.8 against the column at 462) */
+    nudgeArmLabels();
 
     /* the play button greys out when there is nothing to turn: |sum| < 0.05, i.e. case (d) and
      * any sandbox arrangement whose lines of action all pass through P */
@@ -1207,17 +1387,30 @@ function jq2(root) {
     D.sort((a, b) => Math.abs(a[0]) + Math.abs(a[1]) - (Math.abs(b[0]) + Math.abs(b[1])));
     for (const o of texts.filter((x) => x.arm)) {
       const x0 = Number(o.el.getAttribute("x")), y0 = Number(o.el.getAttribute("y"));
-      let placed = o.box;
-      for (const [dx, dy] of D) {
-        const b = { x: o.box.x + dx, y: o.box.y + dy, width: o.box.width, height: o.box.height };
-        if (!fixed.some((f) => hit(f, b))) {
-          if (dx) o.el.setAttribute("x", x0 + dx);
-          if (dy) o.el.setAttribute("y", y0 + dy);
-          placed = b;
-          break;
+      const tryPlace = (box) => {
+        for (const [dx, dy] of D) {
+          const b = { x: box.x + dx, y: box.y + dy, width: box.width, height: box.height };
+          if (!fixed.some((f) => hit(f, b))) {
+            if (dx) o.el.setAttribute("x", x0 + dx);
+            if (dy) o.el.setAttribute("y", y0 + dy);
+            return b;
+          }
         }
+        return null;
+      };
+      let placed = tryPlace(o.box);
+      /* The long "r sin theta = 9.397 m" form does not fit case (f): its two arms, the printed
+       * 7 m/3 m dimensions and two printed angles leave no clear 95 px slot, and the label ran
+       * 15.9 px into the printed 60 deg and into F2's own label. That one arm falls back to the
+       * bare value the widget printed before; the relation is still in the reading column and in
+       * the caption under the canvas. Everywhere else the relation stays on the picture. */
+      if (!placed && o.el.dataset && o.el.dataset.short) {
+        o.el.textContent = o.el.dataset.short;
+        const b = o.el.getBBox();
+        o.box = b;
+        placed = tryPlace(b);
       }
-      fixed.push(placed);
+      fixed.push(placed || o.box);
     }
   }
 
@@ -1225,25 +1418,32 @@ function jq2(root) {
    * Measured on the render: a 12 px line box is 15.5 px tall and a 10.5 px one is 13.4, so the
    * old 13 px step put the sense line 0.4 px inside the tau line and the old 56 px block pitch
    * put the next "F2 = ..." line on top of it. The steps below are 17 px inside a block and
-   * 70 px between blocks; the reader showed every gap positive (see the bbox report). */
+   * 70 px between blocks; the reader showed every gap positive (see the bbox report).
+   * The block now carries five lines (F, theta, d, tau, sense), i.e. 68 px of text: a 70 px pitch
+   * left 0 px between one block's sense line and the next block's F line (measured overlap 1.1 px
+   * at three forces), so the pitch is 85 px. The net block starts below whichever is lower, the
+   * last block or y = 232, so the canvas never runs out of room. */
   function drawColumn(sums) {
     const x = Q2_COLX;
     T(svg, x, 34, "about P", { "font-size": 11, fill: C.grey });
     sums.forEach((s, k) => {
-      const y = 60 + k * 70;
+      const y = 60 + k * 85;
       T(svg, x, y, `F${Q2_SUB[s.i]} = ${s.F.toFixed(0)} N`, { "font-size": 12, "font-weight": 700, fill: s.col });
+      /* the angle, straight under the force it belongs to, in the same amber the arc uses */
+      T(svg, x, y + 17, s.F < 0.5 ? `\u03B8${Q2_SUB[s.i]} = \u2014` : `\u03B8${Q2_SUB[s.i]} = ${degStr(s.theta)}`,
+        { "font-size": 11.5, fill: C.amber });
       /* a force of zero has no line of action, and so no arm: printing "d1 = 1.410 m" next to
        * "F1 = 0 N" reads as "the force is there, its moment just happens to be zero". The arm of
        * a force that is not acting is not a number, so it prints the same dash the sense line
        * uses for a zero moment - which keeps the block's rhythm and its 17 px step unchanged. */
-      T(svg, x, y + 17, s.F < 0.5 ? `d${Q2_SUB[s.i]} = \u2014` : `d${Q2_SUB[s.i]} = ${s.d.toFixed(3)} m`,
+      T(svg, x, y + 34, s.F < 0.5 ? `d${Q2_SUB[s.i]} = \u2014` : `d${Q2_SUB[s.i]} = ${s.d.toFixed(3)} m`,
         { "font-size": 11.5, fill: C.amber });
       if (s.F < 0.5) {
-        T(svg, x, y + 34, "no force", { "font-size": 11, fill: C.grey });
+        T(svg, x, y + 51, "no force", { "font-size": 11, fill: C.grey });
       } else {
-        T(svg, x, y + 34, `\u03C4${Q2_SUB[s.i]} = ${sig3(s.tau)} N m`,
+        T(svg, x, y + 51, `\u03C4${Q2_SUB[s.i]} = ${sig3(s.tau)} N m`,
           { "font-size": 11.5, "font-weight": 700, fill: s.col });
-        T(svg, x + 2, y + 51, Math.abs(s.tau) < 0.05 ? "\u2014" : s.tau > 0 ? "clockwise" : "anticlockwise",
+        T(svg, x + 2, y + 68, Math.abs(s.tau) < 0.05 ? "\u2014" : s.tau > 0 ? "clockwise" : "anticlockwise",
           { "font-size": 10.5, fill: C.grey });
       }
     });
@@ -1252,7 +1452,7 @@ function jq2(root) {
      * drawer scrolls, and the reading used to be outside the picture) ---- */
     const live = sums.filter((s) => s.F >= 0.5);
     const net = live.reduce((a, s) => a + s.tau, 0);
-    const y0 = Math.max(232, 60 + sums.length * 70 + 16);
+    const y0 = Math.max(232, 60 + sums.length * 85 + 16);
     S("line", { x1: x, y1: y0, x2: Q2_W - 14, y2: y0, stroke: C.grey, "stroke-width": 1, "stroke-opacity": 0.45 }, svg);
     T(svg, x, y0 + 22, live.length ? `\u03A3\u03C4 = ${sig3(net)} N m` : "\u03A3\u03C4 = 0 N m",
       { "font-size": 14, "font-weight": 700, fill: C.ink });
@@ -1272,7 +1472,7 @@ function jq2(root) {
     const cw = acts.filter((s) => s.tau > 0);
     const acw = acts.filter((s) => s.tau < 0);
     const tot = (list) => list.reduce((a, s) => a + Math.abs(s.tau), 0);
-    /* "F₁ and F₂" reads well, "F₁ and F₂ and F₃" does not: join a longer list properly */
+    /* "F??and F?? reads well, "F??and F??and F?? does not: join a longer list properly */
     const names = (list) => (list.length > 2
       ? list.slice(0, -1).map((s) => `F${Q2_SUB[s.i]}`).join(", ") + ` and F${Q2_SUB[list[list.length - 1].i]}`
       : list.map((s) => `F${Q2_SUB[s.i]}`).join(" and "));
@@ -1288,7 +1488,7 @@ function jq2(root) {
       : `\\Sigma\\tau = 0\\ \\text{N m}`;
     let caption;
     if (!live.length) {
-      caption = "No force acting: add one by tapping the object, then drag its dot to move it, its knob to turn it, or use the slider for its size. Drag P anywhere \u2014 the arms and moments follow.";
+      caption = "No force acting: add one by tapping the object, then drag its dot to move it, its knob or its angle slider to turn it, and its size slider for F. Drag P anywhere \u2014 the arms and moments follow.";
     } else if (Math.abs(net) < 0.05) {
       // Say how the two senses cancel, never "the same size in opposite senses" unless that is
       // true. A force whose line runs through P has no moment at all: that is not a cancellation.
@@ -1309,16 +1509,42 @@ function jq2(root) {
             ? `${names(one)} all act ${w}, adding to ${sig3(tot(one))} N m`
             : `${names(one)} acts ${w}, ${sig3(tot(one))} N m`;
         })();
-      caption = `Net moment ${sig3(net)} N m ${net > 0 ? "clockwise" : "anticlockwise"}: ${phrase}. Move P and watch every arm and moment change \u2014 the moment is F times the perpendicular distance from P to the line of action, not the distance to the point of application.`;
+      caption = `Net moment ${sig3(net)} N m ${net > 0 ? "clockwise" : "anticlockwise"}: ${phrase}. Move P and watch every arm and moment change \u2014 the moment is F times the perpendicular distance from P to the line of action, not the distance to the point of application. On the picture r is the distance from P to the point the force acts at, \u03B8 is the angle between that rod and the force, and d = r sin\u03B8.`;
     }
     r.set(latex, null, caption);
   }
 
-  /* ---- the controls ---- */
+  /* ---- the controls ----
+   * Each force has two: its size, then its angle. The angle slider is the same state as the knob
+   * on the arrow's head - dragging either one turns the force about its point, and whichever one
+   * the reader touches, the other follows (the knob writes back through render(), the slider
+   * through setTheta). In a printed case the geometry is printed, so the angle slider is hidden
+   * there (the F slider still works: size is not geometry) - the same hidden-plus-display rule
+   * the F rows already needed, because .g-slider is display:flex and beats [hidden]. */
   const sfc = [0, 1, 2].map((i) => slider({
     label: `F${Q2_SUB[i]} (N)`, min: 0, max: 150, step: 1, value: 30, play: false,
     fmt: (v) => v.toFixed(0) + " N",
   }));
+  /* ---- one theta slider, under all the F sliders, editing whichever force the chips select ----
+   * Three sliders under three bars read as three angles to set at once, and in a printed case (one
+   * or two forces) the spare ones pointed at forces that were not on the page. The chips name the
+   * force being turned and carry its theta, so all of them stay readable at a glance; a chip and
+   * the slider both follow the force's id, never its slot, so deleting the middle force cannot
+   * leave a chip or a slider editing a different one. */
+  const thS = slider({
+    label: "angle \u03B8 (degrees)", min: 0, max: 360, step: 1, value: 90, play: false,
+    fmt: (v) => v.toFixed(0) + "\u00B0",
+  });
+  let selId = 0;                        // the force the angle slider is editing, by id
+  const chipRow = H("div", { class: "g-btns g-chips" });
+  thS.on((v) => {
+    if (syncing) return;
+    const f = forces.find((x) => x.id === selId);
+    if (!f) return;
+    setTheta360(f, v);
+    render();
+  });
+  thS.el.hidden = true;
   let syncing = false;
   const rowFid = [0, 0, 0];            // which force each visible row is editing
   const rows = sfc.map((s, i) => {
@@ -1372,6 +1598,27 @@ function jq2(root) {
       s.el.style.display = on ? "" : "none";
       if (on) s.set(clamp(Math.round(forces[i].F), 0, 150));
     });
+    /* the chips and the one angle slider: a printed case keeps its printed geometry, so both are
+     * hidden there - hidden plus display, because .g-slider is display:flex and beats [hidden] */
+    if (!forces.some((f) => f.id === selId)) selId = forces.length ? forces[0].id : 0;
+    const sel = forces.find((f) => f.id === selId) || null;
+    const chipsOff = caseIdx >= 0 || !forces.length;
+    chipRow.textContent = "";
+    if (!chipsOff) {
+      forces.forEach((f, i) => {
+        chipRow.append(H("button", {
+          type: "button",
+          class: "g-chip" + (f.id === selId ? " on" : ""),
+          title: `turn F${i + 1}`,
+          onclick: () => { selId = f.id; syncUI(); },
+        }, [`F${Q2_SUB[i]} ${degStr(thetaShow(f))}`]));
+      });
+    }
+    chipRow.hidden = chipsOff;
+    chipRow.style.display = chipsOff ? "none" : "";
+    thS.el.hidden = chipsOff;
+    thS.el.style.display = chipsOff ? "none" : "";
+    if (sel) thS.set(clamp(Math.round(thetaShow(sel)), 0, 360));
     syncing = false;
     addBtn.disabled = forces.length >= 3;
     addBtn.title = forces.length >= 3 ? "three forces is the limit" : "add a force at the middle of the object";
@@ -1392,7 +1639,8 @@ function jq2(root) {
     if (forces.length >= 3) return;
     const p = at ?? [Q2_CX + 0.2 * Q2_S, Q2_CY];
     const [nx, ny] = clearSpot(p[0], p[1]);
-    forces.push({ id: nextFid++, x: nx, y: ny, a: Math.PI / 2, F: 30 });
+    forces.push(newForce(nx, ny, Math.PI / 2, 30));
+    selId = forces[forces.length - 1].id;      // the force just added is the one to turn
     syncUI();
     render();
   }
@@ -1403,6 +1651,8 @@ function jq2(root) {
     const k = forces.findIndex((f) => f.id === id);
     if (k < 0) return;
     forces.splice(k, 1);
+    // the selection follows its own force: if the selected one went, fall back to the first left
+    if (selId === id) selId = forces.length ? forces[0].id : 0;
     syncUI();
     render();
   }
@@ -1415,7 +1665,8 @@ function jq2(root) {
     Q2_S = c.S;
     shape = "case";
     pivot = [c.pivot[0], c.pivot[1]];
-    forces = c.forces.map((f) => ({ id: nextFid++, x: f.x, y: f.y, a: f.deg * Math.PI / 180, F: f.F }));
+    forces = c.forces.map((f) => newForce(f.x, f.y, f.deg * Math.PI / 180, f.F, { ref: f.ref || 1 }));
+    selId = forces[0].id;
     clearTabs(shapeTabs);              // the object tabs stop being lit: this is a case now
     printed.textContent = "Printed answer: " + c.answer;
     printed.hidden = false;
@@ -1427,7 +1678,8 @@ function jq2(root) {
     if (caseIdx >= 0) { applyCase(caseIdx); return; }      // "reset" here = back to this case
     const s = SHAPES[shape];
     pivot = [X(s.pivot[0]), Y(s.pivot[1])];
-    forces = [{ id: nextFid++, x: X(s.at[0]), y: Y(s.at[1]), a: Math.PI / 2, F: s.F }];
+    forces = [newForce(X(s.at[0]), Y(s.at[1]), Math.PI / 2, s.F)];
+    selId = forces[0].id;
     syncUI();
     render();
   }
@@ -1485,6 +1737,12 @@ function jq2(root) {
     const h = hit(x, y);
     down = [x, y];
     if (h) {
+      /* touching a force's knob (or its dot) selects it, so the one angle slider always edits the
+       * force the reader is holding; P is not a force and selects nothing */
+      if (h.kind !== "pivot" && forces[h.i] && forces[h.i].id !== selId) {
+        selId = forces[h.i].id;
+        syncUI();
+      }
       drag = h;
       try { svg.setPointerCapture(e.pointerId); } catch { /* no capture: the moves still arrive */ }
       e.preventDefault();
@@ -1505,6 +1763,9 @@ function jq2(root) {
         f.y = clamp(y, 34, 370);
       } else {
         f.a = Math.atan2(y - f.y, x - f.x);          // the head sets the direction
+        // remember which side of the rod the reader turned it to, so the angle slider keeps it
+        const ph = phiOf(f);
+        if (Math.abs(ph) > 1e-6) f.side = Math.sign(ph);
       }
     }
     render();
@@ -1523,7 +1784,8 @@ function jq2(root) {
     down = null;
     if (moved < 6 && forces.length < 3) {
       const [nx, ny] = clearSpot(x, y);
-      forces.push({ id: nextFid++, x: nx, y: ny, a: Math.PI / 2, F: 30 });
+      forces.push(newForce(nx, ny, Math.PI / 2, 30));
+      selId = forces[forces.length - 1].id;
       syncUI();
       render();
     }
@@ -1536,7 +1798,7 @@ function jq2(root) {
       "Moment about P: $\\tau = F d$, where $d$ is the perpendicular distance from P to the line of action",
       "The arm is measured to the line of action, never to the point where the force is applied",
       "Net moment: add the moments, clockwise against anticlockwise",
-      "Drag P anywhere (even off the object) \u00B7 tap the object to add a force \u00B7 drag a force's dot to move it, its round knob to turn it",
+      "Drag P anywhere (even off the object) \u00B7 tap the object to add a force \u00B7 drag a force's dot to move it, its round knob (or the angle slider) to turn it",
     ]),
     shapeTabs,
     caseTabs,
@@ -1545,6 +1807,8 @@ function jq2(root) {
     svg,
     tools,
     ...rows,
+    chipRow,
+    thS.el,
     r.el,
   );
 

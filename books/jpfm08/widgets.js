@@ -1186,7 +1186,287 @@ function jq2(root) {
   reset();
 }
 
-const REGISTRY = { q1: jq1, q2: jq2, p1: jp1 };
+/* ---------------- Q26: the smallest push that gets a wheel up a step ----------------
+ *
+ * Printed page 11: a wheel of radius 1 m rests against a 0.5 m step, and a horizontal 50 N
+ * pushes the top of its 0.2 m axle to the right. Every moment is taken about the step corner P:
+ *   (a) W(0.866) = 50(0.700)  ->  W = 40.4 N
+ *   (b) F(2.000) = W(0.866)   ->  F = 17.5 N     (2R = 2.000 m is the longest arm possible)
+ * Nothing below is typed in as an answer: every arm is measured on the drawn force with
+ *   z = r_x u_y - r_y u_x    (z > 0 turns clockwise on screen, the reading q1 and q2 use)
+ *   arm = |z| / 120 m        moment = F * arm, its sign from z
+ * The drawing is 620 x 400 at 120 px per metre, y down: ground y = 300, step corner
+ * P = (403.92, 240), wheel centre C = (300, 180), R = 120 px, axle 24 px. P is exactly one
+ * radius from C - hypot(103.92, 60) = 120 - so the rim passes through the corner.
+ */
+const Q26_S = 120;                   // px per metre
+const Q26_CX = 300, Q26_CY = 180;    // the wheel's centre
+const Q26_R = 120, Q26_AXR = 24;     // 1 m wheel, 0.2 m axle
+const Q26_PX = 403.92, Q26_PY = 240; // the step corner, the pivot for both moments
+const Q26_GROUND = 300, Q26_TOP = 240, Q26_STEP_END = 470;
+const Q26_W0 = 40.4;                 // the printed weight, solutions.js q26(a)
+
+/* 3 significant figures, kept the way the printed answers are written: 35.0, 43.3, 17.5, 0.866.
+ * 100 or more drops the decimal, under 1 keeps three. */
+const n3 = (v) => {
+  if (!Number.isFinite(v)) return "\u2014";
+  const a = Math.abs(v);
+  if (a < 0.0005) return "0";
+  return a.toFixed(a >= 100 ? 0 : a >= 10 ? 1 : a >= 1 ? 2 : 3);
+};
+
+function jq26(root) {
+  const svg = scene(620, 400);
+  svg.style.touchAction = "none";
+  const r = readout();
+
+  let mode = 0;                        // 0 = (a) the printed 50 N push, 1 = (b) the smallest force
+  let W = 40.0;                        // N, the slider in (a)
+  let bx = 300, by = 60;               // (b) where the force acts: always on the rim
+  let ba = 0;                          // (b) its direction, radians (screen)
+  let knobAt = [bx, by];               // (b) where the direction knob was drawn
+
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const armW = Math.abs(Q26_CX - Q26_PX) / Q26_S;      // 0.866 m: the weight's arm about P
+  const Fmin = Q26_W0 * armW / (2 * Q26_R / Q26_S);    // 17.5 N: at the longest arm, 2.000 m
+  const lenOf = (F) => clamp(26 + F * 0.9, 26, 96);
+
+  /* the same reading q2 uses: r from P to the point where the force acts, u its unit direction */
+  const armOf = (x, y, a) => {
+    const ux = Math.cos(a), uy = Math.sin(a);
+    const rx = x - Q26_PX, ry = y - Q26_PY;
+    const along = rx * ux + ry * uy;
+    const z = rx * uy - ry * ux;
+    return { foot: [x - ux * along, y - uy * along], z, d: Math.abs(z), ux, uy, along };
+  };
+
+  function arrow(x1, y1, x2, y2, color, w, head) {
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    const bx2 = x2 - Math.cos(a) * head, by2 = y2 - Math.sin(a) * head;
+    const nx = -Math.sin(a) * head * 0.42, ny = Math.cos(a) * head * 0.42;
+    S("line", { x1, y1, x2: bx2, y2: by2, stroke: color, "stroke-width": w, "stroke-linecap": "round" }, svg);
+    S("polygon", { points: `${x2},${y2} ${bx2 + nx},${by2 + ny} ${bx2 - nx},${by2 - ny}`, fill: color }, svg);
+  }
+
+  /* the ground, the step and the wheel: the printed picture, at 120 px per metre */
+  function drawBase() {
+    S("line", { x1: 40, y1: Q26_GROUND, x2: Q26_PX, y2: Q26_GROUND, stroke: C.line, "stroke-width": 2.2 }, svg);
+    S("line", { x1: Q26_PX, y1: Q26_TOP, x2: Q26_PX, y2: Q26_GROUND, stroke: C.line, "stroke-width": 2.2 }, svg);
+    S("line", { x1: Q26_PX, y1: Q26_TOP, x2: Q26_STEP_END, y2: Q26_TOP, stroke: C.line, "stroke-width": 2.2 }, svg);
+    S("circle", { cx: Q26_CX, cy: Q26_CY, r: Q26_R, fill: C.soft, stroke: C.line, "stroke-width": 2.4 }, svg);
+    S("circle", { cx: Q26_CX, cy: Q26_CY, r: Q26_AXR, fill: "#fff", stroke: C.line, "stroke-width": 2 }, svg);
+    S("circle", { cx: Q26_CX, cy: Q26_CY, r: 3, fill: C.line }, svg);
+  }
+
+  /* ---- one force: its line of action, its arm from P (dashed, right angle, value), its arrow ---- */
+  function oneForce(f) {
+    const { foot, z, d, ux, uy, along } = armOf(f.x, f.y, f.a);
+    const arm = d / Q26_S;
+
+    const ext = 24;
+    const t0 = Math.min(0, -along) - ext, t1 = Math.max(0, -along) + ext;
+    S("line", {
+      x1: f.x + ux * t0, y1: f.y + uy * t0, x2: f.x + ux * t1, y2: f.y + uy * t1,
+      stroke: C.grey, "stroke-width": 1.1, "stroke-dasharray": "7 5", "stroke-opacity": 0.8,
+    }, svg);
+
+    if (d > 3) {
+      S("line", { x1: Q26_PX, y1: Q26_PY, x2: foot[0], y2: foot[1], stroke: f.color,
+        "stroke-width": 2.2, "stroke-dasharray": "8 5" }, svg);
+      if (d > 16) {
+        const wx = (Q26_PX - foot[0]) / d, wy = (Q26_PY - foot[1]) / d, k = 9;
+        S("path", {
+          d: `M${foot[0] - ux * k},${foot[1] - uy * k} L${foot[0] - ux * k + wx * k},${foot[1] - uy * k + wy * k} L${foot[0] + wx * k},${foot[1] + wy * k}`,
+          fill: "none", stroke: f.color, "stroke-width": 1.4,
+        }, svg);
+      }
+      const mx = (Q26_PX + foot[0]) / 2, my = (Q26_PY + foot[1]) / 2;
+      const ox = (Q26_PY - foot[1]) / d * 16, oy = (foot[0] - Q26_PX) / d * 16;
+      /* the value sits at the arm's midpoint, but (b)'s best point makes the arm a diameter, so
+       * that midpoint IS the centre of the wheel: slide it back along the arm until it clears the
+       * axle instead of printing 2.000 m across the hub (seen at 00:04). */
+      let tLab = 0.5;
+      const armPx = Math.hypot(foot[0] - Q26_PX, foot[1] - Q26_PY);
+      if (armPx > 1) {
+        const ux2 = (foot[0] - Q26_PX) / armPx, uy2 = (foot[1] - Q26_PY) / armPx;
+        const clear = () => Math.hypot(Q26_PX + ux2 * armPx * tLab - Q26_CX, Q26_PY + uy2 * armPx * tLab - Q26_CY) >= Q26_AXR + 22;
+        while (!clear() && tLab > 0.14) tLab -= 0.06;
+      }
+      T(svg, Q26_PX + (foot[0] - Q26_PX) * tLab + ox, Q26_PY + (foot[1] - Q26_PY) * tLab + oy + 4,
+        arm.toFixed(3) + " m",
+        { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: f.color,
+          stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
+    } else {
+      T(svg, foot[0] + 10, foot[1] + 16, "line through P: no arm",
+        { "font-size": 11, "font-weight": 700, fill: f.color });
+    }
+
+    const L = lenOf(f.F);
+    const tx = f.x + ux * L, ty = f.y + uy * L;
+    arrow(f.x, f.y, tx - ux * 8, ty - uy * 8, f.color, 3.4, 11);
+
+    // the label runs beside the shaft, on the far side from the wheel's centre
+    const side = Math.sign((Q26_CX - f.x) * uy - (Q26_CY - f.y) * ux) || 1;
+    const nx = -uy * side, ny = ux * side;
+    const anchor = nx > 0.25 ? "start" : nx < -0.25 ? "end" : "middle";
+    const off = anchor === "middle" ? 16 : 12;
+    T(svg, clamp(f.x + ux * (L * 0.55) + nx * off, 34, 588), f.y + uy * (L * 0.55) + ny * off + 4, f.label,
+      { "text-anchor": anchor, "font-size": 11.5, "font-weight": 700, fill: f.color,
+        stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
+
+    // the point it acts at, and the hollow knob that turns it (mode b only)
+    S("circle", { cx: f.x, cy: f.y, r: 5.5, fill: f.color, stroke: "#fff", "stroke-width": 1.6 }, svg);
+    if (f.knob) S("circle", { cx: tx, cy: ty, r: 6.5, fill: "#fff", stroke: f.color, "stroke-width": 2 }, svg);
+
+    return { arm, tau: Math.sign(z) * f.F * arm, tip: [tx, ty] };
+  }
+
+  function render() {
+    clear(svg);
+    drawBase();
+
+    const list = [];
+    if (mode === 0) {
+      // (a) the printed push: 50 N horizontal at the top of the axle, weight on the centre
+      list.push({ x: Q26_CX, y: Q26_CY - Q26_AXR, a: 0, F: 50, color: C.red, label: "F = 50 N" });
+      list.push({ x: Q26_CX, y: Q26_CY, a: Math.PI / 2, F: W, color: C.blue, label: `W = ${n3(W)} N` });
+    } else {
+      // (b) the weight is the printed 40.4 N and the force is whatever is just enough
+      const dpx = armOf(bx, by, ba).d;
+      const need = dpx > 3 ? (Q26_W0 * armW * Q26_S) / dpx : Infinity;
+      list.push({ x: Q26_CX, y: Q26_CY, a: Math.PI / 2, F: Q26_W0, color: C.blue, label: `W = ${n3(Q26_W0)} N` });
+      list.push({ x: bx, y: by, a: ba, F: Number.isFinite(need) ? need : 0, color: C.red,
+        label: Number.isFinite(need) ? `F = ${n3(need)} N` : "F = \u2014", knob: true });
+    }
+    const got = list.map(oneForce);
+    if (mode === 1) knobAt = got[1].tip;
+
+    // the pivot, last so it is never covered
+    S("circle", { cx: Q26_PX, cy: Q26_PY, r: 8.5, fill: C.ink, stroke: "#fff", "stroke-width": 2.2 }, svg);
+    T(svg, Q26_PX + 13, Q26_PY - 12, "P", { "font-size": 13, "font-weight": 700, fill: C.ink });
+
+    if (mode === 0) {
+      const tF = got[0].tau, tW = Math.abs(got[1].tau);
+      const net = tF - tW;
+      const near = Math.abs(net) <= 0.05;
+      T(svg, 14, 20, near ? "(a) balanced on P" : net > 0 ? "(a) clockwise \u2014 up the step" : "(a) still on the ground",
+        { "font-size": 11.5, "font-weight": 700, fill: near ? C.green : C.grey });
+
+      r.set(
+        `\\begin{aligned}\\tau_F &= 50(${got[0].arm.toFixed(3)}) = ${n3(tF)}\\ \\text{N m}\\\\[-2pt] `
+        + `\\tau_W &= ${n3(W)}(${got[1].arm.toFixed(3)}) = ${n3(tW)}\\ \\text{N m}\\end{aligned}`,
+        null,
+        near
+          ? `Both moments are ${n3(tF)} N m, so the wheel is balanced on the corner P: it is on the point of climbing. At W = 40.4 N the printed 50 N push is exactly enough \u2014 that is the answer to (a).`
+          : net > 0
+            ? `The push turns the wheel clockwise about P with ${n3(tF)} N m; the weight holds it back with ${n3(tW)} N m, so ${n3(net)} N m clockwise is left over and the wheel starts up the step. It climbs for any W below 40.4 N.`
+            : `The weight holds the wheel with ${n3(tW)} N m about P, more than the ${n3(tF)} N m the 50 N push can give, so it stays on the ground. Bring W down to 40.4 N and the two moments match.`);
+      return;
+    }
+
+    const arm = armOf(bx, by, ba).d / Q26_S;
+    const need = arm > 0.002 ? Q26_W0 * armW / arm : Infinity;
+    const atMax = arm >= 1.9995;
+    T(svg, 14, 20, atMax ? "(b) d\u22A5 at its maximum \u2014 2.000 m" : "(b) drag the point and its knob",
+      { "font-size": 11.5, "font-weight": 700, fill: atMax ? C.green : C.grey });
+
+    /* two lines, like (a): a single-line \frac leaves the readout box 2 px short in this reader
+     * (KaTeX's fraction descender), which turns .g-expr into a scroll container - measured 42
+     * against 40 at 00:12; the aligned pair measures 79 against 79. */
+    const l1 = `F &= \\frac{W(0.866)}{d_\\perp}`;
+    const l2 = Number.isFinite(need)
+      ? `&= \\frac{${n3(Q26_W0)}(0.866)}{${arm.toFixed(3)}} = ${n3(need)}\\ \\text{N}`
+      : `&= \\frac{${n3(Q26_W0)}(0.866)}{${arm.toFixed(3)}}\\ \\text{: no finite force}`;
+    r.set(`\\begin{aligned}${l1}\\\\[-2pt] ${l2}\\end{aligned}`, null,
+      atMax
+        ? `d\u22A5 = 2.000 m is as long as an arm about P can get (the line of action is 2R from P, a diameter away), so ${n3(need)} N is the smallest force that will start the wheel up the step \u2014 the printed answer to (b).`
+        : Number.isFinite(need)
+          ? `The force acts ${arm.toFixed(3)} m from P, so it takes ${n3(need)} N to match the weight's ${n3(Q26_W0 * armW)} N m. Drag the point round the rim and turn its knob: on the far side the arm reaches 2.000 m and only ${n3(Fmin)} N is needed.`
+          : `The line of action now runs through P, so the arm is zero and no force applied this way can turn the wheel about the corner. Drag the point round the rim to give it an arm.`);
+  }
+
+  /* ---- controls ---- */
+  const modeTabs = tabs(["(a) the 50 N push", "(b) the smallest force"], (i) => {
+    mode = i;
+    syncUI();
+    render();
+  });
+
+  const wS = slider({
+    label: "W (N)", min: 0, max: 100, step: 0.1, value: 40.0, play: false,
+    fmt: (v) => v.toFixed(1) + " N",
+  });
+  wS.on((v) => { W = v; render(); });
+
+  /* the best point: diametrically opposite P, with the force square to the radius, so the line of
+   * action is a full 2R = 2.000 m from P and the force needed drops to 17.5 N */
+  const bestBtn = H("button", { type: "button", onclick: () => {
+    bx = 2 * Q26_CX - Q26_PX;
+    by = 2 * Q26_CY - Q26_PY;
+    ba = -60 * Math.PI / 180;
+    render();
+  } }, ["put it at the best point"]);
+  const tools = H("div", { class: "g-btns" }, [bestBtn]);
+
+  function syncUI() {
+    /* the hidden attribute alone loses to .g-slider's display:flex, and to nothing else, so the
+     * slider needs the inline display too or it stays on screen in (b) (seen at 00:04) */
+    wS.el.hidden = mode !== 0;
+    wS.el.style.display = mode === 0 ? "" : "none";
+    bestBtn.hidden = mode !== 1;
+  }
+
+  /* ---- dragging in (b): the point slides round the rim, the knob sets the direction ---- */
+  let drag = null;
+  const at = (e) => {
+    const b = svg.getBoundingClientRect();
+    const k = 620 / b.width;
+    return [(e.clientX - b.left) * k, (e.clientY - b.top) * k];
+  };
+  svg.addEventListener("pointerdown", (e) => {
+    if (mode !== 1) return;
+    const [x, y] = at(e);
+    drag = Math.hypot(x - bx, y - by) <= 22 ? "pt"
+      : Math.hypot(x - knobAt[0], y - knobAt[1]) <= 22 ? "tip" : null;
+    if (!drag) return;
+    try { svg.setPointerCapture(e.pointerId); } catch { /* the moves still arrive */ }
+    e.preventDefault();
+  });
+  svg.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const [x, y] = at(e);
+    if (drag === "pt") {
+      const ang = Math.atan2(y - Q26_CY, x - Q26_CX);   // stay on the rim, wherever the finger is
+      bx = Q26_CX + Q26_R * Math.cos(ang);
+      by = Q26_CY + Q26_R * Math.sin(ang);
+    } else {
+      ba = Math.atan2(y - by, x - bx);
+    }
+    render();
+    e.preventDefault();
+  });
+  const off = () => { drag = null; };
+  svg.addEventListener("pointerup", off);
+  svg.addEventListener("pointercancel", off);
+
+  root.append(
+    question("A wheel of radius 1 m rests against a 0.5 m step. In (a) a horizontal 50 N pushes the top of its 0.2 m axle. In (b) the weight is the printed 40.4 N: find the smallest force, and where to put it.", [
+      "Take moments about the step corner P: the wheel climbs when the push's moment beats the weight's",
+      "The weight's arm about P is $\\sqrt{1^2 - 0.5^2} = 0.866$ m",
+      "In (b) drag the force point round the rim and its knob to turn it; the longest arm possible is $2R = 2.000$ m",
+    ]),
+    modeTabs,
+    svg,
+    tools,
+    wS.el,
+    r.el,
+  );
+
+  syncUI();
+  render();
+}
+
+const REGISTRY = { q1: jq1, q2: jq2, p1: jp1, q26: jq26 };
 
 export function hasGraphic(id) {
   return Boolean(REGISTRY[id]);

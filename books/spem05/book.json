@@ -123,6 +123,14 @@
   },
   "media": [
     {
+      "page": 1,
+      "region": [267, 145, 542, 300],
+      "scene": "spem05:P1Fleming",
+      "src": "media/p1-fleming.mp4",
+      "poster": "media/p1-fleming-poster.jpg",
+      "title": "Fleming's left hand rule: B, I and F are mutually perpendicular"
+    },
+    {
       "page": 7,
       "region": [30, 119, 582, 784],
       "scene": "spem05:P07Turning",
@@ -130,6 +138,15 @@
       "poster": "media/p07-turning-poster.jpg",
       "title": "Turning effect on a current-carrying coil in a magnetic field",
       "ctrl": [0, -17]
+    }
+  ],
+  "embeds": [
+    {
+      "page": 3,
+      "at": [563.7, 107],
+      "title": "磁力大小的四個因素：F = BIL sinθ（p3）",
+      "sub": "F = BIL sinθ",
+      "src": "explainers/spem05-force-factors/spem05-force-factors.html"
     }
   ],
   "endPages": [

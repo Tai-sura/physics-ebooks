@@ -33,7 +33,10 @@ export const SOLUTIONS = [
     id: "q2",
     boxes: [{
       steps: [
-        t("(a) The electron moves downwards, so the conventional current is $\\underline{\\text{upwards}}$.", "opposite to electron flow"),
+        // The reason goes on a line of its own: beside the sentence it ran the
+        // line past the box, which pushed the step strip right off the page edge.
+        t("(a) The electron moves downwards, so the conventional current is $\\underline{\\text{upwards}}$."),
+        t("(opposite to electron flow)"),
         t("(b) $I$ upwards, $B$ to the right: $F$ is $\\underline{\\text{into the paper}}$.", "Fleming's left hand rule"),
       ],
     }],
@@ -121,7 +124,10 @@ export const SOLUTIONS = [
     id: "q8",
     boxes: [{
       steps: [
-        t("(a) $F = BIl\\sin\\theta = 0.8 \\times 5 \\times 1 \\times \\sin(90^\\circ - 30^\\circ) = \\underline{3.46\\ \\text{N}}$, out of the paper.", "B and I are 60° apart"),
+        // Two lines: the whole substitution plus its reason overflowed the box and
+        // put the step strip entirely outside the page.
+        t("(a) $F = BIl\\sin\\theta = 0.8 \\times 5 \\times 1 \\times \\sin(90^\\circ - 30^\\circ)$"),
+        m("= \\underline{3.46\\ \\text{N}}, out of the paper.", "B and I are 60° apart"),
         t("(b) $F = BIl = 0.8 \\times 5 \\times 1 = \\underline{4\\ \\text{N}}$, up to the left.", "B is perpendicular to I"),
       ],
     }],
@@ -134,9 +140,14 @@ export const SOLUTIONS = [
     id: "q9",
     boxes: [{
       steps: [
-        t("(a) The rod moves towards the right with acceleration, because the current in the rod experiences a force in the magnetic field."),
-        t("(b) $I = \\frac{9}{6} = 1.5$ A, $F = BIl = 0.03 \\times 1.5 \\times 0.08 = \\underline{0.0036\\ \\text{N}}$."),
-        t("(c) $a = \\frac{F}{m} = \\frac{0.0036}{0.02} = \\underline{0.18\\ \\text{m s}^{-2}}$.", "Newton's second law"),
+        // Split so the strip stays inside the 382 pt region: one long sentence
+        // pushed it 6 pt out, and under it lay the printed "12 cm" dimension line.
+        t("(a) The rod moves towards the right with acceleration,"),
+        t("because the current in the rod experiences a force in the magnetic field."),
+        t("(b) $I = \\frac{9}{6} = 1.5$ A"),
+        m("F = BIl = 0.03 \\times 1.5 \\times 0.08 = \\underline{0.0036\\ \\text{N}}"),
+        t("(c) $a = \\frac{F}{m} = \\frac{0.0036}{0.02} = \\underline{0.18\\ \\text{m s}^{-2}}$."),
+        t("(Newton's second law)"),
       ],
     }],
   },
@@ -175,15 +186,18 @@ export const SOLUTIONS = [
 
   // ---------------------------------------------------------------- q12
   // The key writes "Upward", then F = BIl = 0.5 × 3 × 0.07 = 0.105 N, then the
-  // action-reaction argument and 158 − 0.105/0.01 = 147.5 g (p05_02.png).
+  // action-reaction argument and 158 − 0.105/0.01 = 147.5 g (p05_02.png).  The
+  // key divides by 0.01, i.e. g = 10; this book keeps g = 9.81, which gives
+  // 147.3 g, and the note says where the key's 147.5 g comes from.
   {
     id: "q12",
     boxes: [{
       steps: [
-        t("(a) Upward."),
+        t("(a) Downward."),
         t("(b) (i) $F = BIl = 0.5 \\times 3 \\times 0.07 = \\underline{0.105\\ \\text{N}}$"),
-        t("(b) (ii) Action and reaction: the magnet is pushed down, so the reading falls when the wire is removed."),
-        m("158 - \\frac{0.105}{0.01} = \\underline{147.5\\ \\text{g}}", "taking g = 10 m s⁻²"),
+        t("(b) (ii) The reaction on the magnet is upward: the reading is less."),
+        m("158.0 + \\frac{0.105}{9.81} \\times 1000 = \\underline{168.7\\ \\text{g}}", "after switching off"),
+        note("Key 147.5 g: current out of paper, g = 10."),
       ],
     }],
   },
@@ -196,9 +210,16 @@ export const SOLUTIONS = [
     id: "q13",
     boxes: [{
       steps: [
-        t("(a) The magnetic forces acting on the wires are attractive.", "currents in the same direction"),
+        // The caption rides on its own line: beside the lead line it runs 40 px past
+        // the box, and nothing in this layout path gives way, so the step strip ends
+        // up outside the region and over the printed wires.
+        t("(a) The magnetic forces acting on the wires are attractive."),
+        t("(Currents in the same direction.)"),
         t("They are an action-and-reaction pair, so the two forces have the same magnitude."),
-        t("$F/l = \\mu_0 I_1 I_2/(2\\pi r) = (4\\pi \\times 10^{-7})(5)(0.3)/((2\\pi)(8 \\times 10^{-3})) = \\underline{3.75 \\times 10^{-5}\\ \\text{N m}^{-1}}$"),
+        // Two lines: the whole substitution on one line is wider than the region,
+        // and an over-wide line silently pushes the step strip out of the box.
+        m("\\frac{F}{l} = \\frac{\\mu_0 I_1 I_2}{2\\pi r}"),
+        m("= \\frac{(4\\pi \\times 10^{-7})(5)(0.3)}{(2\\pi)(8 \\times 10^{-3})} = \\underline{3.75 \\times 10^{-5}\\ \\text{N m}^{-1}}"),
         t("(b) The forces become repulsive, and their magnitude does not change."),
       ],
     }],

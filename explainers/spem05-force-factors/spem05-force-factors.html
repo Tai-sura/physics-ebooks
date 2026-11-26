@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>磁力大小的四個因素：F = BIL sinθ（spem05 p3）</title>
+<!-- p5.js — LGPL-2.1 — loaded unmodified as an external file: ../p5.min.js -->
+<style>
+  :root{
+    --ink:#23231f; --ink2:#5e5e55; --ink3:#8a877c; --line:#ddd8ca; --card:#fffefb;
+    --paper:#f4f1ea; --chip:#f0ebdd;
+    --cF:#2f6fbf; --cB:#7b4fa8; --cI:#b07d0a; --green:#2e7d5b; --max:#b03c2c;
+  }
+  html,body{height:100%;margin:0;padding:0;background:var(--paper);color:var(--ink);
+    font:16px/1.5 ui-sans-serif,system-ui,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;
+    overflow:hidden;-webkit-text-size-adjust:100%;}
+  #app{height:100%;box-sizing:border-box;display:grid;
+    grid-template-columns:minmax(0,1fr) 402px;gap:14px;padding:12px 14px;overflow:hidden;}
+  #stage{position:relative;min-width:0;min-height:0;background:var(--card);
+    border:1px solid var(--line);border-radius:10px;touch-action:none;overflow:hidden;}
+  #canvas-holder{position:absolute;inset:0;line-height:0;}
+
+  #panel{min-width:0;min-height:0;display:flex;flex-direction:column;gap:10px;overflow:hidden;
+    justify-content:space-between;}
+  .kick{font-size:25px;font-weight:700;letter-spacing:.5px;}
+  .kick small{display:block;font-size:14px;font-weight:500;color:var(--ink3);letter-spacing:0;margin-top:1px;}
+
+  .sliders{display:flex;flex-direction:column;gap:7px;}
+  .row{display:flex;align-items:center;gap:10px;}
+  .row label{width:20px;flex:none;font-weight:700;font-size:17px;}
+  .row input[type=range]{flex:1;min-width:0;accent-color:var(--cB);height:22px;}
+  .row output{width:74px;flex:none;text-align:right;font-variant-numeric:tabular-nums;
+    font-size:16px;font-weight:600;}
+  .bB label{color:var(--cB);} .bI label{color:var(--cI);} .bL label,.bth label{color:var(--ink);}
+
+  .defs{background:var(--chip);border-radius:8px;padding:7px 11px;font-size:14.5px;
+    color:var(--ink2);line-height:1.55;}
+
+  .read{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 12px;}
+  .read .f{font-size:16px;font-variant-numeric:tabular-nums;font-weight:600;}
+  .read .mx{display:none;font-size:16px;font-weight:700;color:var(--max);
+    font-variant-numeric:tabular-nums;margin-top:3px;}
+  .read .mx.on{display:block;}
+  .badge{display:inline-block;font-size:12px;font-weight:700;color:#fff;background:var(--max);
+    border-radius:5px;padding:1px 6px;margin-left:5px;vertical-align:2px;}
+  .rat{display:flex;justify-content:space-between;gap:8px;font-size:15px;color:var(--ink2);
+    margin-top:5px;font-variant-numeric:tabular-nums;}
+  .bar{height:13px;border-radius:7px;background:#e8e2d4;overflow:hidden;margin-top:5px;}
+  .bar i{display:block;height:100%;width:0;background:var(--cF);border-radius:7px;transition:none;}
+
+  .tnote{display:none;font-size:14.5px;color:var(--ink2);}
+  .tnote.on{display:block;}
+
+  .demos{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .demos button{font:inherit;text-align:left;padding:8px 10px;border-radius:9px;
+    border:1px solid var(--line);background:var(--card);cursor:pointer;
+    box-shadow:0 1px 0 #e7e1d2;line-height:1.35;}
+  .demos button:hover{background:#f8f5ec;}
+  .demos button:active{transform:translateY(1px);}
+  .demos button b{display:block;font-size:15.5px;font-weight:700;}
+  .demos button span{display:block;font-size:13px;color:var(--ink2);margin-top:2px;
+    font-variant-numeric:tabular-nums;}
+  .demos button[aria-pressed=true]{border-color:var(--cB);background:#f5f0fa;}
+
+  .cap{font-size:14.5px;color:var(--ink2);line-height:1.55;
+    border-top:1px solid var(--line);padding-top:8px;}
+  .cap b{color:var(--ink);}
+  @media (max-width:980px){
+    #app{grid-template-columns:minmax(0,1fr) 352px;gap:10px;padding:10px;}
+    .kick{font-size:22px;} .read .f,.read .mx{font-size:15px;} .demos button b{font-size:14.5px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage"><div id="canvas-holder"></div></div>
+
+  <aside id="panel">
+    <div class="kick">F = BIL sinθ<small>磁力大小的四個因素</small></div>
+
+    <div class="sliders">
+      <div class="row bB"><label for="B">B</label><input id="B" type="range" min="0" max="1" step="0.05" value="0.50"><output id="oB">0.50 T</output></div>
+      <div class="row bI"><label for="I">I</label><input id="I" type="range" min="0" max="5" step="0.1" value="2"><output id="oI">2.0 A</output></div>
+      <div class="row bL"><label for="L">L</label><input id="L" type="range" min="0" max="0.3" step="0.01" value="0.2"><output id="oL">0.20 m</output></div>
+      <div class="row bth"><label for="th">θ</label><input id="th" type="range" min="0" max="90" step="5" value="90"><output id="oth">90°</output></div>
+    </div>
+
+    <div class="defs">
+      <div>θ ＝ 導線與 B 的夾角（不是與法線的夾角）</div>
+      <div>L ＝ 導線在磁場中的長度（不是導線總長）</div>
+    </div>
+
+    <div class="read">
+      <div class="f" id="fLine">F = 0.50 × 2.0 × 0.20 × sin 90° = 0.200 N</div>
+      <div class="mx" id="maxLine">F = BIL（最大）= 0.200 N<span class="badge">MAX</span></div>
+      <div class="rat"><span id="ratLine">F/Fmax = sinθ = 1.000</span><span id="ratPct">100%</span></div>
+      <div class="bar"><i id="barFill"></i></div>
+    </div>
+
+    <div class="tnote" id="tnote">轉 θ 只改大小，F 仍然 ⊥ 導線、⊥ B。</div>
+
+    <div class="demos">
+      <button type="button" data-demo="b"><b>① 加強磁場</b><span>B 0.50 → 1.00 T</span></button>
+      <button type="button" data-demo="i"><b>② 加大電流</b><span>I 2.0 → 4.0 A</span></button>
+      <button type="button" data-demo="l"><b>③ 更長的場內長度</b><span>L 0.20 → 0.30 m</span></button>
+      <button type="button" data-demo="th"><b>④ 導線與場成直角</b><span>θ 30° → 90°</span></button>
+    </div>
+
+    <div class="cap">
+      <b>θ = 90° 就係印刷頁嗰個情況（力最大）。</b>F ∝ B、∝ I、∝ L、∝ sinθ（不是 ∝ θ）；
+      中間 F 圓的大小 ∝ sinθ；場線粗細隨 B 變，只是示意。滑桿數值係示範值：
+      B 0–1.00 T、I 0–5.0 A、L 0–0.30 m、θ 0–90°。
+    </div>
+  </aside>
+</div>
+
+<script src="../p5.min.js"></script>
+<script>
+/* ------------------------------------------------------------------
+   磁力大小 F = BIL sinθ（spem05 p3）
+   F 永遠垂直紙面（⊗ 入紙面）；θ 只改大小。
+   導線完全在均勻場內，L 由滑桿獨立控制（唔係跨固定極隙）。
+   ------------------------------------------------------------------ */
+const C = {
+  paper:[244,241,234], card:[255,254,251], ink:[35,35,31], ink2:[94,94,85], ink3:[138,135,124],
+  line:[221,216,202], grid:[236,231,219],
+  F:[47,111,191], B:[123,79,168], I:[176,125,10], green:[46,125,91], maxc:[176,60,44],
+};
+
+const DEF = { B:0.50, I:2.0, L:0.20, th:90 };       // 預設＝印刷頁嗰個情況
+const S   = { ...DEF };
+const STEP = { B:0.05, I:0.1, L:0.01, th:5 };
+
+const f2 = (v) => v.toFixed(2);
+const f1 = (v) => v.toFixed(1);
+function sig3(v){
+  if (Math.abs(v) < 1e-12) return '0';
+  const e = Math.floor(Math.log10(Math.abs(v)));
+  return v.toFixed(Math.max(0, 2 - e));
+}
+const force = () => S.B * S.I * S.L * Math.sin(radians(S.th));
+const ratio = () => Math.sin(radians(S.th));
+
+/* ---------------- 讀數 ---------------- */
+function sync(){
+  const Fv = force(), r = ratio();
+  document.getElementById('oB').textContent  = f2(S.B) + ' T';
+  document.getElementById('oI').textContent  = f1(S.I) + ' A';
+  document.getElementById('oL').textContent  = f2(S.L) + ' m';
+  document.getElementById('oth').textContent = Math.round(S.th) + '°';
+  document.getElementById('B').value  = String(S.B);
+  document.getElementById('I').value  = String(S.I);
+  document.getElementById('L').value  = String(S.L);
+  document.getElementById('th').value = String(Math.round(S.th));
+
+  const fl = document.getElementById('fLine');
+  const mx = document.getElementById('maxLine');
+  const tn = document.getElementById('tnote');
+
+  if (S.th <= 0.001){
+    fl.textContent = 'F = 0 N（導線與 B 平行，無磁力）';
+  } else {
+    fl.textContent = 'F = ' + f2(S.B) + ' × ' + f1(S.I) + ' × ' + f2(S.L)
+      + ' × sin ' + Math.round(S.th) + '° = ' + sig3(Fv) + ' N';
+  }
+  // MAX 行：θ = 90° 之外，仲要 Fmax ≠ 0 才出。
+  // B／I／L = 0 時「F = BIL（最大）= 0 N ＋ MAX」對學生是矛盾訊號，索性唔顯示。
+  const Fmax = S.B * S.I * S.L;
+  const undef = Fmax <= 1e-12;                   // B／I／L 有 0 → F/Fmax 無定義
+  mx.classList.toggle('on', Math.abs(S.th - 90) < 0.001 && !undef);
+  mx.innerHTML = 'F = BIL（最大）= ' + sig3(Fmax) + ' N<span class="badge">MAX</span>';
+  document.getElementById('ratLine').textContent = undef
+    ? 'F/Fmax 無定義（B、I 或 L 為 0）'
+    : 'F/Fmax = sinθ = ' + r.toFixed(3);
+  document.getElementById('ratPct').textContent = undef ? '—' : Math.round(r * 100) + '%';
+  document.getElementById('barFill').style.width = undef ? '0%' : (r * 100).toFixed(1) + '%';
+
+  tn.classList.toggle('on', S.th > 0.001 && S.th < 89.999);
+  redraw();
+}
+
+/* ---------------- 畫 ---------------- */
+function fieldArrows(fld){
+  if (S.B <= 0.001) return;                      // B = 0：沒有場線
+  const wgt = 0.8 + 1.6 * S.B;                   // B 越大，場線越粗（強度的示意）
+  const hs = 3.5 + 4.0 * S.B;
+  stroke(...C.B); strokeWeight(wgt); strokeCap(ROUND);
+  const rows = [0.14, 0.34, 0.66, 0.86];
+  for (const f of rows){
+    const y = fld.y + fld.h * f;
+    const x0 = fld.x + 26, x1 = fld.x + fld.w - 30;
+    line(x0, y, x1 - 12, y);
+    noStroke(); fill(...C.B);
+    triangle(x1, y, x1 - 13, y - hs, x1 - 13, y + hs);
+    stroke(...C.B); noFill();
+  }
+  noStroke(); fill(...C.B); textAlign(LEFT, BOTTOM); textSize(15); textStyle(BOLD);
+  text('B（均勻磁場，→）', fld.x + 14, fld.y + fld.h * 0.14 - 8);
+  textStyle(NORMAL);
+}
+
+function drawField(W, H){
+  const M = 16;
+  const chartH = Math.max(116, Math.min(162, Math.round(H * 0.18)));
+  const chartTop = H - M - chartH;
+  const fld = { x: M, y: M, w: W - 2 * M, h: chartTop - 10 - M };
+  noFill(); stroke(...C.line); strokeWeight(1.5);
+  rect(fld.x, fld.y, fld.w, fld.h, 10);
+  fill(246, 243, 253, 120); noStroke(); rect(fld.x + 1, fld.y + 1, fld.w - 2, fld.h - 2, 10);
+  fieldArrows(fld);
+
+  const c = { x: fld.x + fld.w / 2, y: fld.y + fld.h / 2 };
+  const unit = Math.min(fld.w, fld.h);
+  const scale = 0.86 * unit / 0.30;             // 固定比例：L 長短真係睇得出
+  const half = S.L * scale / 2;                 // L = 0 就係 0，唔再用最小值撐一段 6 px 假導線
+  const wireOn = half >= 1;                     // 短過 1 px 就當「場中導線長度 = 0」：整段唔畫
+  const th = radians(S.th);
+  const dir = { x: Math.cos(th), y: -Math.sin(th) };
+  const nor = { x: Math.sin(th), y: Math.cos(th) };
+  const p1 = { x: c.x - dir.x * half, y: c.y - dir.y * half };
+  const p2 = { x: c.x + dir.x * half, y: c.y + dir.y * half };
+  const rFmax = unit * 0.075;
+  const rArc = unit * 0.22;
+  const rF = unit * 0.075 * ratio();
+  const fOn = force() > 1e-9;
+
+  // 次序：① 白底圓 → ② ⊗ 的十字 → ③ 導線 → ④ ⊗ 的圓環 → ⑤ 標籤。
+  // 導線壓在十字上面，L 短到 0.01 m 導線都一定連續見得到（唔會被十字的中間切開）；
+  // 圓環最後畫，所以 ⊗ 的圓永遠係一個完整嘅圓，被導線壓住嘅只有圓環上落兩個窄位。
+  // F = 0 時上面三樣都唔畫。
+  if (fOn){
+    noStroke(); fill(...C.card); circle(c.x, c.y, 2 * rF + 14);
+    stroke(...C.F); strokeWeight(Math.max(2, rF * 0.20));
+    const k = rF * 0.62;
+    line(c.x - k, c.y - k, c.x + k, c.y + k);
+    line(c.x - k, c.y + k, c.x + k, c.y - k);
+  }
+
+  if (wireOn){
+  // 導線
+  stroke(...C.ink); strokeWeight(8); strokeCap(ROUND);
+  line(p1.x, p1.y, p2.x, p2.y);
+  stroke(255, 254, 251); strokeWeight(2.5);
+  line(p1.x, p1.y, p2.x, p2.y);
+
+  // 電流方向（黃）；I = 0 沒有電流，唔畫箭咀
+  const ia = { x: c.x + dir.x * half * 0.55, y: c.y + dir.y * half * 0.55 };
+  if (S.I > 0.001){
+    const aS = Math.min(1, half / 20);              // 導線短過 20 px 就把箭咀縮細，唔會伸出導線兩端
+    noStroke(); fill(...C.I);
+    push(); translate(ia.x, ia.y); rotate(Math.atan2(dir.y, dir.x));
+    triangle(11 * aS, 0, -8 * aS, -7 * aS, -8 * aS, 7 * aS); pop();
+    fill(...C.I); textAlign(LEFT, CENTER); textSize(16); textStyle(BOLD);
+    text('I', ia.x + 16, ia.y - 14); textStyle(NORMAL);
+  } else {
+    noStroke(); fill(...C.ink3); textAlign(LEFT, CENTER); textSize(15); textStyle(BOLD);
+    text('I = 0', ia.x + 14, ia.y - 8); textStyle(NORMAL);
+  }
+
+  // L 尺寸線：偏移要避開中心的 ⊗ 同 θ 的直角記號，否則會疊在同一條線上
+  const o = Math.max(34, rFmax + 26, rArc * 0.62 + 22);
+  stroke(...C.ink3); strokeWeight(1.2);
+  line(p1.x, p1.y, p1.x + nor.x * (o + 8), p1.y + nor.y * (o + 8));
+  line(p2.x, p2.y, p2.x + nor.x * (o + 8), p2.y + nor.y * (o + 8));
+  const b1 = { x: p1.x + nor.x * o, y: p1.y + nor.y * o };
+  const b2 = { x: p2.x + nor.x * o, y: p2.y + nor.y * o };
+  line(b1.x, b1.y, b2.x, b2.y);
+  noStroke(); fill(...C.ink3);
+  push(); translate(b1.x, b1.y); rotate(Math.atan2(dir.y, dir.x));
+  triangle(9, 0, -1, -5, -1, 5); pop();
+  push(); translate(b2.x, b2.y); rotate(Math.atan2(dir.y, dir.x));
+  triangle(-9, 0, 1, -5, 1, 5); pop();
+  const lm = { x: (b1.x + b2.x) / 2 + nor.x * 16, y: (b1.y + b2.y) / 2 + nor.y * 16 };
+  const lal = nor.x > 0.1 ? LEFT : (nor.x < -0.1 ? RIGHT : CENTER);
+  textAlign(lal, CENTER); textSize(15); fill(...C.ink2);
+  stroke(253, 251, 245); strokeWeight(5);            // 白色外框：貼住尺寸線都讀得到
+  text('L = ' + f2(S.L) + ' m', lm.x, lm.y);
+  noStroke();
+
+  // θ 弧：參考方向就係處處可見的水平場線，唔另外畫長箭咀（會橫過 L 尺寸線）
+  if (S.th >= 89.999){
+    stroke(...C.B); strokeWeight(2); noFill();
+    const q = rArc * 0.62;
+    line(c.x + q, c.y, c.x + q, c.y - q); line(c.x + q, c.y - q, c.x, c.y - q);
+  } else if (S.th > 0.001){
+    stroke(...C.B); strokeWeight(2); noFill();
+    arc(c.x, c.y, 2 * rArc, 2 * rArc, -th, 0);
+  }
+  const la = -th / 2;
+  const tlx = c.x + Math.cos(la) * rArc * 1.42, tly = c.y + Math.sin(la) * rArc * 1.42;
+  textAlign(CENTER, CENTER); textSize(16); textStyle(BOLD);
+  stroke(253, 251, 245); strokeWeight(5);           // 外框：壓住場線都讀得到
+  text('θ = ' + Math.round(S.th) + '°', tlx, tly);
+  noStroke(); fill(...C.B);
+  text('θ = ' + Math.round(S.th) + '°', tlx, tly);
+  textStyle(NORMAL);
+  } else {
+    // L = 0：場中導線長度為 0 —— 導線、L 尺寸線、θ 弧全部唔畫，畫任何一段都係假象
+    noStroke(); fill(...C.ink2); textAlign(CENTER, CENTER); textSize(16); textStyle(BOLD);
+    text('L = 0：導線在場中的長度為 0', c.x, c.y + 34);
+    textStyle(NORMAL);
+  }
+
+  // ⊗ 的圓環：放在導線之後，圓永遠完整
+  if (fOn){
+    stroke(...C.F); strokeWeight(Math.max(2, rF * 0.20)); noFill();
+    circle(c.x, c.y, 2 * rF);
+  }
+
+  // F 的標籤最後畫（在導線之上）：細字唔會被導線壓住。
+  // F = 0（θ=0 或 B／I／L = 0）時連圓環、十字都唔畫，寧願留白都唔畫一支細到睇不見的箭。
+  if (fOn){
+    noStroke(); fill(...C.F); textAlign(RIGHT, CENTER); textSize(17); textStyle(BOLD);
+    text('F', c.x - rF - 12, c.y - 9);
+    textSize(12.5); textStyle(NORMAL); fill(...C.ink3);
+    text('入紙（指向紙內）', c.x - rF - 12, c.y + 9);
+  } else {
+    textAlign(CENTER, CENTER); textSize(16); textStyle(BOLD);
+    stroke(253, 251, 245); strokeWeight(5);
+    text('F = 0（無磁力）', c.x, c.y - 28);
+    noStroke(); fill(...C.maxc);
+    text('F = 0（無磁力）', c.x, c.y - 28);
+    textStyle(NORMAL);
+  }
+  return chartTop;
+}
+
+function drawCurve(W, H, top){
+  const bx = 16, by = top, bw = W - 32, bh = H - 16 - top;
+  fill(253, 251, 245); stroke(...C.line); strokeWeight(1.5);
+  rect(bx, by, bw, bh, 9);
+  noStroke(); fill(...C.ink2); textAlign(LEFT, TOP); textSize(13.5);
+  text('F–θ：F/Fmax = sinθ（0–90°）', bx + 12, by + 6);
+
+  const pl = bx + 58, pr = bx + bw - 22, pt = by + 32, pb = by + bh - 26;
+  const X = (a) => pl + (pr - pl) * (a / 90);
+  const Y = (v) => pb - (pb - pt) * v;
+
+  stroke(...C.grid); strokeWeight(1);
+  for (const v of [0, 0.5, 1]) { line(pl, Y(v), pr, Y(v)); }
+  stroke(...C.line); strokeWeight(1.2);
+  line(pl, pt, pl, pb); line(pl, pb, pr, pb);
+  noStroke(); fill(...C.ink3); textSize(11.5); textAlign(RIGHT, CENTER);
+  text('0', pl - 6, Y(0)); text('0.50', pl - 6, Y(0.5)); text('1.00', pl - 6, Y(1));
+  textAlign(CENTER, TOP);
+  text('0°', pl, pb + 5); text('45°', X(45), pb + 5); text('90°', pr, pb + 5);
+
+  noFill(); stroke(...C.F); strokeWeight(2.4); beginShape();
+  for (let a = 0; a <= 90; a += 2) vertex(X(a), Y(Math.sin(radians(a))));
+  endShape();
+
+  const a0 = Math.max(0, Math.min(90, S.th)), v0 = ratio();
+  stroke(180, 200, 228); strokeWeight(1);
+  line(X(a0), Y(v0), X(a0), pb);
+  noStroke(); fill(...C.card); stroke(...C.F); strokeWeight(2); circle(X(a0), Y(v0), 9);
+  noStroke(); fill(...C.ink); textAlign(CENTER, BOTTOM); textSize(12.5);
+  text('(' + Math.round(S.th) + '°, ' + v0.toFixed(2) + ')',
+    Math.min(pr - 26, Math.max(pl + 26, X(a0))), Y(v0) - 8);
+}
+
+function draw(){
+  background(...C.paper);
+  const chartTop = drawField(width, height);
+  drawCurve(width, height, chartTop);
+}
+
+/* ---------------- 一鍵演示：先設 before，再掃到 after ---------------- */
+let raf = 0, guard = 0;
+const DEMOS = {
+  b:  { key:'B',  from:0.50, to:1.00 },
+  i:  { key:'I',  from:2.0,  to:4.0  },
+  l:  { key:'L',  from:0.20, to:0.30 },
+  th: { key:'th', from:30,   to:90   },
+};
+function resetAll(){
+  Object.assign(S, DEF);
+  document.querySelectorAll('.demos button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+}
+function playDemo(id){
+  const d = DEMOS[id];
+  cancelAnimationFrame(raf); clearTimeout(guard);
+  resetAll();
+  S[d.key] = d.from;
+  sync();
+  const t0 = performance.now(), dur = 950;
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / dur);
+    const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    S[d.key] = d.from + (d.to - d.from) * e;
+    if (k >= 1) S[d.key] = d.to;
+    sync();
+    if (k < 1) raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+  // 保險：就算 rAF 被節流／掉幀，時間到都一定落到 after
+  guard = setTimeout(() => { S[d.key] = d.to; sync(); }, dur + 90);
+}
+
+/* ---------------- 控制 ---------------- */
+for (const id of ['B', 'I', 'L', 'th']){
+  document.getElementById(id).addEventListener('input', (ev) => {
+    cancelAnimationFrame(raf); clearTimeout(guard);
+    document.querySelectorAll('.demos button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+    S[id] = Number(ev.target.value);
+    sync();
+  });
+}
+document.querySelectorAll('.demos button').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.demos button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+    btn.setAttribute('aria-pressed', 'true');
+    playDemo(btn.dataset.demo);
+  });
+});
+
+/* ---------------- p5 ---------------- */
+function canvasSize(){
+  const h = document.getElementById('canvas-holder');
+  return { w: Math.max(300, Math.floor(h.clientWidth)), h: Math.max(300, Math.floor(h.clientHeight)) };
+}
+function setup(){
+  const { w, h } = canvasSize();
+  createCanvas(w, h).parent('canvas-holder');
+  pixelDensity(Math.min(2, window.devicePixelRatio || 1));
+  noLoop(); textFont('system-ui, "PingFang TC", "Microsoft JhengHei", sans-serif');
+  sync();
+}
+function windowResized(){
+  const { w, h } = canvasSize();
+  resizeCanvas(w, h);
+  redraw();
+}
+</script>
+</body>
+</html>

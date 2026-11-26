@@ -1064,6 +1064,7 @@ body.embed-open { overflow: hidden; }
   overflow: hidden;
 }
 .qa.card .card-head {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1073,7 +1074,23 @@ body.embed-open { overflow: hidden; }
   border-bottom: 1px solid #e4d7bd;
   font: 600 12px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
   color: #6d5c3b;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
+/* The bar is 30 pt tall: the hit area reaches 44 pt without changing how it looks. */
+.qa.card .card-head::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: -7px;
+  bottom: -7px;
+}
+.qa.card.dragging,
+.qa.card.dragging .card-head { cursor: grabbing; }
+.qa.card.dragging { box-shadow: 0 14px 34px rgba(30, 25, 15, 0.3); }
 .qa.card .card-head strong { flex: 1 1 auto; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .qa.card .card-head .ctl {
   position: static !important;

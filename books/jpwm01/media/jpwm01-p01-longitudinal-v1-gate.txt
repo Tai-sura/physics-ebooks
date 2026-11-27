@@ -1,0 +1,12 @@
+file      jpwm01-p01-longitudinal-v1.mp4
+size      353,601 B  (0.35 MB)   md5 93DC67C0AF1FD99AC172065A5B8AE43D
+video     h264 High yuv420p 1600x670 @ 30 fps, 192 frames, 6.400 s
+bitrate   442 kbps
+faststart YES (moov@36, mdat@2952)
+audio     0 stream(s)
+motion    changed px/pair min=0 median=1372 max=1610  (600x250 @ 10 fps, still if < 40)
+still     longest 1.70 s at t=4.60..6.30 s
+padding   no identical replay at 40/50/60/75 % offsets
+period    no short repeating cycle found
+seam      first vs last frame MAD 2.63 (loops cleanly)
+RESULT: PASS

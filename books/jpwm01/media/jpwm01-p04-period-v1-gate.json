@@ -1,0 +1,18 @@
+{
+  "file": "C:\\Users\\surat\\.dsh\\bot\\workspace\\films\\jpwm01_p04\\delivery\\jpwm01-p04-period-v1.mp4",
+  "md5": "FBF4D1A8DB883A710BC45F4C0E751BA1",
+  "size": 426709,
+  "width": 1600,
+  "height": 670,
+  "fps": 30.0,
+  "frames": 219,
+  "duration": 7.3,
+  "faststart": true,
+  "audio_streams": 0,
+  "longest_still_s": 1.7,
+  "periodic_cycle_s": null,
+  "replay_match_pct": 0,
+  "loop_seam_mad": 4.92,
+  "fails": [],
+  "notes": []
+}

@@ -1,0 +1,71 @@
+{
+  "name": "jpwm01-p10-dxdt-v3",
+  "source": {
+    "frames": "C:\\Users\\surat\\.dsh\\bot\\workspace\\films\\jpwm01_p10\\png_v3",
+    "pattern": "%04d.png",
+    "master": null
+  },
+  "encoder": {
+    "cmd": [
+      "-c:v",
+      "libx264",
+      "-crf",
+      "18",
+      "-preset",
+      "slow",
+      "-pix_fmt",
+      "yuv420p",
+      "-profile:v",
+      "high",
+      "-level",
+      "4.0",
+      "-g",
+      "90",
+      "-keyint_min",
+      "30",
+      "-movflags",
+      "+faststart",
+      "-colorspace",
+      "bt709",
+      "-color_primaries",
+      "bt709",
+      "-color_trc",
+      "bt709",
+      "-an"
+    ],
+    "width": 1600,
+    "height": 590,
+    "fps": 30,
+    "crf": 18
+  },
+  "film": {
+    "file": "jpwm01-p10-dxdt-v3.mp4",
+    "bytes": 349783,
+    "md5": "6F0BCB61F3B9684DB8041079FCB117D9"
+  },
+  "poster": {
+    "file": "jpwm01-p10-dxdt-v3-poster.jpg",
+    "bytes": 61989,
+    "md5": "3AABEBF5A2A7BF7EB0A5AA9FC85B3AEB",
+    "at_s": 6.4
+  },
+  "gate": {
+    "file": "C:\\Users\\surat\\.dsh\\bot\\workspace\\films\\jpwm01_p10\\delivery\\jpwm01-p10-dxdt-v3.mp4",
+    "md5": "6F0BCB61F3B9684DB8041079FCB117D9",
+    "size": 349783,
+    "width": 1600,
+    "height": 590,
+    "fps": 30.0,
+    "frames": 251,
+    "duration": 8.366667,
+    "faststart": true,
+    "audio_streams": 0,
+    "longest_still_s": 1.6,
+    "periodic_cycle_s": null,
+    "replay_match_pct": 0,
+    "loop_seam_mad": 2.91,
+    "fails": [],
+    "notes": []
+  },
+  "gate_pass": true
+}

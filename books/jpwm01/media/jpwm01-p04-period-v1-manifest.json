@@ -1,0 +1,72 @@
+{
+  "name": "jpwm01-p04-period-v1",
+  "source": {
+    "frames": null,
+    "pattern": "%04d.png",
+    "master": "C:\\Users\\surat\\.dsh\\bot\\workspace\\films\\jpwm01_p04\\P4Period_master_1668x698_30fps.mp4"
+  },
+  "encoder": {
+    "cmd": [
+      "-c:v",
+      "libx264",
+      "-crf",
+      "18",
+      "-preset",
+      "slow",
+      "-pix_fmt",
+      "yuv420p",
+      "-profile:v",
+      "high",
+      "-level",
+      "4.0",
+      "-g",
+      "90",
+      "-keyint_min",
+      "30",
+      "-movflags",
+      "+faststart",
+      "-colorspace",
+      "bt709",
+      "-color_primaries",
+      "bt709",
+      "-color_trc",
+      "bt709",
+      "-an"
+    ],
+    "width": 1600,
+    "height": 670,
+    "fps": 30,
+    "crf": 18
+  },
+  "film": {
+    "file": "jpwm01-p04-period-v1.mp4",
+    "bytes": 426709,
+    "md5": "FBF4D1A8DB883A710BC45F4C0E751BA1"
+  },
+  "poster": {
+    "file": "jpwm01-p04-period-v1-poster.jpg",
+    "bytes": 70245,
+    "md5": "A58457F7FAF0F56420F71A4EDC359497",
+    "at_s": 6.3333,
+    "frame": 190
+  },
+  "gate": {
+    "file": "C:\\Users\\surat\\.dsh\\bot\\workspace\\films\\jpwm01_p04\\delivery\\jpwm01-p04-period-v1.mp4",
+    "md5": "FBF4D1A8DB883A710BC45F4C0E751BA1",
+    "size": 426709,
+    "width": 1600,
+    "height": 670,
+    "fps": 30.0,
+    "frames": 219,
+    "duration": 7.3,
+    "faststart": true,
+    "audio_streams": 0,
+    "longest_still_s": 1.7,
+    "periodic_cycle_s": null,
+    "replay_match_pct": 0,
+    "loop_seam_mad": 4.92,
+    "fails": [],
+    "notes": []
+  },
+  "gate_pass": true
+}

@@ -1,0 +1,18 @@
+{
+  "file": "C:\\Users\\surat\\.dsh\\bot\\workspace\\films\\jpwm01_p01\\delivery\\jpwm01-p01-longitudinal-v1.mp4",
+  "md5": "93DC67C0AF1FD99AC172065A5B8AE43D",
+  "size": 353601,
+  "width": 1600,
+  "height": 670,
+  "fps": 30.0,
+  "frames": 192,
+  "duration": 6.4,
+  "faststart": true,
+  "audio_streams": 0,
+  "longest_still_s": 1.7,
+  "periodic_cycle_s": null,
+  "replay_match_pct": 0,
+  "loop_seam_mad": 2.63,
+  "fails": [],
+  "notes": []
+}

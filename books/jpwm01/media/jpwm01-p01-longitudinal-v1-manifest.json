@@ -1,0 +1,72 @@
+{
+  "name": "jpwm01-p01-longitudinal-v1",
+  "source": {
+    "frames": null,
+    "pattern": "%04d.png",
+    "master": "C:\\Users\\surat\\.dsh\\bot\\workspace\\films\\jpwm01_p01\\P1Longitudinal_master_1668x698_30fps.mp4"
+  },
+  "encoder": {
+    "cmd": [
+      "-c:v",
+      "libx264",
+      "-crf",
+      "18",
+      "-preset",
+      "slow",
+      "-pix_fmt",
+      "yuv420p",
+      "-profile:v",
+      "high",
+      "-level",
+      "4.0",
+      "-g",
+      "90",
+      "-keyint_min",
+      "30",
+      "-movflags",
+      "+faststart",
+      "-colorspace",
+      "bt709",
+      "-color_primaries",
+      "bt709",
+      "-color_trc",
+      "bt709",
+      "-an"
+    ],
+    "width": 1600,
+    "height": 670,
+    "fps": 30,
+    "crf": 18
+  },
+  "film": {
+    "file": "jpwm01-p01-longitudinal-v1.mp4",
+    "bytes": 353601,
+    "md5": "93DC67C0AF1FD99AC172065A5B8AE43D"
+  },
+  "poster": {
+    "file": "jpwm01-p01-longitudinal-v1-poster.jpg",
+    "bytes": 51458,
+    "md5": "00C403C4A9CAB4054CB93F71F9AFCD84",
+    "at_s": 6.3667,
+    "frame": 191
+  },
+  "gate": {
+    "file": "C:\\Users\\surat\\.dsh\\bot\\workspace\\films\\jpwm01_p01\\delivery\\jpwm01-p01-longitudinal-v1.mp4",
+    "md5": "93DC67C0AF1FD99AC172065A5B8AE43D",
+    "size": 353601,
+    "width": 1600,
+    "height": 670,
+    "fps": 30.0,
+    "frames": 192,
+    "duration": 6.4,
+    "faststart": true,
+    "audio_streams": 0,
+    "longest_still_s": 1.7,
+    "periodic_cycle_s": null,
+    "replay_match_pct": 0,
+    "loop_seam_mad": 2.63,
+    "fails": [],
+    "notes": []
+  },
+  "gate_pass": true
+}

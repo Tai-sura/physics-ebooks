@@ -1,0 +1,12 @@
+file      jpwm01-p10-dxdt-v3.mp4
+size      349,783 B  (0.35 MB)   md5 6F0BCB61F3B9684DB8041079FCB117D9
+video     h264 High yuv420p 1600x590 @ 30 fps, 251 frames, 8.367 s
+bitrate   334 kbps
+faststart YES (moov@36, mdat@3575)
+audio     0 stream(s)
+motion    changed px/pair min=0 median=1654 max=2153  (600x220 @ 10 fps, still if < 40)
+still     longest 1.60 s at t=6.70..8.30 s
+padding   no identical replay at 40/50/60/75 % offsets
+period    no short repeating cycle found
+seam      first vs last frame MAD 2.91 (loops cleanly)
+RESULT: PASS

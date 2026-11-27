@@ -1,0 +1,12 @@
+file      jpwm01-p04-period-v1.mp4
+size      426,709 B  (0.43 MB)   md5 FBF4D1A8DB883A710BC45F4C0E751BA1
+video     h264 High yuv420p 1600x670 @ 30 fps, 219 frames, 7.300 s
+bitrate   468 kbps
+faststart YES (moov@36, mdat@3356)
+audio     0 stream(s)
+motion    changed px/pair min=0 median=1893 max=4187  (600x250 @ 10 fps, still if < 40)
+still     longest 1.70 s at t=5.50..7.20 s
+padding   no identical replay at 40/50/60/75 % offsets
+period    no short repeating cycle found
+seam      first vs last frame MAD 4.92 (visible jump if looped)
+RESULT: PASS

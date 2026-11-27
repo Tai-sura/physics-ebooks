@@ -710,28 +710,8 @@
     {
       "page": 7,
       "at": [
-        563.7,
-        107
-      ],
-      "title": "力偶：力矩與支點無關",
-      "sub": "Couples",
-      "src": "explainers/couple/couple.html"
-    },
-    {
-      "page": 7,
-      "at": [
         1.5,
         352
-      ],
-      "title": "重心：懸掛法",
-      "sub": "Centre of gravity, steps 1-5",
-      "src": "explainers/centroid-hang/centroid-hang.html"
-    },
-    {
-      "page": 7,
-      "at": [
-        544.7,
-        522.3
       ],
       "title": "重心：懸掛法",
       "sub": "Centre of gravity, steps 1-5",

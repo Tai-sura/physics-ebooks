@@ -419,6 +419,15 @@
       "label": "p10 d-x / d-t"
     }
   ],
+  "embeds": [
+    {
+      "page": 8,
+      "at": [568, 400],
+      "title": "Phase: in phase, out of phase, antiphase",
+      "sub": "p08 · particles 1–7",
+      "src": "explainers/jpwm01-p08-phase/jpwm01-p08-phase.html"
+    }
+  ],
   "answerCards": [
     "q1",
     "q6",

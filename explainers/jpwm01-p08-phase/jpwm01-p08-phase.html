@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phase · in phase, out of phase, antiphase (jpwm01 p8)</title>
+<style>
+  /* One panel film, opened from the reader's embed tab on p08. The card around
+     this page is drawn by the reader (header with the title, close button), so
+     the page itself is nothing but the film: it fills whatever the card gives
+     it, keeps the film's 1600x670 aspect, and never scrolls. */
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #fff; }
+  #wrap {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    box-sizing: border-box;
+  }
+  video {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    background: #fff;
+    outline: none;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <video id="film" controls muted playsinline preload="auto"
+    src="../../books/jpwm01/media/jpwm01-p08-phase-v2.mp4"
+    poster="../../books/jpwm01/media/jpwm01-p08-phase-v2-poster.jpg"></video>
+</div>
+<script>
+  // Opening the card was the tap that allows playback, so start on its own.
+  // The film ends on the printed t = 0 state; it does not loop, and the reader
+  // drops this iframe when the card closes, which stops the video.
+  const film = document.getElementById("film");
+  film.play().catch(() => {});
+</script>
+</body>
+</html>

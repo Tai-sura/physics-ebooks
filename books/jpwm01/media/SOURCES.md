@@ -7,8 +7,9 @@ old row stays while the old file is still in the folder (the live site may still
 at it).
 
 The scene sources ship with the films — `tools/manim/jpwm01.py` (`P10Graphs`),
-`tools/manim/jpwm01_phase.py` (`P8Phase`), `tools/manim/jpwm01_p04.py` (`P4Period`)
-and `tools/manim/jpwm01_p01.py` (`P1Longitudinal`) are all tracked, so
+`tools/manim/jpwm01_phase.py` (`P8Phase`), `tools/manim/jpwm01_p04.py` (`P4Period`),
+`tools/manim/jpwm01_p01.py` (`P1Longitudinal`) and `tools/manim/jpwm01_p05.py`
+(`P5Frequency`) are all tracked, so
 `git ls-files tools/manim` lists them. Byte sizes and md5 below were measured on this
 folder's files (`Get-FileHash -Algorithm MD5`); frame count, frame size and duration
 were measured on the delivered mp4 (`ffprobe`), not taken from the manifest.
@@ -25,6 +26,8 @@ were measured on the delivered mp4 (`ffprobe`), not taken from the manifest.
 | `jpwm01-p04-period-v1-poster.jpg` | frame **190** (6.333 s), not the frame the script first named (136): at 136 the label `one complete oscillation` is still fading in and reads as a half-transparent ghost; frames 188–216 are pixel-identical with the label fully drawn, `t = 1.000 T`, and both brackets in place. The poster is the finished state, so it looks like the printed panel before ▶ | written by the same `--poster-frame 190` run (q:v 3). PSNR against frames 188 / 189 / 190 / 191 / 216 is the same value (44.668) because they are the same picture | 7.300 s | 1600 × 670 | 70,245 | `A58457F7FAF0F56420F71A4EDC359497` |
 | `jpwm01-p01-longitudinal-v1.mp4` | Manim scene `tools/manim/jpwm01_p01.py` :: `P1Longitudinal` (scene commit `654c39e`). A **drawer film** like p04; opens from the tab at p01 `at` `[558.3, 465.3]` (printed-page points; this page inserts no space, so sheet = printed) | master `films\jpwm01_p01\P1Longitudinal_master_1668x698_30fps.mp4` (267,518 B, md5 `5B2EDB842EADAA35BF3FB24394806A44`, 192 frames) → `python films\tools\encode_panel.py --name jpwm01-p01-longitudinal --version 1 --master films\jpwm01_p01\P1Longitudinal_master_1668x698_30fps.mp4 --outdir <delivery> --poster-frame 191 --width 1600 --height 670` | 6.400 s | 1600 × 670, 30 fps, 192 frames, h264 High yuv420p, +faststart, no audio | 353,601 | `93DC67C0AF1FD99AC172065A5B8AE43D` |
 | `jpwm01-p01-longitudinal-v1-poster.jpg` | last frame (frame 191, 6.367 s): the finished state, `C : Compression` / `R : Rarefaction`, both λ brackets and the two sentences; frames 189–191 are pixel-identical, so there is no fade to catch | written by the same `--poster-frame 191` run (q:v 3) | 6.400 s | 1600 × 670 | 51,458 | `00C403C4A9CAB4054CB93F71F9AFCD84` |
+| `jpwm01-p05-frequency-v1.mp4` | Manim scene `tools/manim/jpwm01_p05.py` :: `P5Frequency` (scene commit `4d7aced`: the opening Phase A hold cut from 80 frames to 49, 282 frames / 9.400 s → 252 frames / 8.400 s, so the gate's 2 s still limit is met). **In-page `media`, not a drawer film**: it is drawn over the printed Frequency panel, so it must keep that panel's shape. `book.json` uses the panel's inner rectangle `[53.33, 72.00, 579.67, 125.33]`, 1 pt inside the printed box `[52.3, 71.0] – [580.7, 126.0]`, which keeps the page's 2 pt rule (3,060 / 4,590 / 423 / 564 dark px survive on the four rules) and covers all 23,899 px of printed ink inside it. Inner rect 526.34 × 53.33 pt = 9.8695 against the film's 9.8765, so `object-fit: fill` stretches 0.071 %. Page 5 inserts no space above this panel (its first cut is q10's 43 pt at y 293.2), so the region is printed points as they stand | master `films\jpwm01_p05\P5Frequency_master_1600x162_30fps.mp4` (153,548 B, md5 `7A8CA3FF70E9F3CE41C9687E28AD2F25`, 252 frames) → `python films\tools\encode_panel.py --name jpwm01-p05-frequency --version 1 --master films\jpwm01_p05\P5Frequency_master_1600x162_30fps.mp4 --outdir <delivery> --poster-frame 0 --width 1600 --height 162`. Rebuild the master with `py -3.12 -m manim -qk -r 1600,162 --fps 30 tools/manim/jpwm01_p05.py P5Frequency` | 8.400 s | 1600 × 162, 30 fps, 252 frames, h264 High yuv420p, +faststart, no audio | 187,823 | `61908B2F04D93B4834842179C6129881` |
+| `jpwm01-p05-frequency-v1-poster.jpg` | **frame 0** — the one film in this book where frame 0 is the right poster: it is Phase A, which *is* the printed panel (serif, `Frequency (f)` regular, the `f = 1/T` box), so before ▶ the reader sees the panel it replaces, and no case is given away. The film opens and closes on that same picture (first vs last frame: max channel difference 54, nothing above 90) | written by the same `--poster-frame 0` run (q:v 3) | 8.400 s | 1600 × 162 | 29,329 | `71B3B26E9C677B7F1734EEAAB3BB2230` |
 
 Each film also ships `<name>-manifest.json` (encoder args, source paths, probe facts,
 gate result), `<name>-gate.txt` (raw gate output) and `<name>-gate.json`. Those three
@@ -68,3 +71,14 @@ are the film's own record: the mp4 is reproducible from the manifest alone.
   every instant = same phase.` because the first states the rule the antiphase and
   quarter-period cases contradict. v3 was never encoded, so only v4 (delivered as
   `-v2`) exists: the delivery version counts encodes, the master version counts renders.
+- **A still segment is measured twice, and correctly both times.** On the p05 master the
+  opening hold reads 1.63 s by exact frame equality; on the delivered mp4 the same hold
+  reads 1.77 s by a pixel tolerance, because an encode leaves almost no byte-identical
+  frames (2 of 251 pairs on this film). The gate's 2 s limit is about what the student
+  sees, so it is measured on the delivery with tolerance; exact equality stays a master
+  measurement. Quote which one you mean.
+- **A film that opens on the printed panel may take frame 0 as its poster.** The p10
+  films may not — frame 0 there is two bare axes — but p05's frame 0 *is* the printed
+  Frequency panel, and the film opens and closes on it, so the poster is frame 0 and
+  no case is spoiled. The rule is "the poster is the picture the student should see
+  before pressing ▶", not a fixed frame index.

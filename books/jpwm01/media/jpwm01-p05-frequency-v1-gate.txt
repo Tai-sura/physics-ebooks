@@ -1,0 +1,12 @@
+file      jpwm01-p05-frequency-v1.mp4
+size      187,823 B  (0.19 MB)   md5 61908B2F04D93B4834842179C6129881
+video     h264 High yuv420p 1600x162 @ 30 fps, 252 frames, 8.400 s
+bitrate   179 kbps
+faststart YES (moov@36, mdat@3808)
+audio     0 stream(s)
+motion    changed px/pair min=0 median=513 max=3582  (600x60 @ 10 fps, still if < 40)
+still     longest 1.70 s at t=0.00..1.70 s
+padding   at offset 6.30 s: 57% of frames identical
+period    no short repeating cycle found
+seam      first vs last frame MAD 0.15 (loops cleanly)
+RESULT: PASS

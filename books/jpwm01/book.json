@@ -417,6 +417,14 @@
       "poster": "media/jpwm01-p10-dxdt-v3-poster.jpg",
       "title": "One wave, two graphs: displacement–distance and displacement–time",
       "label": "p10 d-x / d-t"
+    },
+    {
+      "page": 5,
+      "region": [53.33, 72.0, 579.67, 125.33],
+      "src": "media/jpwm01-p05-frequency-v1.mp4",
+      "poster": "media/jpwm01-p05-frequency-v1-poster.jpg",
+      "title": "Frequency: oscillations per second",
+      "label": "p05 frequency"
     }
   ],
   "embeds": [

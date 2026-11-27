@@ -1,0 +1,18 @@
+{
+  "file": "C:\\Users\\surat\\.dsh\\bot\\workspace\\films\\jpwm01_p05\\delivery\\jpwm01-p05-frequency-v1.mp4",
+  "md5": "61908B2F04D93B4834842179C6129881",
+  "size": 187823,
+  "width": 1600,
+  "height": 162,
+  "fps": 30.0,
+  "frames": 252,
+  "duration": 8.4,
+  "faststart": true,
+  "audio_streams": 0,
+  "longest_still_s": 1.7,
+  "periodic_cycle_s": null,
+  "replay_match_pct": 57,
+  "loop_seam_mad": 0.15,
+  "fails": [],
+  "notes": []
+}

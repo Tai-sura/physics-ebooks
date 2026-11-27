@@ -670,6 +670,13 @@ function jq2(root) {
 
   let shape = "rod";
   let caseIdx = -1;                    // >= 0 while a printed case (a)-(f) is showing
+  /* the arm layer, on or off. The "r sin(theta)" reading, the coloured dashed arm and the right
+   * angle at its foot are one statement, so one button hides all three together; the reading
+   * column keeps d, tau and the net either way, and nothing here changes a number. */
+  let armShown = true;
+  /* the toolbar is built after the first render(), so the button is declared here and the
+   * render guards on it instead of reaching into a const that is not initialised yet */
+  let armBtn = null;
   let pivot = [0, 0];                  // screen px
   let forces = [];                     // {id, x, y, a, F}: screen px, radians (screen), newtons
   let nextFid = 1;                     // every force carries its own id, so a row's control can
@@ -1176,6 +1183,7 @@ function jq2(root) {
         }
       }
 
+      if (armShown) {
       // the arm: the perpendicular from P to that line, with a right angle at the foot
       if (d > 3) {
         S("line", { x1: pivot[0], y1: pivot[1], x2: foot[0], y2: foot[1], stroke: col,
@@ -1207,6 +1215,7 @@ function jq2(root) {
       } else {
         T(meas, foot[0] + 10, foot[1] + 18, `d${Q2_SUB[i]} = 0 (line through P)`,
           { "font-size": 11, "font-weight": 700, fill: col });
+      }
       }
 
       // the force itself, ending at the round knob so the head is not buried in it
@@ -1296,6 +1305,7 @@ function jq2(root) {
     playBtn.title = can
       ? "swing the picture 30\u00B0 about P and back"
       : "the net moment is zero, so nothing would turn";
+    if (armBtn) armBtn.textContent = armShown ? "hide r sin\u03B8" : "show r sin\u03B8";
 
     drawGhost(ghostG);
     applySwing();
@@ -1605,7 +1615,15 @@ function jq2(root) {
 
   const addBtn = H("button", { type: "button", onclick: () => addForce() }, ["+ add a force"]);
   const resetBtn = H("button", { type: "button", onclick: () => reset() }, ["reset this object"]);
-  const tools = H("div", { class: "g-btns" }, [addBtn, resetBtn]);
+  /* hide or show the arm layer: the "r sin(theta)" reading, the coloured dashed arm and its right
+   * angle. A teaching aid, not a second answer - the reading column never changes with it. */
+  const armBtnEl = H("button", {
+    type: "button",
+    onclick: () => { armShown = !armShown; render(); },
+  }, ["hide r sin\u03B8"]);
+  armBtnEl.title = "show or hide the r sin(theta) arm and its dashed line on the drawing";
+  armBtn = armBtnEl;
+  const tools = H("div", { class: "g-btns" }, [addBtn, resetBtn, armBtnEl]);
 
   /* the swing button: its own row under the case tabs and above the canvas, as asked */
   const playBtn = H("button", { type: "button", onclick: () => spin() }, ["\u25B6 play 30\u00B0 swing"]);

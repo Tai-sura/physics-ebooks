@@ -1883,6 +1883,26 @@ function jq2(root) {
  * The drawing is 620 x 400 at 120 px per metre, y down: ground y = 300, step corner
  * P = (403.92, 240), wheel centre C = (300, 180), R = 120 px, axle 24 px. P is exactly one
  * radius from C - hypot(103.92, 60) = 120 - so the rim passes through the corner.
+ *
+ * THE ANGLE, and why its reference ray runs from P and not from the centre C:
+ *   theta is measured at the point where the force acts, from the ray P -> that point to the
+ *   force's direction, clockwise positive on screen (the same convention and the same sign as
+ *   q2's sandbox). Only that reference makes "d_perp = r sin(theta)" true, because
+ *       |r x u| = r |sin(theta)|      with r = the vector P -> the point, u the force's unit vector
+ *   is an identity. Measured from the radius C -> point instead, the same 360-degree reading is
+ *   a different angle: at (b)'s best point the two coincide (P, C and the point are collinear),
+ *   but at, say, the top of the rim the C-anchored angle is 90 deg away and r sin(theta) misses
+ *   d_perp by the sine of the half-angle of the chord. The wedge on the drawing is therefore
+ *   drawn between the P-ray and the force, and the reading column prints d_perp = r sin(theta)
+ *   from the same two numbers the arc is drawn from.
+ *
+ * THE SWING: the whole picture (wheel, forces, lines of action, arms, angle arcs and the three
+ * printed distances) turns about P by 30 deg and comes back - the wheel rolls up the step, so
+ * the ground and the step stay where they are. Fixed clock: 900 ms out + 150 ms hold + 900 ms
+ * back, smoothstep, no torque timing (the net here never leaves 0.05..13 N m). The direction is
+ * the sign of the net moment; within 0.05 N m the button is disabled. The measuring layer fades
+ * out over the first 6 deg and is restored at the end; every reading is computed from the
+ * unrotated state, so nothing in the column moves.
  */
 const Q26_S = 120;                   // px per metre
 const Q26_CX = 300, Q26_CY = 180;    // the wheel's centre
@@ -1890,6 +1910,8 @@ const Q26_R = 120, Q26_AXR = 24;     // 1 m wheel, 0.2 m axle
 const Q26_PX = 403.92, Q26_PY = 240; // the step corner, the pivot for both moments
 const Q26_GROUND = 300, Q26_TOP = 240, Q26_STEP_END = 470;
 const Q26_W0 = 40.4;                 // the printed weight, solutions.js q26(a)
+const Q26_SWING = 30;                // degrees
+const Q26_UP = 900, Q26_HOLD = 150, Q26_DOWN = 900;   // ms; fixed, not torque-timed
 
 /* 3 significant figures, kept the way the printed answers are written: 35.0, 43.3, 17.5, 0.866.
  * 100 or more drops the decimal, under 1 keeps three. */
@@ -1910,6 +1932,12 @@ function jq26(root) {
   let bx = 300, by = 60;               // (b) where the force acts: always on the rim
   let ba = 0;                          // (b) its direction, radians (screen)
   let knobAt = [bx, by];               // (b) where the direction knob was drawn
+  let armShown = true;                 // the d_perp / r sin(theta) layer
+  let k = 1;                           // (b) how much harder than the minimum you push
+  let phi = 0, swingK = 1, raf = 0;    // the swing
+  let sceneG = null;                   // what swings (everything but the ground, the step, P)
+  let syncing = false;                 // a slider being written from a drag
+  let gotNow = [];                     // what the last render measured, for spin()
 
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const armW = Math.abs(Q26_CX - Q26_PX) / Q26_S;      // 0.866 m: the weight's arm about P
@@ -1922,152 +1950,366 @@ function jq26(root) {
     const rx = x - Q26_PX, ry = y - Q26_PY;
     const along = rx * ux + ry * uy;
     const z = rx * uy - ry * ux;
-    return { foot: [x - ux * along, y - uy * along], z, d: Math.abs(z), ux, uy, along };
+    return { foot: [x - ux * along, y - uy * along], z, d: Math.abs(z), ux, uy, along, rr: Math.hypot(rx, ry) };
   };
 
-  function arrow(x1, y1, x2, y2, color, w, head) {
+  /* theta: at the point, from the ray P -> point, to the force, clockwise positive, 0..360 */
+  const ptAngle = () => Math.atan2(by - Q26_PY, bx - Q26_PX);
+  const thetaDeg = (x, y, a) => {
+    let d = (((a - Math.atan2(y - Q26_PY, x - Q26_PX)) * 180) / Math.PI) % 360;
+    if (d < 0) d += 360;
+    return d;
+  };
+  const setTheta = (deg) => { ba = ptAngle() + (deg * Math.PI) / 180; };
+  /* whole degrees print without a decimal, everything else to one place (q2's slider format) */
+  const degStr = (d) => (Math.abs(d - Math.round(d)) < 0.05 ? String(Math.round(d)) : d.toFixed(1)) + "\u00B0";
+
+  function arrow(parent, x1, y1, x2, y2, color, w, head) {
     const a = Math.atan2(y2 - y1, x2 - x1);
     const bx2 = x2 - Math.cos(a) * head, by2 = y2 - Math.sin(a) * head;
     const nx = -Math.sin(a) * head * 0.42, ny = Math.cos(a) * head * 0.42;
-    S("line", { x1, y1, x2: bx2, y2: by2, stroke: color, "stroke-width": w, "stroke-linecap": "round" }, svg);
-    S("polygon", { points: `${x2},${y2} ${bx2 + nx},${by2 + ny} ${bx2 - nx},${by2 - ny}`, fill: color }, svg);
+    S("line", { x1, y1, x2: bx2, y2: by2, stroke: color, "stroke-width": w, "stroke-linecap": "round" }, parent);
+    S("polygon", { points: `${x2},${y2} ${bx2 + nx},${by2 + ny} ${bx2 - nx},${by2 - ny}`, fill: color }, parent);
   }
 
-  /* the ground, the step and the wheel: the printed picture, at 120 px per metre */
+  /* an open thin arc from baseDeg sweeping sweepDeg (screen degrees, clockwise positive). Past
+   * 180 it has to take the long way round, so it needs the large-arc flag. */
+  function arcSweep(parent, cx, cy, rad, baseDeg, sweepDeg, colour, w, cls) {
+    const a0 = (baseDeg * Math.PI) / 180, a1 = ((baseDeg + sweepDeg) * Math.PI) / 180;
+    const p0 = [cx + rad * Math.cos(a0), cy + rad * Math.sin(a0)];
+    const p1 = [cx + rad * Math.cos(a1), cy + rad * Math.sin(a1)];
+    const large = Math.abs(sweepDeg) > 180 ? 1 : 0;
+    const flag = sweepDeg >= 0 ? 1 : 0;
+    S("path", {
+      d: `M${p0[0].toFixed(2)},${p0[1].toFixed(2)} A${rad},${rad} 0 ${large} ${flag} ${p1[0].toFixed(2)},${p1[1].toFixed(2)}`,
+      fill: "none", stroke: colour, "stroke-width": w, "stroke-linecap": "round", class: cls,
+    }, parent);
+  }
+
+  /* a grey dimension: a thin line with a bar at each end and its value in 11 px, as printed */
+  function dim(parent, x1, y1, x2, y2, label, tx, ty, anchor) {
+    const a = Math.atan2(y2 - y1, x2 - x1), nx = -Math.sin(a), ny = Math.cos(a);
+    S("line", { x1, y1, x2, y2, stroke: C.grey, "stroke-width": 1.1, "stroke-opacity": 0.75 }, parent);
+    for (const [px, py] of [[x1, y1], [x2, y2]]) {
+      S("line", { x1: px - nx * 4, y1: py - ny * 4, x2: px + nx * 4, y2: py + ny * 4,
+        stroke: C.grey, "stroke-width": 1.1, "stroke-opacity": 0.75 }, parent);
+    }
+    T(parent, tx, ty, label, { "text-anchor": anchor || "middle", "font-size": 11, "font-weight": 700,
+      fill: C.grey, stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
+  }
+
+  /* the ground, the step and P: they do not swing - the wheel climbs the step, the step stays.
+   * The 0.5 m is on the step, so it belongs here; the wheel's own 1 m and 0.2 m are drawn with
+   * the wheel (dimWheel), or the wheel's fill would cover them. */
   function drawBase() {
     S("line", { x1: 40, y1: Q26_GROUND, x2: Q26_PX, y2: Q26_GROUND, stroke: C.line, "stroke-width": 2.2 }, svg);
     S("line", { x1: Q26_PX, y1: Q26_TOP, x2: Q26_PX, y2: Q26_GROUND, stroke: C.line, "stroke-width": 2.2 }, svg);
     S("line", { x1: Q26_PX, y1: Q26_TOP, x2: Q26_STEP_END, y2: Q26_TOP, stroke: C.line, "stroke-width": 2.2 }, svg);
-    S("circle", { cx: Q26_CX, cy: Q26_CY, r: Q26_R, fill: C.soft, stroke: C.line, "stroke-width": 2.4 }, svg);
-    S("circle", { cx: Q26_CX, cy: Q26_CY, r: Q26_AXR, fill: "#fff", stroke: C.line, "stroke-width": 2 }, svg);
-    S("circle", { cx: Q26_CX, cy: Q26_CY, r: 3, fill: C.line }, svg);
+    dim(svg, Q26_PX + 12, Q26_TOP, Q26_PX + 12, Q26_GROUND, "0.5 m", Q26_PX + 19, (Q26_TOP + Q26_GROUND) / 2 + 4, "start");
   }
 
-  /* ---- one force: its line of action, its arm from P (dashed, right angle, value), its arrow ---- */
-  function oneForce(f) {
-    const { foot, z, d, ux, uy, along } = armOf(f.x, f.y, f.a);
+  /* the wheel's printed sizes: 1 m radius to the left rim, 0.2 m axle radius. Grey, 11 px, so
+   * they can never be read as a moment arm (the arms are the coloured dashed lines). */
+  function dimWheel(parent) {
+    dim(parent, Q26_CX, Q26_CY, Q26_CX - Q26_R, Q26_CY, "1 m", Q26_CX - 62, Q26_CY - 10);
+    dim(parent, Q26_CX, Q26_CY - Q26_AXR, Q26_CX, Q26_CY, "0.2 m", Q26_CX - 8, Q26_CY - Q26_AXR / 2 + 4, "end");
+  }
+
+  /* ---- one force: its line of action, its arm from P (dashed, right angle, value), r and the
+   * angle wedge. Everything the arm/angle layer draws is `g-meas`, so the swing can fade it. ---- */
+  function oneForce(f, parent, idx) {
+    const { foot, z, d, ux, uy, along, rr } = armOf(f.x, f.y, f.a);
     const arm = d / Q26_S;
+    const th = thetaDeg(f.x, f.y, f.a);
 
     const ext = 24;
     const t0 = Math.min(0, -along) - ext, t1 = Math.max(0, -along) + ext;
     S("line", {
       x1: f.x + ux * t0, y1: f.y + uy * t0, x2: f.x + ux * t1, y2: f.y + uy * t1,
       stroke: C.grey, "stroke-width": 1.1, "stroke-dasharray": "7 5", "stroke-opacity": 0.8,
-    }, svg);
+    }, parent);
 
-    if (d > 3) {
-      S("line", { x1: Q26_PX, y1: Q26_PY, x2: foot[0], y2: foot[1], stroke: f.color,
-        "stroke-width": 2.2, "stroke-dasharray": "8 5" }, svg);
-      if (d > 16) {
-        const wx = (Q26_PX - foot[0]) / d, wy = (Q26_PY - foot[1]) / d, k = 9;
-        S("path", {
-          d: `M${foot[0] - ux * k},${foot[1] - uy * k} L${foot[0] - ux * k + wx * k},${foot[1] - uy * k + wy * k} L${foot[0] + wx * k},${foot[1] + wy * k}`,
-          fill: "none", stroke: f.color, "stroke-width": 1.4,
-        }, svg);
+    /* r: the line from P to the point where the force acts */
+    S("line", { x1: Q26_PX, y1: Q26_PY, x2: f.x, y2: f.y, stroke: C.grey, "stroke-width": 1,
+      "stroke-opacity": 0.85, class: "g-meas" }, parent);
+    {
+      const mx = (Q26_PX + f.x) / 2, my = (Q26_PY + f.y) / 2;
+      const L = Math.hypot(f.x - Q26_PX, f.y - Q26_PY) || 1;
+      const ox = ((Q26_PY - f.y) / L) * 13, oy = ((f.x - Q26_PX) / L) * 13;
+      T(parent, mx + ox, my + oy + 4, `r = ${(rr / Q26_S).toFixed(2)} m`,
+        { "text-anchor": "middle", "font-size": 10.5, "font-weight": 700, fill: C.grey,
+          stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round",
+          class: "g-meas g-arm-lab" });
+    }
+
+    if (armShown) {
+      if (d > 3) {
+        S("line", { x1: Q26_PX, y1: Q26_PY, x2: foot[0], y2: foot[1], stroke: f.color,
+          "stroke-width": 2.2, "stroke-dasharray": "8 5", class: "g-meas" }, parent);
+        if (d > 16) {
+          const wx = (Q26_PX - foot[0]) / d, wy = (Q26_PY - foot[1]) / d, k = 9;
+          S("path", {
+            d: `M${foot[0] - ux * k},${foot[1] - uy * k} L${foot[0] - ux * k + wx * k},${foot[1] - uy * k + wy * k} L${foot[0] + wx * k},${foot[1] + wy * k}`,
+            fill: "none", stroke: f.color, "stroke-width": 1.4, class: "g-meas",
+          }, parent);
+        }
+        /* the value sits at the arm's midpoint; (b)'s best point makes the arm a diameter, so the
+         * midpoint IS the centre of the wheel - slide it back along the arm until it clears the hub
+         * instead of printing 2.000 m across it. */
+        let tLab = 0.5;
+        const armPx = Math.hypot(foot[0] - Q26_PX, foot[1] - Q26_PY);
+        if (armPx > 1) {
+          const ux2 = (foot[0] - Q26_PX) / armPx, uy2 = (foot[1] - Q26_PY) / armPx;
+          const clear = () => Math.hypot(Q26_PX + ux2 * armPx * tLab - Q26_CX, Q26_PY + uy2 * armPx * tLab - Q26_CY) >= Q26_AXR + 22;
+          while (!clear() && tLab > 0.14) tLab -= 0.06;
+        }
+        const mx = Q26_PX + (foot[0] - Q26_PX) * tLab, my = Q26_PY + (foot[1] - Q26_PY) * tLab;
+        const ox = ((Q26_PY - foot[1]) / d) * 16, oy = ((foot[0] - Q26_PX) / d) * 16;
+        /* the edited force carries the relation; the weight just carries its arm, or the two long
+         * labels brush against each other when the arms line up (seen at theta = 249 deg: 98.5 x 1 px) */
+        const lab = T(parent, mx + ox, my + oy + 4, f.arc ? `d\u22A5 = r sin\u03B8 = ${arm.toFixed(3)} m` : `d\u22A5 = ${arm.toFixed(3)} m`,
+          { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: f.color,
+            stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round",
+            class: "g-meas g-arm-lab" });
+        lab.dataset.short = `${arm.toFixed(3)} m`;
+        lab.dataset.full = `d\u22A5 = r sin\u03B8 = ${arm.toFixed(3)} m`;
+      } else {
+        /* no arm, and no pretend one: the line of action runs through P */
+        T(parent, f.x + 10, f.y + 22, "no arm \u2014 line through P",
+          { "font-size": 10.5, "font-weight": 700, fill: f.color, stroke: "#fff",
+            "stroke-width": 3, "paint-order": "stroke", class: "g-meas g-arm-lab" });
       }
-      const mx = (Q26_PX + foot[0]) / 2, my = (Q26_PY + foot[1]) / 2;
-      const ox = (Q26_PY - foot[1]) / d * 16, oy = (foot[0] - Q26_PX) / d * 16;
-      /* the value sits at the arm's midpoint, but (b)'s best point makes the arm a diameter, so
-       * that midpoint IS the centre of the wheel: slide it back along the arm until it clears the
-       * axle instead of printing 2.000 m across the hub (seen at 00:04). */
-      let tLab = 0.5;
-      const armPx = Math.hypot(foot[0] - Q26_PX, foot[1] - Q26_PY);
-      if (armPx > 1) {
-        const ux2 = (foot[0] - Q26_PX) / armPx, uy2 = (foot[1] - Q26_PY) / armPx;
-        const clear = () => Math.hypot(Q26_PX + ux2 * armPx * tLab - Q26_CX, Q26_PY + uy2 * armPx * tLab - Q26_CY) >= Q26_AXR + 22;
-        while (!clear() && tLab > 0.14) tLab -= 0.06;
-      }
-      T(svg, Q26_PX + (foot[0] - Q26_PX) * tLab + ox, Q26_PY + (foot[1] - Q26_PY) * tLab + oy + 4,
-        arm.toFixed(3) + " m",
-        { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: f.color,
-          stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
-    } else {
-      T(svg, foot[0] + 10, foot[1] + 16, "line through P: no arm",
-        { "font-size": 11, "font-weight": 700, fill: f.color });
+    }
+
+    /* the angle wedge: only the force being edited carries one. W's theta is a bookkeeping angle
+     * for the column (its line of action is fixed), so a 240 deg near-circle around the hub would
+     * be noise on the drawing - ruled out by the user. */
+    if (f.arc && d > 0.6) {
+      const base = (Math.atan2(f.y - Q26_PY, f.x - Q26_PX) * 180) / Math.PI;
+      arcSweep(parent, f.x, f.y, 26, base, th, f.color, 1.3, "g-meas g-theta");
+      const bis = ((base + th / 2) * Math.PI) / 180;
+      T(parent, f.x + 40 * Math.cos(bis), f.y + 40 * Math.sin(bis) + 4, `\u03B8 = ${degStr(th)}`,
+        { "text-anchor": "middle", "font-size": 10.5, "font-weight": 700, fill: f.color,
+          stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round",
+          class: "g-meas g-arm-lab" });
     }
 
     const L = lenOf(f.F);
     const tx = f.x + ux * L, ty = f.y + uy * L;
-    arrow(f.x, f.y, tx - ux * 8, ty - uy * 8, f.color, 3.4, 11);
+    arrow(parent, f.x, f.y, tx - ux * 8, ty - uy * 8, f.color, 3.4, 11);
 
     // the label runs beside the shaft, on the far side from the wheel's centre
     const side = Math.sign((Q26_CX - f.x) * uy - (Q26_CY - f.y) * ux) || 1;
     const nx = -uy * side, ny = ux * side;
     const anchor = nx > 0.25 ? "start" : nx < -0.25 ? "end" : "middle";
     const off = anchor === "middle" ? 16 : 12;
-    T(svg, clamp(f.x + ux * (L * 0.55) + nx * off, 34, 588), f.y + uy * (L * 0.55) + ny * off + 4, f.label,
+    T(parent, clamp(f.x + ux * (L * 0.55) + nx * off, 34, 588), f.y + uy * (L * 0.55) + ny * off + 4, f.label,
       { "text-anchor": anchor, "font-size": 11.5, "font-weight": 700, fill: f.color,
         stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
 
     // the point it acts at, and the hollow knob that turns it (mode b only)
-    S("circle", { cx: f.x, cy: f.y, r: 5.5, fill: f.color, stroke: "#fff", "stroke-width": 1.6 }, svg);
-    if (f.knob) S("circle", { cx: tx, cy: ty, r: 6.5, fill: "#fff", stroke: f.color, "stroke-width": 2 }, svg);
+    S("circle", { cx: f.x, cy: f.y, r: 5.5, fill: f.color, stroke: "#fff", "stroke-width": 1.6 }, parent);
+    if (f.knob) S("circle", { cx: tx, cy: ty, r: 6.5, fill: "#fff", stroke: f.color, "stroke-width": 2 }, parent);
 
-    return { arm, tau: Math.sign(z) * f.F * arm, tip: [tx, ty] };
+    /* a force of 0 N, or one that no finite value can give, has no moment: the reading says so
+     * rather than printing a NaN into the column */
+    const Fin = Number.isFinite(f.F) ? f.F : 0;
+    return { arm, th, r: rr / Q26_S, tau: Math.sign(z) * Fin * arm, tip: [tx, ty], F: f.F, key: f.key, color: f.color, note: f.note };
+  }
+
+  /* ---- keep the arm / r / theta numbers off each other: nudge each tagged label until its box
+   * clears every other text and every dot. Leaves it alone if the widget is not laid out yet. ---- */
+  function nudgeArmLabels() {
+    let texts, circles;
+    try {
+      texts = [...svg.querySelectorAll("text")].map((el) => ({ el, box: el.getBBox(), arm: el.classList.contains("g-arm-lab") }));
+      circles = [...svg.querySelectorAll("circle")].map((c) => {
+        const cx = Number(c.getAttribute("cx")), cy = Number(c.getAttribute("cy")), r0 = Number(c.getAttribute("r")) || 0;
+        return { x: cx - r0 - 2, y: cy - r0 - 2, width: 2 * r0 + 4, height: 2 * r0 + 4 };
+      });
+    } catch { return; }
+    const hit = (a, b) => Math.min(a.x + a.width, b.x + b.width) > Math.max(a.x, b.x) + 1
+      && Math.min(a.y + a.height, b.y + b.height) > Math.max(a.y, b.y) + 1;
+    const fixed = [...texts.filter((o) => !o.arm).map((o) => o.box), ...circles];
+    const D = [];
+    for (const dy of [0, 13, -13, 26, -26, 39, -39]) for (const dx of [0, 18, -18, 34, -34]) D.push([dx, dy]);
+    D.sort((a, b) => Math.abs(a[0]) + Math.abs(a[1]) - (Math.abs(b[0]) + Math.abs(b[1])));
+    for (const o of texts.filter((x) => x.arm)) {
+      const x0 = Number(o.el.getAttribute("x")), y0 = Number(o.el.getAttribute("y"));
+      const before = { x: o.box.x, y: o.box.y, width: o.box.width, height: o.box.height };
+      let best = null, bestCost = null;
+      for (const [dx, dy] of D) {
+        const b = { x: before.x + dx, y: before.y + dy, width: before.width, height: before.height };
+        const cost = fixed.filter((f) => hit(f, b)).length * 1000 + Math.abs(dx) + Math.abs(dy);
+        if (bestCost === null || cost < bestCost) { bestCost = cost; best = [dx, dy]; }
+        if (cost < 1) break;
+      }
+      if (best && (best[0] || best[1])) {
+        o.el.setAttribute("x", x0 + best[0]);
+        o.el.setAttribute("y", y0 + best[1]);
+      }
+      try { fixed.push(o.el.getBBox()); } catch { /* not laid out */ }
+    }
   }
 
   function render() {
     clear(svg);
     drawBase();
 
+    const g = S("g", { class: "g-scene" }, svg);
+    sceneG = g;
+    // the wheel, inside the swinging group: the wheel is what rolls up the step
+    S("circle", { cx: Q26_CX, cy: Q26_CY, r: Q26_R, fill: C.soft, stroke: C.line, "stroke-width": 2.4 }, g);
+    S("circle", { cx: Q26_CX, cy: Q26_CY, r: Q26_AXR, fill: "#fff", stroke: C.line, "stroke-width": 2 }, g);
+    S("circle", { cx: Q26_CX, cy: Q26_CY, r: 3, fill: C.line }, g);
+    dimWheel(g);
+
     const list = [];
     if (mode === 0) {
       // (a) the printed push: 50 N horizontal at the top of the axle, weight on the centre
-      list.push({ x: Q26_CX, y: Q26_CY - Q26_AXR, a: 0, F: 50, color: C.red, label: "F = 50 N" });
-      list.push({ x: Q26_CX, y: Q26_CY, a: Math.PI / 2, F: W, color: C.blue, label: `W = ${n3(W)} N` });
+      list.push({ x: Q26_CX, y: Q26_CY - Q26_AXR, a: 0, F: 50, color: C.red, label: "F = 50.0 N", key: "F", arc: true });
+      list.push({ x: Q26_CX, y: Q26_CY, a: Math.PI / 2, F: W, color: C.blue, label: `W = ${n3(W)} N`, key: "W" });
     } else {
       // (b) the weight is the printed 40.4 N and the force is whatever is just enough
       const dpx = armOf(bx, by, ba).d;
-      const need = dpx > 3 ? (Q26_W0 * armW * Q26_S) / dpx : Infinity;
-      list.push({ x: Q26_CX, y: Q26_CY, a: Math.PI / 2, F: Q26_W0, color: C.blue, label: `W = ${n3(Q26_W0)} N` });
-      list.push({ x: bx, y: by, a: ba, F: Number.isFinite(need) ? need : 0, color: C.red,
-        label: Number.isFinite(need) ? `F = ${n3(need)} N` : "F = \u2014", knob: true });
+      const need = dpx > 3 ? (Q26_W0 * armW * Q26_S) / dpx : Infinity;   // the minimum, Newtons
+      const push = Number.isFinite(need) ? k * need : Infinity;          // what you actually push
+      list.push({ x: Q26_CX, y: Q26_CY, a: Math.PI / 2, F: Q26_W0, color: C.blue, label: `W = ${n3(Q26_W0)} N`, key: "W" });
+      list.push({ x: bx, y: by, a: ba, F: push, color: C.red,
+        label: Number.isFinite(push) ? `F = ${n3(push)} N` : "F = \u2014", knob: true, key: "F", arc: true,
+        note: `(k = ${k.toFixed(2)})` });
     }
-    const got = list.map(oneForce);
+    const got = list.map((f, i) => oneForce(f, g, i));
+    gotNow = got;
     if (mode === 1) knobAt = got[1].tip;
 
-    // the pivot, last so it is never covered
+    // the pivot, outside the swing group and last, so it is never covered
     S("circle", { cx: Q26_PX, cy: Q26_PY, r: 8.5, fill: C.ink, stroke: "#fff", "stroke-width": 2.2 }, svg);
     T(svg, Q26_PX + 13, Q26_PY - 12, "P", { "font-size": 13, "font-weight": 700, fill: C.ink });
 
+    nudgeArmLabels();
+
+    /* the reading column: one block per force with F, theta, d_perp and tau, then the net and the
+     * answer. Nothing here goes through the swing transform, so no number tilts or crawls. */
+    const rows = got.map((o) => {
+      /* a force that no finite value can supply prints a dash, not "0.0 N": at theta = 0/180 the
+       * line of action runs through P, so there is no force that would turn the wheel that way */
+      const head = Number.isFinite(o.F)
+        ? `${o.key} &= ${o.F.toFixed(1)}\\ \\text{N}${o.note ? "\\ \\text{" + o.note + "}" : ""},\\ \\ \\theta = ${degStr(o.th)},\\ \\ d_\\perp = ${o.arm.toFixed(3)}\\ \\text{m}`
+        : `${o.key} &= \\text{\u2014}\\ \\text{(no finite force)},\\ \\ \\theta = ${degStr(o.th)}`;
+      const tail = `\\tau_{${o.key}} &= ${n3(Math.abs(o.tau))}\\ \\text{N m (${o.key === "F" && !Number.isFinite(o.F) ? "no arm" : o.tau >= 0 ? "clockwise" : "anticlockwise"})}`;
+      return `${head}\\\\[-2pt] ${tail}`;
+    }).join("\\\\[-4pt] ");
+    const net = got.reduce((a, o) => a + o.tau, 0);
+    const near = Math.abs(net) <= 0.05;
+    const netRow = `\\Sigma\\tau &${near ? "\\approx 0" : "= " + n3(Math.abs(net)) + "\\ \\text{N m (" + (net > 0 ? "clockwise" : "anticlockwise") + ")}"}`;
+
     if (mode === 0) {
-      const tF = got[0].tau, tW = Math.abs(got[1].tau);
-      const net = tF - tW;
-      const near = Math.abs(net) <= 0.05;
       T(svg, 14, 20, near ? "(a) balanced on P" : net > 0 ? "(a) clockwise \u2014 up the step" : "(a) still on the ground",
         { "font-size": 11.5, "font-weight": 700, fill: near ? C.green : C.grey });
-
-      r.set(
-        `\\begin{aligned}\\tau_F &= 50(${got[0].arm.toFixed(3)}) = ${n3(tF)}\\ \\text{N m}\\\\[-2pt] `
-        + `\\tau_W &= ${n3(W)}(${got[1].arm.toFixed(3)}) = ${n3(tW)}\\ \\text{N m}\\end{aligned}`,
-        null,
+      const ans = `\\tau_F = 50.0(0.700) \\approx ${n3(got[0].tau)}\\ \\text{N m}`;
+      r.set(`\\begin{aligned}${rows}\\\\[-2pt] ${netRow}\\\\[-2pt] ${ans}\\end{aligned}`, null,
         near
-          ? `Both moments are ${n3(tF)} N m, so the wheel is balanced on the corner P: it is on the point of climbing. At W = 40.4 N the printed 50 N push is exactly enough \u2014 that is the answer to (a).`
+          ? `Both moments are ${n3(Math.abs(got[0].tau))} N m, so the wheel is balanced on the corner P: it is on the point of climbing. At W = 40.4 N the printed 50 N push is exactly enough \u2014 that is the answer to (a).`
           : net > 0
-            ? `The push turns the wheel clockwise about P with ${n3(tF)} N m; the weight holds it back with ${n3(tW)} N m, so ${n3(net)} N m clockwise is left over and the wheel starts up the step. It climbs for any W below 40.4 N.`
-            : `The weight holds the wheel with ${n3(tW)} N m about P, more than the ${n3(tF)} N m the 50 N push can give, so it stays on the ground. Bring W down to 40.4 N and the two moments match.`);
-      return;
+            ? `The push turns the wheel clockwise about P with ${n3(got[0].tau)} N m; the weight holds it back with ${n3(Math.abs(got[1].tau))} N m, so ${n3(net)} N m clockwise is left over and the wheel starts up the step. It climbs for any W below 40.4 N.`
+            : `The weight holds the wheel with ${n3(Math.abs(got[1].tau))} N m about P, more than the ${n3(got[0].tau)} N m the 50 N push can give, so it stays on the ground. Bring W down to 40.4 N and the two moments match.`);
+    } else {
+      const arm = got[1].arm;
+      const need = arm > 0.002 ? (Q26_W0 * armW) / arm : Infinity;
+      const atMax = arm >= 1.9995;
+      T(svg, 14, 20, atMax ? "(b) d\u22A5 at its maximum \u2014 2.000 m" : "(b) drag the point and its knob",
+        { "font-size": 11.5, "font-weight": 700, fill: atMax ? C.green : C.grey });
+      /* the answer line substitutes rounded numbers, so it carries a tilde */
+      const fminRow = `F_{\\min} &= ${n3(need)}\\ \\text{N (just enough)}`;
+      const ans = Number.isFinite(need)
+        ? `F_{\\min} = \\frac{W(0.866)}{d_\\perp} = \\frac{${n3(Q26_W0)}(0.866)}{${arm.toFixed(3)}} \\approx ${n3(need)}\\ \\text{N}`
+        : `F_{\\min} = \\frac{W(0.866)}{d_\\perp}: d_\\perp = 0 \\Rightarrow \\text{no finite force}`;
+      r.set(`\\begin{aligned}${rows}\\\\[-2pt] ${fminRow}\\\\[-2pt] ${netRow}\\\\[-2pt] ${ans}\\end{aligned}`, null,
+        atMax
+          ? `d\u22A5 = 2.000 m is as long as an arm about P can get (the line of action is 2R from P, a diameter away), so ${n3(need)} N is the smallest force that will start the wheel up the step \u2014 the printed answer to (b). You are pushing ${n3(k * need)} N (k = ${k.toFixed(2)}): k > 1 means you push harder than the minimum, so the wheel climbs the step.`
+          : Number.isFinite(need)
+            ? `The force acts ${arm.toFixed(3)} m from P, so ${n3(need)} N is just enough to match the weight's ${n3(Q26_W0 * armW)} N m; you are pushing ${n3(k * need)} N (k = ${k.toFixed(2)}). Drag the point round the rim, turn its knob or use the angle slider until the arm reaches 2.000 m and only ${n3(Fmin)} N is needed. k > 1 means you push harder than the minimum, so the wheel climbs the step.`
+            : `The line of action now runs through P, so the arm is zero and no force applied this way can turn the wheel about the corner. Give it an arm by turning the angle away from 0\u00B0 or 180\u00B0.`);
     }
 
-    const arm = armOf(bx, by, ba).d / Q26_S;
-    const need = arm > 0.002 ? Q26_W0 * armW / arm : Infinity;
-    const atMax = arm >= 1.9995;
-    T(svg, 14, 20, atMax ? "(b) d\u22A5 at its maximum \u2014 2.000 m" : "(b) drag the point and its knob",
-      { "font-size": 11.5, "font-weight": 700, fill: atMax ? C.green : C.grey });
+    /* the angle slider, its knob state, the arm button and the play button follow the picture */
+    if (mode === 1) {
+      syncing = true;
+      thS.set(clamp(Math.round(thetaDeg(bx, by, ba) * 10) / 10, 0, 360));
+      syncing = false;
+    }
+    armBtnEl.textContent = armShown ? "hide r sin\u03B8" : "show r sin\u03B8";
+    const can = got.length > 0 && Math.abs(net) >= 0.05;
+    playBtn.disabled = !can;
+    playBtn.style.cursor = can ? "pointer" : "default";
+    playBtn.title = can ? "swing the picture 30\u00B0 about P and back" : "the net moment is zero, so nothing would turn";
 
-    /* two lines, like (a): a single-line \frac leaves the readout box 2 px short in this reader
-     * (KaTeX's fraction descender), which turns .g-expr into a scroll container - measured 42
-     * against 40 at 00:12; the aligned pair measures 79 against 79. */
-    const l1 = `F &= \\frac{W(0.866)}{d_\\perp}`;
-    const l2 = Number.isFinite(need)
-      ? `&= \\frac{${n3(Q26_W0)}(0.866)}{${arm.toFixed(3)}} = ${n3(need)}\\ \\text{N}`
-      : `&= \\frac{${n3(Q26_W0)}(0.866)}{${arm.toFixed(3)}}\\ \\text{: no finite force}`;
-    r.set(`\\begin{aligned}${l1}\\\\[-2pt] ${l2}\\end{aligned}`, null,
-      atMax
-        ? `d\u22A5 = 2.000 m is as long as an arm about P can get (the line of action is 2R from P, a diameter away), so ${n3(need)} N is the smallest force that will start the wheel up the step \u2014 the printed answer to (b).`
-        : Number.isFinite(need)
-          ? `The force acts ${arm.toFixed(3)} m from P, so it takes ${n3(need)} N to match the weight's ${n3(Q26_W0 * armW)} N m. Drag the point round the rim and turn its knob: on the far side the arm reaches 2.000 m and only ${n3(Fmin)} N is needed.`
-          : `The line of action now runs through P, so the arm is zero and no force applied this way can turn the wheel about the corner. Drag the point round the rim to give it an arm.`);
+    applySwing();
+  }
+
+  /* ---- the swing: rotate the picture about P, hold, come back ----
+   * 900 + 150 + 900 ms, smoothstep, direction from the net moment; the measuring layer fades out
+   * over the first 6 deg and is exactly restored at the end. Readings never leave the unrotated
+   * state, so d, tau and the net cannot change while it moves. */
+  function applySwing() {
+    if (!sceneG) return;
+    const zoom = swingK === 1 ? "" : ` translate(${Q26_PX} ${Q26_PY}) scale(${swingK}) translate(${-Q26_PX} ${-Q26_PY})`;
+    sceneG.setAttribute("transform", `rotate(${phi} ${Q26_PX} ${Q26_PY})${zoom}`);
+    const op = Math.max(0, 1 - Math.abs(phi) / 6);
+    for (const el of sceneG.querySelectorAll(".g-meas")) el.style.opacity = String(op.toFixed(3));
+  }
+
+  /* how far the picture may turn before a corner of 620 x 400 is crossed: the smallest uniform
+   * zoom about P that keeps every drawn corner inside a 7 px margin (a camera, not a change of
+   * shape, so every angle and ratio stays true and P does not move) */
+  function fitScale(dir) {
+    if (!sceneG) return 1;
+    const a = (dir * Q26_SWING * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+    const PAD = 7;
+    let k = 1;
+    for (const el of [...sceneG.children]) {
+      if (el.classList && el.classList.contains("g-meas")) continue;   // faded out while swinging
+      let b;
+      try { b = el.getBBox(); } catch { continue; }
+      if (!b || !(b.width || b.height)) continue;
+      for (const [x, y] of [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]]) {
+        const dx = x - Q26_PX, dy = y - Q26_PY;
+        const rx = dx * c - dy * s, ry = dx * s + dy * c;
+        if (rx > 1e-6) k = Math.min(k, (620 - PAD - Q26_PX) / rx);
+        if (rx < -1e-6) k = Math.min(k, (Q26_PX - PAD) / -rx);
+        if (ry > 1e-6) k = Math.min(k, (400 - PAD - Q26_PY) / ry);
+        if (ry < -1e-6) k = Math.min(k, (Q26_PY - PAD) / -ry);
+      }
+    }
+    return clamp(k, 0.6, 1);
+  }
+
+  function spin() {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    const live = gotNow.filter((o) => o.F >= 0.5);
+    const net = live.reduce((a, o) => a + o.tau, 0);
+    if (!live.length || Math.abs(net) < 0.05) { phi = 0; swingK = 1; applySwing(); return; }
+    const dir = net > 0 ? 1 : -1;
+    const kFull = fitScale(dir);
+    swingK = 1;
+    const total = Q26_UP + Q26_HOLD + Q26_DOWN;
+    const t0 = performance.now();
+    const step = (now) => {
+      const ms = Math.min(total, now - t0);
+      let k;
+      if (ms <= Q26_UP) k = ms / Q26_UP;
+      else if (ms <= Q26_UP + Q26_HOLD) k = 1;
+      else k = 1 - (ms - Q26_UP - Q26_HOLD) / Q26_DOWN;
+      k = Math.max(0, Math.min(1, k));
+      k = k * k * (3 - 2 * k);                    // smoothstep: eases out of rest and back into it
+      phi = dir * Q26_SWING * k;
+      swingK = 1 + (kFull - 1) * Math.min(1, k / 0.2);
+      applySwing();
+      if (ms < total) raf = requestAnimationFrame(step);
+      else { raf = 0; phi = 0; swingK = 1; applySwing(); }
+    };
+    raf = requestAnimationFrame(step);
   }
 
   /* ---- controls ---- */
@@ -2077,11 +2319,35 @@ function jq26(root) {
     render();
   });
 
+  const playBtn = H("button", { type: "button", onclick: () => spin() }, ["\u25B6 play 30\u00B0 swing"]);
+  const playRow = H("div", { class: "g-btns" }, [playBtn]);
+
   const wS = slider({
     label: "W (N)", min: 0, max: 100, step: 0.1, value: 40.0, play: false,
     fmt: (v) => v.toFixed(1) + " N",
   });
   wS.on((v) => { W = v; render(); });
+
+  /* the angle: 0..360 measured at the point from the ray P -> point to the force, clockwise
+   * positive, the same reading and the same sign as q2's sandbox. One step is 0.1 deg. */
+  const thS = slider({
+    label: "angle \u03B8 (degrees)", min: 0, max: 360, step: 0.1, value: 30, play: false,
+    fmt: (v) => (Math.abs(v - Math.round(v)) < 0.05 ? v.toFixed(0) : v.toFixed(1)) + "\u00B0",
+  });
+  thS.on((v) => {
+    if (syncing) return;
+    if (mode !== 1) return;
+    setTheta(v);
+    render();
+  });
+
+  /* (b) how much harder than the minimum you push: F = k x F_min. k = 1 is the printed answer
+   * and the wheel is on the point of climbing; above 1 the net moment is positive, so play works */
+  const kS = slider({
+    label: "push k \u00D7", min: 1, max: 2, step: 0.05, value: 1, play: false,
+    fmt: (v) => "\u00D7" + v.toFixed(2),
+  });
+  kS.on((v) => { k = v; render(); });
 
   /* the best point: diametrically opposite P, with the force square to the radius, so the line of
    * action is a full 2R = 2.000 m from P and the force needed drops to 17.5 N */
@@ -2091,18 +2357,30 @@ function jq26(root) {
     ba = -60 * Math.PI / 180;
     render();
   } }, ["put it at the best point"]);
-  const tools = H("div", { class: "g-btns" }, [bestBtn]);
+
+  /* hide or show the arm layer: the d_perp dashed line, its right angle and its d_perp value.
+   * The r line and the theta wedge stay on the drawing, exactly as in q2 - they are the two
+   * things the hidden relation is written between, so hiding them too would leave nothing to
+   * read it against. The numbers in the column stay put either way. */
+  const armBtnEl = H("button", { type: "button", onclick: () => { armShown = !armShown; render(); } },
+    ["hide r sin\u03B8"]);
+  armBtnEl.title = "show or hide the d\u22A5 arm, its right angle and its d\u22A5 = r sin\u03B8 value on the drawing";
+
+  const tools = H("div", { class: "g-btns" }, [bestBtn, armBtnEl]);
 
   function syncUI() {
     /* the hidden attribute alone loses to .g-slider's display:flex, and to nothing else, so the
-     * slider needs the inline display too or it stays on screen in (b) (seen at 00:04) */
+     * slider needs the inline display too or it stays on screen in the wrong mode */
     wS.el.hidden = mode !== 0;
     wS.el.style.display = mode === 0 ? "" : "none";
+    thS.el.hidden = mode !== 1;
+    thS.el.style.display = mode === 1 ? "" : "none";
+    kS.el.hidden = mode !== 1;
+    kS.el.style.display = mode === 1 ? "" : "none";
     bestBtn.hidden = mode !== 1;
   }
 
-  /* ---- dragging in (b): the point slides round the rim, the knob sets the direction ---- */
-  let drag = null;
+  /* ---- dragging in (b): the point slides round the rim, the knob sets the direction ---- */  let drag = null;
   const at = (e) => {
     const b = svg.getBoundingClientRect();
     const k = 620 / b.width;
@@ -2134,15 +2412,20 @@ function jq26(root) {
   svg.addEventListener("pointerup", off);
   svg.addEventListener("pointercancel", off);
 
+  /* the render above computes `got` inside; keep it for spin() and the button state */
+
   root.append(
     question("A wheel of radius 1 m rests against a 0.5 m step. In (a) a horizontal 50 N pushes the top of its 0.2 m axle. In (b) the weight is the printed 40.4 N: find the smallest force, and where to put it.", [
       "Take moments about the step corner P: the wheel climbs when the push's moment beats the weight's",
       "The weight's arm about P is $\\sqrt{1^2 - 0.5^2} = 0.866$ m",
-      "In (b) drag the force point round the rim and its knob to turn it; the longest arm possible is $2R = 2.000$ m",
+      "In (b) drag the force point round the rim and its knob, or set the angle \u03B8: the longest arm possible is $2R = 2.000$ m",
     ]),
     modeTabs,
+    playRow,
     svg,
     tools,
+    thS.el,
+    kS.el,
     wS.el,
     r.el,
   );
@@ -2150,7 +2433,6 @@ function jq26(root) {
   syncUI();
   render();
 }
-
 /* ---------------- Q30: the ladder against a wall ----------------
  *
  * This replaces the small play-video panel on page 14 with the model behind it. A 4 m ladder

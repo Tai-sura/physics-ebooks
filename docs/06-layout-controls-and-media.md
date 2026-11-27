@@ -1,3 +1,5 @@
+<!-- canon: ebook-starter-v2/docs/06-layout-controls-and-media.md · 由 CTO 於 2026-11-27 三路合併 · 改這份，唔好改副本 -->
+
 # Page layout, controls and media: the rules this book was built by
 
 Every rule below is here for one of two reasons: a check fails when it is broken,
@@ -351,3 +353,51 @@ secondary books (`jpfm08` 12, `spem02` 5, `jm29c` 1), listed in
 `04-qa-and-release.md`. Those books are finished, approved copies, and re-cutting
 moves every answer below the line. Check a cut before reusing its region in a new
 book; never re-cut a published one.
+
+
+---
+
+## Maths only (verbatim from the maths repo — NOT yet reconciled with the base above)
+
+**Scope.** This is a rule for a book whose printed figures run across the page, which is
+the case in the primary maths book. A published secondary book keeps its cuts: re-cutting
+moves every answer below the line and changes a layout the teacher has already approved.
+Check a cut before reusing its region in a new book; never re-cut a finished one on the
+strength of this rule alone.
+
+  the rims underneath, q18 lost 114 printed-ink pixels where the dash crossed a rim
+  and repainted it. Prove it by rendering twice, dashes shown and hidden: take the
+  hidden frame's dark pixels as the printed ink and require every one of them back
+  unchanged (0 pixels lighter by more than 20; the accepted run was 0 across 16
+
+- **A dashed length ends on ink, not in a gap.** A fixed `13 7` left F's 307 px
+
+  (L mod period = 0 is where a gap begins): it left A's radius, B's and C's diameters
+  and F's radius 2.8-4.0 pt short. Verify both ends inside ink, each within 0.5 pt of
+  the rim.
+- **Every circle opens on its own angle.** One global 62 deg put F's diameter 4.3 pt
+  from E's centre dot and 3.7 pt from D's printed 3 cm arrow, so the line read as
+  ending at the dot. Score all 360 angles per circle against the other circles'
+  centre dots (at least 9 pt), the printed arrows, their readings and the badges; F
+  moved to 288 deg, nearest dot 18.8 pt. Recompute whenever the printed figure
+  changes: the numbers come from the measured geometry, not from taste.
+
+pencil foot was nowhere near the arc — it read as the arc appearing by itself, not
+
+rigid body (the old code flipped the compass upright so it never crossed 90°, which
+is why it had stopped turning), and one tracker drives **both** the arc and the
+compass, so the pencil is always at the arc's leading end.
+
+Gate: measure it per cell — the tool's axis against the arc's end ≤ 2°, the pencil
+≤ 1 px from the arc, the pivot fixed within 1 px — and keep frame 0 = last frame.
+
+  not the question's picture, every hour spent after it is wasted — this is the one
+  order that must never be reversed.
+
+None in this book's layout, controls or media. Two things that were open are now closed:
+
+- `CircleBasics` no longer fades to blank; it clears the printed page to white before it
+  draws, and crossfades back at the end (v171).
+- Its mid-section labels stay as flat coloured text, while the first and last frames use
+  the printed colour boxes. **The teacher looked at both and chose to keep the flat
+  labels** — do not "fix" this without asking; it is a decision, not a defect.

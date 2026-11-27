@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transverse and longitudinal waves — jpwm01 p01</title>
+<style>
+  :root{
+    --paper:#faf8f2;
+    --ink:#1e2a36;
+    --ink2:#586674;
+    --line:#d9d3c6;
+    --blue:#1f5fd0;
+    --red:#c8372a;
+    --bar-h:104px;
+    --hdr-h:64px;
+    --ftr-h:32px;
+    --hdr-pad:10px 18px 4px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);
+    font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    -webkit-text-size-adjust:100%;overflow:hidden}
+  #app{position:fixed;inset:0;display:flex;flex-direction:column}
+  #strips{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;position:relative;z-index:1}
+  .strip{flex:1 1 0;min-height:0;display:grid;grid-template-rows:var(--hdr-h) 1fr var(--ftr-h);position:relative}
+  .strip + .strip{border-top:1px solid var(--line)}
+  .hdr{padding:var(--hdr-pad);pointer-events:none;overflow:hidden}
+  .hdr h2{margin:0;font-family:"Times New Roman",Times,serif;font-weight:700;
+    font-size:clamp(17px,1.55vw,22px);letter-spacing:.1px}
+  .hdr p{margin:2px 0 0;font-size:clamp(12px,1.05vw,15px);color:var(--ink2)}
+  .hdr .legend{margin-top:2px;color:var(--ink);font-size:clamp(12px,1.02vw,14px)}
+  .view{flex:1 1 auto;min-height:0;position:relative;touch-action:none;cursor:grab;
+    -webkit-user-select:none;user-select:none;overflow:hidden}
+  .view.drag{cursor:grabbing}
+  .ftr{display:flex;flex-wrap:wrap;gap:2px 16px;align-items:baseline;overflow:hidden;
+    padding:2px 18px 7px;font-size:clamp(11.5px,1vw,13.5px);color:var(--ink2);pointer-events:none}
+  .ftr .state{color:var(--red);font-weight:600;font-variant-numeric:tabular-nums;min-width:9.5em}
+  .ftr .note{color:var(--ink2)}
+  .lbl{position:absolute;left:0;top:0;transform:translate(-50%,-50%);
+    font-size:clamp(11.5px,.95vw,13px);line-height:1.15;white-space:nowrap;
+    padding:1px 5px;border-radius:3px;background:rgba(250,248,242,.86);
+    color:var(--ink);pointer-events:none;will-change:transform;
+    box-shadow:0 0 0 .5px rgba(0,0,0,.04)}
+  .lbl.blue{color:var(--blue)}
+  .lbl.red{color:var(--red);font-weight:700}
+  .lbl.grey{color:var(--ink2)}
+  #gl{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0}
+  #bar{flex:0 0 var(--bar-h);position:relative;z-index:2;background:var(--paper);
+    border-top:1px solid var(--line);display:flex;align-items:center;gap:14px;
+    padding:8px 16px;flex-wrap:wrap}
+  #bar button{font:inherit;font-size:14px;color:var(--ink);background:#fff;
+    border:1px solid #cfc8b8;border-radius:8px;padding:7px 13px;min-height:38px;
+    cursor:pointer;-webkit-tap-highlight-color:transparent}
+  #bar button:active{transform:translateY(1px)}
+  #bar button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  #speed{display:flex;gap:6px}
+  #speed button{padding:6px 9px;min-height:36px;font-variant-numeric:tabular-nums}
+  .slider{flex:1 1 220px;min-width:150px;display:flex;align-items:center}
+  #time{width:100%;accent-color:var(--ink);height:28px}
+  #readout{display:flex;flex-wrap:wrap;gap:2px 18px;align-items:baseline;
+    flex:1 1 100%;font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  #readout b{color:var(--ink);font-weight:600}
+  #tval{color:var(--ink);font-weight:600}
+  #readout .src{flex:1 1 100%;font-size:11.5px;color:#7b8794}
+  @media (max-width:760px){
+    :root{--bar-h:150px;--hdr-pad:8px 12px 2px;--hdr-h:88px;--ftr-h:62px}
+    .lam-note{display:none}
+    #bar{gap:8px;padding:8px 12px}
+    .ftr{padding:2px 12px 7px;gap:2px 10px}
+  }
+  @media (min-width:761px) and (max-width:1100px){
+    :root{--ftr-h:50px}
+  }
+  @media (max-height:560px) and (min-aspect-ratio:1/1){
+    :root{--bar-h:88px}
+    .hdr p{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div id="strips">
+    <section class="strip" id="stripA">
+      <div class="hdr">
+        <h2>Transverse wave</h2>
+        <p>Particles vibrate perpendicular to the direction of wave travel.</p>
+      </div>
+      <div class="view" id="viewA"></div>
+      <div class="ftr">
+        <span class="state" id="stateA">P: moving up</span>
+        <span class="note">P moves only up and down; its x stays fixed.</span>
+        <span class="note lam-note">λ is the distance between two neighbouring crests.</span>
+      </div>
+    </section>
+    <section class="strip" id="stripB">
+      <div class="hdr">
+        <h2>Longitudinal wave</h2>
+        <p>Particles vibrate parallel to the direction of wave travel.</p>
+      </div>
+      <div class="view" id="viewB"></div>
+      <div class="ftr">
+        <span class="state" id="stateB">P: moving right</span>
+        <span class="note">P moves only left and right; its equilibrium position is fixed.</span>
+        <span class="note lam-note">λ is the distance between two neighbouring compressions.</span>
+      </div>
+    </section>
+  </div>
+  <div id="bar">
+    <button id="play" type="button">Play</button>
+    <button id="reset" type="button">Reset</button>
+    <div class="slider"><input id="time" type="range" min="0" max="2" step="0.001" value="0" aria-label="time in periods t/T"></div>
+    <div id="speed" role="group" aria-label="playback speed">
+      <button type="button" data-speed="0.25">0.25×</button>
+      <button type="button" data-speed="0.5">0.5×</button>
+      <button type="button" data-speed="1" class="on">1×</button>
+    </div>
+    <div id="readout">
+      <span id="tval">t / T = 0.000</span>
+      <span>λ = 40 cm&nbsp;&nbsp; T = 0.20 s&nbsp;&nbsp; f = 5 Hz&nbsp;&nbsp; A = 4 cm</span>
+      <span class="src">Sample values from q35 (A = 4 cm, λ = 40 cm, f = 5 Hz); the same λ and T are used on both sides. Drag the picture to look around.</span>
+    </div>
+  </div>
+</div>
+<script type="module" src="./main.js"></script>
+</body>
+</html>

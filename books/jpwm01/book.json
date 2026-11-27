@@ -448,6 +448,13 @@
       "title": "A longitudinal wave: C and R",
       "sub": "p01 · panel 5",
       "src": "explainers/jpwm01-p01-longitudinal/jpwm01-p01-longitudinal.html"
+    },
+    {
+      "page": 1,
+      "at": [566, 100],
+      "title": "Transverse vs longitudinal: a 3D comparison",
+      "sub": "p01 · panel 6",
+      "src": "explainers/jpwm01-p01-3d/index.html"
     }
   ],
   "answerCards": [

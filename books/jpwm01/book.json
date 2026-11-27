@@ -298,7 +298,7 @@
           374,
           780.5
         ],
-        "space": 237
+        "space": 0
       },
       "q1": {
         "region": [
@@ -338,9 +338,9 @@
           66,
           750.5,
           236,
-          779.0
+          796.0
         ],
-        "space": 194
+        "space": 177
       },
       "q2": {
         "space": 68
@@ -409,6 +409,16 @@
       }
     }
   },
+  "media": [
+    {
+      "page": 10,
+      "region": [41.7, 102.3, 574.2, 298.2],
+      "src": "media/jpwm01-p10-dxdt-v2.mp4",
+      "poster": "media/jpwm01-p10-dxdt-v2-poster.jpg",
+      "title": "One wave, two graphs: displacement–distance and displacement–time",
+      "label": "p10 d-x / d-t"
+    }
+  ],
   "answerCards": [
     "q1",
     "q6",

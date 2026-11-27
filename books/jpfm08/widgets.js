@@ -1934,7 +1934,10 @@ function jq26(root) {
   let knobAt = [bx, by];               // (b) where the direction knob was drawn
   let armShown = true;                 // the d_perp / r sin(theta) layer
   let k = 1;                           // (b) how much harder than the minimum you push
-  let phi = 0, swingK = 1, raf = 0;    // the swing
+  let phi = 0, swingK = 1, fitK = 1, raf = 0;  // the swing; fitK is the fixed camera scale
+  /* fitK is the one scale the whole picture is drawn at, chosen at rest so that a 30 deg
+   * turn either way still fits the 620 x 400 box; the swing then only rotates, so the
+   * wheel keeps exactly the same radius while it moves. */
   let sceneG = null;                   // what swings (everything but the ground, the step, P)
   let syncing = false;                 // a slider being written from a drag
   let gotNow = [];                     // what the last render measured, for spin()
@@ -2240,11 +2243,28 @@ function jq26(root) {
       syncing = false;
     }
     armBtnEl.textContent = armShown ? "hide r sin\u03B8" : "show r sin\u03B8";
-    const can = got.length > 0 && Math.abs(net) >= 0.05;
+    /* Only a net moment that would actually LIFT the wheel (clockwise about P) may play.
+     * With the weight winning -- and at k = 1, where the wheel is on the point of climbing
+     * and the net is still not positive -- the button is dead: no rotation, no animation. */
+    const can = got.length > 0 && net > 0.05;
     playBtn.disabled = !can;
     playBtn.style.cursor = can ? "pointer" : "default";
-    playBtn.title = can ? "swing the picture 30\u00B0 about P and back" : "the net moment is zero, so nothing would turn";
+    playBtn.style.opacity = can ? "" : "0.45";
+    playBtn.style.filter = can ? "" : "grayscale(1)";
+    /* the two ways of being dead read differently: the weight may win outright, or the two
+     * moments may balance exactly (b) k = 1 and (a) at W = 40.4) -- then nothing starts */
+    playBtn.title = can
+      ? "swing the picture 30\u00B0 about P and back"
+      : net < -0.05
+        ? "the weight's moment wins \u2014 the wheel stays on the ground"
+        : "on the point of climbing: the moments balance, so the wheel does not start";
 
+    /* the camera: one scale for both turn directions, applied even at rest, so a swing
+     * never changes the size of anything. Not recomputed while a swing is running. */
+    if (!raf) {
+      fitK = Math.min(fitScale(1), fitScale(-1));
+      swingK = fitK;
+    }
     applySwing();
   }
 
@@ -2289,10 +2309,10 @@ function jq26(root) {
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
     const live = gotNow.filter((o) => o.F >= 0.5);
     const net = live.reduce((a, o) => a + o.tau, 0);
-    if (!live.length || Math.abs(net) < 0.05) { phi = 0; swingK = 1; applySwing(); return; }
-    const dir = net > 0 ? 1 : -1;
-    const kFull = fitScale(dir);
-    swingK = 1;
+    /* same rule as the button: a measured weight can hold the wheel, and then nothing
+     * turns -- in particular it must never turn the other way */
+    if (!live.length || net <= 0.05) { phi = 0; applySwing(); return; }
+    const dir = 1;
     const total = Q26_UP + Q26_HOLD + Q26_DOWN;
     const t0 = performance.now();
     const step = (now) => {
@@ -2304,10 +2324,9 @@ function jq26(root) {
       k = Math.max(0, Math.min(1, k));
       k = k * k * (3 - 2 * k);                    // smoothstep: eases out of rest and back into it
       phi = dir * Q26_SWING * k;
-      swingK = 1 + (kFull - 1) * Math.min(1, k / 0.2);
-      applySwing();
+      applySwing();                       // rotate only: the scale is fixed
       if (ms < total) raf = requestAnimationFrame(step);
-      else { raf = 0; phi = 0; swingK = 1; applySwing(); }
+      else { raf = 0; phi = 0; applySwing(); }
     };
     raf = requestAnimationFrame(step);
   }

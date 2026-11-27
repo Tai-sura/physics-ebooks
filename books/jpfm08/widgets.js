@@ -1922,13 +1922,20 @@ const n3 = (v) => {
   return a.toFixed(a >= 100 ? 0 : a >= 10 ? 1 : a >= 1 ? 2 : 3);
 };
 
+/* The same figure rule for a length that can be very short: a 3-decimal arm would print
+ * 0.008 m for 0.00754 m, and 4641 x 0.008 is 37.1 N m, not the 35.0 N m the sentence claims.
+ * Below 0.1 m the figures are given rather than the decimals; 0.1 m and up is unchanged. */
+const m3 = (v) => (Math.abs(v) < 0.1 ? Number(v).toPrecision(3) : v.toFixed(3));   // an arm, metres
+const r2 = (v) => (Math.abs(v) < 0.0005 ? "0.00"                                     // a radius, metres
+  : Math.abs(v) < 0.1 ? Number(v).toPrecision(3) : v.toFixed(2));
+
 function jq26(root) {
   const svg = scene(620, 400);
   svg.style.touchAction = "none";
   const r = readout();
 
   let mode = 0;                        // 0 = (a) the printed 50 N push, 1 = (b) the smallest force
-  let W = 40.0;                        // N, the slider in (a)
+  let W = Q26_W0;                      // N, the slider in (a): the printed answer, 40.4
   let bx = 300, by = 60;               // (b) where the force acts: always on the rim
   let ba = 0;                          // (b) its direction, radians (screen)
   let knobAt = [bx, by];               // (b) where the direction knob was drawn
@@ -2039,14 +2046,17 @@ function jq26(root) {
       const mx = (Q26_PX + f.x) / 2, my = (Q26_PY + f.y) / 2;
       const L = Math.hypot(f.x - Q26_PX, f.y - Q26_PY) || 1;
       const ox = ((Q26_PY - f.y) / L) * 13, oy = ((f.x - Q26_PX) / L) * 13;
-      T(parent, mx + ox, my + oy + 4, `r = ${(rr / Q26_S).toFixed(2)} m`,
+      T(parent, mx + ox, my + oy + 4, `r = ${r2(rr / Q26_S)} m`,
         { "text-anchor": "middle", "font-size": 10.5, "font-weight": 700, fill: C.grey,
           stroke: "#fff", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round",
           class: "g-meas g-arm-lab" });
     }
 
     if (armShown) {
-      if (d > 3) {
+      /* the same 0.002 m bound as the reading column and the caption: below it the arm is
+       * thinner than the drawing can resolve, so the label says "no arm" and the numbers
+       * say "no finite force"; at or above it all three carry the value */
+      if (d > 0.002 * Q26_S) {
         S("line", { x1: Q26_PX, y1: Q26_PY, x2: foot[0], y2: foot[1], stroke: f.color,
           "stroke-width": 2.2, "stroke-dasharray": "8 5", class: "g-meas" }, parent);
         if (d > 16) {
@@ -2068,14 +2078,19 @@ function jq26(root) {
         }
         const mx = Q26_PX + (foot[0] - Q26_PX) * tLab, my = Q26_PY + (foot[1] - Q26_PY) * tLab;
         const ox = ((Q26_PY - foot[1]) / d) * 16, oy = ((foot[0] - Q26_PX) / d) * 16;
+        /* an arm shorter than this has no midpoint worth printing at: its label would sit across
+         * the rim, so it goes where the "no arm" label used to, just outside P, and still carries
+         * the value that the reading column and the caption carry */
+        const shortArm = d <= 16;
         /* the edited force carries the relation; the weight just carries its arm, or the two long
          * labels brush against each other when the arms line up (seen at theta = 249 deg: 98.5 x 1 px) */
-        const lab = T(parent, mx + ox, my + oy + 4, f.arc ? `d\u22A5 = r sin\u03B8 = ${arm.toFixed(3)} m` : `d\u22A5 = ${arm.toFixed(3)} m`,
-          { "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: f.color,
+        const lab = T(parent, shortArm ? f.x + 10 : mx + ox, shortArm ? f.y + 22 : my + oy + 4,
+          f.arc ? `d\u22A5 = r sin\u03B8 = ${m3(arm)} m` : `d\u22A5 = ${m3(arm)} m`,
+          { "text-anchor": shortArm ? "start" : "middle", "font-size": 11, "font-weight": 700, fill: f.color,
             stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round",
             class: "g-meas g-arm-lab" });
-        lab.dataset.short = `${arm.toFixed(3)} m`;
-        lab.dataset.full = `d\u22A5 = r sin\u03B8 = ${arm.toFixed(3)} m`;
+        lab.dataset.short = `${m3(arm)} m`;
+        lab.dataset.full = `d\u22A5 = r sin\u03B8 = ${m3(arm)} m`;
       } else {
         /* no arm, and no pretend one: the line of action runs through P */
         T(parent, f.x + 10, f.y + 22, "no arm \u2014 line through P",
@@ -2110,8 +2125,14 @@ function jq26(root) {
       { "text-anchor": anchor, "font-size": 11.5, "font-weight": 700, fill: f.color,
         stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
 
-    // the point it acts at, and the hollow knob that turns it (mode b only)
-    S("circle", { cx: f.x, cy: f.y, r: 5.5, fill: f.color, stroke: "#fff", "stroke-width": 1.6 }, parent);
+    // the point it acts at, and the hollow knob that turns it (mode b only).
+    // In (b) the point can be dragged anywhere round the rim, so it is drawn with a dashed
+    // handle ring and is a little larger: a control you can see, not one you have to guess.
+    if (f.knob) {
+      S("circle", { cx: f.x, cy: f.y, r: 12.5, fill: "none", stroke: f.color, "stroke-width": 1.1,
+        "stroke-dasharray": "3 3", "stroke-opacity": 0.55 }, parent);
+    }
+    S("circle", { cx: f.x, cy: f.y, r: f.knob ? 7 : 5.5, fill: f.color, stroke: "#fff", "stroke-width": 1.6 }, parent);
     if (f.knob) S("circle", { cx: tx, cy: ty, r: 6.5, fill: "#fff", stroke: f.color, "stroke-width": 2 }, parent);
 
     /* a force of 0 N, or one that no finite value can give, has no moment: the reading says so
@@ -2178,8 +2199,10 @@ function jq26(root) {
       list.push({ x: Q26_CX, y: Q26_CY, a: Math.PI / 2, F: W, color: C.blue, label: `W = ${n3(W)} N`, key: "W" });
     } else {
       // (b) the weight is the printed 40.4 N and the force is whatever is just enough
-      const dpx = armOf(bx, by, ba).d;
-      const need = dpx > 3 ? (Q26_W0 * armW * Q26_S) / dpx : Infinity;   // the minimum, Newtons
+      const armM = armOf(bx, by, ba).d / Q26_S;                          // the arm about P, metres
+      /* one bound for both places: a thinner arm than the drawing can resolve reads as zero
+       * here and in the caption (0.002 m = 0.24 px), so the two never disagree */
+      const need = armM > 0.002 ? (Q26_W0 * armW) / armM : Infinity;      // the minimum, Newtons
       const push = Number.isFinite(need) ? k * need : Infinity;          // what you actually push
       list.push({ x: Q26_CX, y: Q26_CY, a: Math.PI / 2, F: Q26_W0, color: C.blue, label: `W = ${n3(Q26_W0)} N`, key: "W" });
       list.push({ x: bx, y: by, a: ba, F: push, color: C.red,
@@ -2202,7 +2225,7 @@ function jq26(root) {
       /* a force that no finite value can supply prints a dash, not "0.0 N": at theta = 0/180 the
        * line of action runs through P, so there is no force that would turn the wheel that way */
       const head = Number.isFinite(o.F)
-        ? `${o.key} &= ${o.F.toFixed(1)}\\ \\text{N}${o.note ? "\\ \\text{" + o.note + "}" : ""},\\ \\ \\theta = ${degStr(o.th)},\\ \\ d_\\perp = ${o.arm.toFixed(3)}\\ \\text{m}`
+        ? `${o.key} &= ${o.F.toFixed(1)}\\ \\text{N}${o.note ? "\\ \\text{" + o.note + "}" : ""},\\ \\ \\theta = ${degStr(o.th)},\\ \\ d_\\perp = ${m3(o.arm)}\\ \\text{m}`
         : `${o.key} &= \\text{\u2014}\\ \\text{(no finite force)},\\ \\ \\theta = ${degStr(o.th)}`;
       const tail = `\\tau_{${o.key}} &= ${n3(Math.abs(o.tau))}\\ \\text{N m (${o.key === "F" && !Number.isFinite(o.F) ? "no arm" : o.tau >= 0 ? "clockwise" : "anticlockwise"})}`;
       return `${head}\\\\[-2pt] ${tail}`;
@@ -2230,13 +2253,13 @@ function jq26(root) {
       /* the answer line substitutes rounded numbers, so it carries a tilde */
       const fminRow = `F_{\\min} &= ${n3(need)}\\ \\text{N (just enough)}`;
       const ans = Number.isFinite(need)
-        ? `F_{\\min} = \\frac{W(0.866)}{d_\\perp} = \\frac{${n3(Q26_W0)}(0.866)}{${arm.toFixed(3)}} \\approx ${n3(need)}\\ \\text{N}`
+        ? `F_{\\min} = \\frac{W(0.866)}{d_\\perp} = \\frac{${n3(Q26_W0)}(0.866)}{${m3(arm)}} \\approx ${n3(need)}\\ \\text{N}`
         : `F_{\\min} = \\frac{W(0.866)}{d_\\perp}: d_\\perp = 0 \\Rightarrow \\text{no finite force}`;
       r.set(`\\begin{aligned}${rows}\\\\[-2pt] ${fminRow}\\\\[-2pt] ${netRow}\\\\[-2pt] ${ans}\\end{aligned}`, null,
         atMax
           ? `d\u22A5 = 2.000 m is as long as an arm about P can get (the line of action is 2R from P, a diameter away), so ${n3(need)} N is the smallest force that will start the wheel up the step \u2014 the printed answer to (b). You are pushing ${n3(k * need)} N (k = ${k.toFixed(2)}): k > 1 means you push harder than the minimum, so the wheel climbs the step.`
           : Number.isFinite(need)
-            ? `The force acts ${arm.toFixed(3)} m from P, so ${n3(need)} N is just enough to match the weight's ${n3(Q26_W0 * armW)} N m; you are pushing ${n3(k * need)} N (k = ${k.toFixed(2)}). Drag the point round the rim, turn its knob or use the angle slider until the arm reaches 2.000 m and only ${n3(Fmin)} N is needed. k > 1 means you push harder than the minimum, so the wheel climbs the step.`
+            ? `The force acts ${m3(arm)} m from P, so ${n3(need)} N is just enough to match the weight's ${n3(Q26_W0 * armW)} N m; you are pushing ${n3(k * need)} N (k = ${k.toFixed(2)}). Drag the point round the rim, turn its knob or use the angle slider until the arm reaches 2.000 m and only ${n3(Fmin)} N is needed. k > 1 means you push harder than the minimum, so the wheel climbs the step.`
             : `The line of action now runs through P, so the arm is zero and no force applied this way can turn the wheel about the corner. Give it an arm by turning the angle away from 0\u00B0 or 180\u00B0.`);
     }
 
@@ -2345,10 +2368,28 @@ function jq26(root) {
   });
 
   const playBtn = H("button", { type: "button", onclick: () => spin() }, ["\u25B6 play 30\u00B0 swing"]);
-  const playRow = H("div", { class: "g-btns" }, [playBtn]);
+  /* Puts the tab you are on back to the state the widget opens in: (a) W = 40.4 N, the
+   * printed answer;
+   * (b) the point at the top of the rim (300, 60), its direction along +x (ba = 0),
+   * k = 1.00 and the r sin(theta) layer shown. The readings redraw with it. */
+  const resetBtn = H("button", {
+    type: "button", onclick: () => {
+      if (mode === 0) {
+        W = Q26_W0;
+        wS.set(Q26_W0);
+      } else {
+        bx = 300; by = 60; ba = 0;
+        k = 1; kS.set(1);
+        armShown = true;
+        if (armBtnEl) armBtnEl.textContent = "hide r sin\u03B8";
+      }
+      render();
+    }, title: "put this tab back to how it opened",
+  }, ["Reset"]);
+  const playRow = H("div", { class: "g-btns" }, [playBtn, resetBtn]);
 
   const wS = slider({
-    label: "W (N)", min: 0, max: 100, step: 0.1, value: 40.0, play: false,
+    label: "W (N)", min: 0, max: 100, step: 0.1, value: Q26_W0, play: false,
     fmt: (v) => v.toFixed(1) + " N",
   });
   wS.on((v) => { W = v; render(); });
@@ -2407,21 +2448,38 @@ function jq26(root) {
 
   /* ---- dragging in (b): the point slides round the rim, the knob sets the direction ---- */  let drag = null;
   const at = (e) => {
-    const b = svg.getBoundingClientRect();
-    const k = 620 / b.width;
-    return [(e.clientX - b.left) * k, (e.clientY - b.top) * k];
+    /* the viewBox is 620 x 400 but the CSS box rarely keeps that ratio, so the drawing sits
+     * letterboxed inside it. The screen matrix carries that scale and offset, so its inverse
+     * puts a pointer exactly where the drawing thinks it is -- no per-axis guesswork. */
+    const m = svg.getScreenCTM();
+    if (!m) return [0, 0];
+    const p = svg.createSVGPoint ? svg.createSVGPoint() : new DOMPoint();
+    p.x = e.clientX;
+    p.y = e.clientY;
+    const q = p.matrixTransform(m.inverse());
+    return [q.x, q.y];
   };
   svg.addEventListener("pointerdown", (e) => {
     if (mode !== 1) return;
     const [x, y] = at(e);
-    drag = Math.hypot(x - bx, y - by) <= 22 ? "pt"
+    drag = Math.hypot(x - bx, y - by) <= 28 ? "pt"
       : Math.hypot(x - knobAt[0], y - knobAt[1]) <= 22 ? "tip" : null;
     if (!drag) return;
     try { svg.setPointerCapture(e.pointerId); } catch { /* the moves still arrive */ }
     e.preventDefault();
   });
   svg.addEventListener("pointermove", (e) => {
-    if (!drag) return;
+    /* (b) is the only tab with a draggable point, so the cursor says what can be grabbed:
+     * grab over the point or its knob, grabbing while it is being moved */
+    if (!drag) {
+      if (mode === 1) {
+        const [hx, hy] = at(e);
+        const near = Math.hypot(hx - bx, hy - by) <= 28 || Math.hypot(hx - knobAt[0], hy - knobAt[1]) <= 22;
+        svg.style.cursor = near ? "grab" : "";
+      } else if (svg.style.cursor) svg.style.cursor = "";
+      return;
+    }
+    svg.style.cursor = "grabbing";
     const [x, y] = at(e);
     if (drag === "pt") {
       const ang = Math.atan2(y - Q26_CY, x - Q26_CX);   // stay on the rim, wherever the finger is
@@ -2433,7 +2491,7 @@ function jq26(root) {
     render();
     e.preventDefault();
   });
-  const off = () => { drag = null; };
+  const off = () => { drag = null; svg.style.cursor = ""; };
   svg.addEventListener("pointerup", off);
   svg.addEventListener("pointercancel", off);
 

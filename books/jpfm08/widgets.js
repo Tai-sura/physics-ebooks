@@ -2004,11 +2004,11 @@ function jq26(root) {
   /* the ground, the step and P: they do not swing - the wheel climbs the step, the step stays.
    * The 0.5 m is on the step, so it belongs here; the wheel's own 1 m and 0.2 m are drawn with
    * the wheel (dimWheel), or the wheel's fill would cover them. */
-  function drawBase() {
-    S("line", { x1: 40, y1: Q26_GROUND, x2: Q26_PX, y2: Q26_GROUND, stroke: C.line, "stroke-width": 2.2 }, svg);
-    S("line", { x1: Q26_PX, y1: Q26_TOP, x2: Q26_PX, y2: Q26_GROUND, stroke: C.line, "stroke-width": 2.2 }, svg);
-    S("line", { x1: Q26_PX, y1: Q26_TOP, x2: Q26_STEP_END, y2: Q26_TOP, stroke: C.line, "stroke-width": 2.2 }, svg);
-    dim(svg, Q26_PX + 12, Q26_TOP, Q26_PX + 12, Q26_GROUND, "0.5 m", Q26_PX + 19, (Q26_TOP + Q26_GROUND) / 2 + 4, "start");
+  function drawBase(parent) {
+    S("line", { x1: 40, y1: Q26_GROUND, x2: Q26_PX, y2: Q26_GROUND, stroke: C.line, "stroke-width": 2.2 }, parent);
+    S("line", { x1: Q26_PX, y1: Q26_TOP, x2: Q26_PX, y2: Q26_GROUND, stroke: C.line, "stroke-width": 2.2 }, parent);
+    S("line", { x1: Q26_PX, y1: Q26_TOP, x2: Q26_STEP_END, y2: Q26_TOP, stroke: C.line, "stroke-width": 2.2 }, parent);
+    dim(parent, Q26_PX + 12, Q26_TOP, Q26_PX + 12, Q26_GROUND, "0.5 m", Q26_PX + 19, (Q26_TOP + Q26_GROUND) / 2 + 4, "start");
   }
 
   /* the wheel's printed sizes: 1 m radius to the left rim, 0.2 m axle radius. Grey, 11 px, so
@@ -2157,9 +2157,13 @@ function jq26(root) {
 
   function render() {
     clear(svg);
-    drawBase();
+    /* The camera group holds EVERYTHING -- the ground, the step, P and the wheel -- so the
+     * constant scale shrinks the whole picture about P and the wheel cannot come off the
+     * ground; the swing then only rotates the wheel group inside it. */
+    const camG = S("g", { class: "g-cam" }, svg);
+    drawBase(camG);
 
-    const g = S("g", { class: "g-scene" }, svg);
+    const g = S("g", { class: "g-scene" }, camG);
     sceneG = g;
     // the wheel, inside the swinging group: the wheel is what rolls up the step
     S("circle", { cx: Q26_CX, cy: Q26_CY, r: Q26_R, fill: C.soft, stroke: C.line, "stroke-width": 2.4 }, g);
@@ -2187,7 +2191,7 @@ function jq26(root) {
     if (mode === 1) knobAt = got[1].tip;
 
     // the pivot, outside the swing group and last, so it is never covered
-    S("circle", { cx: Q26_PX, cy: Q26_PY, r: 8.5, fill: C.ink, stroke: "#fff", "stroke-width": 2.2 }, svg);
+    S("circle", { cx: Q26_PX, cy: Q26_PY, r: 8.5, fill: C.ink, stroke: "#fff", "stroke-width": 2.2 }, camG);
     T(svg, Q26_PX + 13, Q26_PY - 12, "P", { "font-size": 13, "font-weight": 700, fill: C.ink });
 
     nudgeArmLabels();
@@ -2265,6 +2269,8 @@ function jq26(root) {
       fitK = Math.min(fitScale(1), fitScale(-1));
       swingK = fitK;
     }
+    camG.setAttribute("transform",
+      `translate(${Q26_PX} ${Q26_PY}) scale(${swingK}) translate(${-Q26_PX} ${-Q26_PY})`);
     applySwing();
   }
 
@@ -2274,8 +2280,8 @@ function jq26(root) {
    * state, so d, tau and the net cannot change while it moves. */
   function applySwing() {
     if (!sceneG) return;
-    const zoom = swingK === 1 ? "" : ` translate(${Q26_PX} ${Q26_PY}) scale(${swingK}) translate(${-Q26_PX} ${-Q26_PY})`;
-    sceneG.setAttribute("transform", `rotate(${phi} ${Q26_PX} ${Q26_PY})${zoom}`);
+    /* rotate only: the camera group already carries the one fixed scale */
+    sceneG.setAttribute("transform", `rotate(${phi} ${Q26_PX} ${Q26_PY})`);
     const op = Math.max(0, 1 - Math.abs(phi) / 6);
     for (const el of sceneG.querySelectorAll(".g-meas")) el.style.opacity = String(op.toFixed(3));
   }

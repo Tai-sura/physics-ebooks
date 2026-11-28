@@ -1924,10 +1924,10 @@ const n3 = (v) => {
 
 /* The same figure rule for a length that can be very short: a 3-decimal arm would print
  * 0.008 m for 0.00754 m, and 4641 x 0.008 is 37.1 N m, not the 35.0 N m the sentence claims.
- * Below 0.1 m the figures are given rather than the decimals; 0.1 m and up is unchanged. */
+ * Below 0.1 m the figures are given rather than the decimals; 0.1 m and up is unchanged.
+ * A radius always carries three figures, so the printed r sin(theta) closes against the arm. */
 const m3 = (v) => (Math.abs(v) < 0.1 ? Number(v).toPrecision(3) : v.toFixed(3));   // an arm, metres
-const r2 = (v) => (Math.abs(v) < 0.0005 ? "0.00"                                     // a radius, metres
-  : Math.abs(v) < 0.1 ? Number(v).toPrecision(3) : v.toFixed(2));
+const r2 = (v) => (Math.abs(v) < 0.0005 ? "0.00" : Number(v).toPrecision(3));     // a radius, metres
 
 function jq26(root) {
   const svg = scene(620, 400);
@@ -1940,6 +1940,8 @@ function jq26(root) {
   let ba = 0;                          // (b) its direction, radians (screen)
   let knobAt = [bx, by];               // (b) where the direction knob was drawn
   let armShown = true;                 // the d_perp / r sin(theta) layer
+  let rShown = false;                  // the r labels: the printed page has none, so they start off
+  let wShown = true, fShown = true;    // the W and F labels
   let k = 1;                           // (b) how much harder than the minimum you push
   let phi = 0, swingK = 1, fitK = 1, raf = 0;  // the swing; fitK is the fixed camera scale
   /* fitK is the one scale the whole picture is drawn at, chosen at rest so that a 30 deg
@@ -2018,11 +2020,32 @@ function jq26(root) {
     dim(parent, Q26_PX + 12, Q26_TOP, Q26_PX + 12, Q26_GROUND, "0.5 m", Q26_PX + 19, (Q26_TOP + Q26_GROUND) / 2 + 4, "start");
   }
 
-  /* the wheel's printed sizes: 1 m radius to the left rim, 0.2 m axle radius. Grey, 11 px, so
-   * they can never be read as a moment arm (the arms are the coloured dashed lines). */
+  /* The sizes exactly as page 11 prints them: one vertical chain to the left of the rim, 0.2 m
+   * from the axle top down to the centre and 1 m from the centre down to the ground, the labels
+   * centred on the line (their white halo opens the gap the page has). Grey and thin, so they
+   * can never be read as a moment arm - the arms are the coloured dashed lines.
+   * Measured on the page: the chain sits 47 px left of the printed rim (R = 169.8 px), so
+   * 0.279 R = 33 units here, and the two extension lines run at the axle top and the centre. */
   function dimWheel(parent) {
-    dim(parent, Q26_CX, Q26_CY, Q26_CX - Q26_R, Q26_CY, "1 m", Q26_CX - 62, Q26_CY - 10);
-    dim(parent, Q26_CX, Q26_CY - Q26_AXR, Q26_CX, Q26_CY, "0.2 m", Q26_CX - 8, Q26_CY - Q26_AXR / 2 + 4, "end");
+    const x = Q26_CX - Q26_R - 33;
+    S("line", { x1: x, y1: Q26_CY - Q26_AXR, x2: x, y2: Q26_GROUND,
+      stroke: C.grey, "stroke-width": 1.1, "stroke-opacity": 0.8 }, parent);
+    for (const [y, down] of [[Q26_CY - Q26_AXR, true], [Q26_CY, false], [Q26_GROUND, true]]) {
+      const wy = y + (down ? -9 : 9);
+      S("path", { d: `M${x - 4.5},${wy} L${x},${y} L${x + 4.5},${wy}`, fill: "none",
+        stroke: C.grey, "stroke-width": 1.1, "stroke-opacity": 0.8 }, parent);
+    }
+    /* the page sets each label a little above the middle of its span and a little left of the
+     * line (measured: the 0.2 m centre is 2.1 pt above its span, the 1 m centre 2.9 pt above;
+     * both sit 4 page px left of the line), so the two are placed there rather than centred */
+    for (const [y, label] of [[Q26_CY - Q26_AXR / 2 - 0.2, "0.2 m"], [(Q26_CY + Q26_GROUND) / 2 - 2.1, "1 m"]]) {
+      T(parent, x - 2, y, label, { "text-anchor": "middle", "font-size": 11, "font-weight": 700,
+        fill: C.grey, stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
+    }
+    for (const y of [Q26_CY - Q26_AXR, Q26_CY]) {
+      S("line", { x1: x, y1: y, x2: Q26_CX + Q26_AXR + 8, y2: y, stroke: C.grey,
+        "stroke-width": 1, "stroke-opacity": 0.5, "stroke-dasharray": "5 4" }, parent);
+    }
   }
 
   /* ---- one force: its line of action, its arm from P (dashed, right angle, value), r and the
@@ -2042,7 +2065,9 @@ function jq26(root) {
     /* r: the line from P to the point where the force acts */
     S("line", { x1: Q26_PX, y1: Q26_PY, x2: f.x, y2: f.y, stroke: C.grey, "stroke-width": 1,
       "stroke-opacity": 0.85, class: "g-meas" }, parent);
-    {
+    /* the page prints no r at all, so this label waits for the r button; and it is left out when
+     * the point sits on P, where it would only repeat "no arm - line through P" over the step */
+    if (rShown && rr / Q26_S >= 0.002) {
       const mx = (Q26_PX + f.x) / 2, my = (Q26_PY + f.y) / 2;
       const L = Math.hypot(f.x - Q26_PX, f.y - Q26_PY) || 1;
       const ox = ((Q26_PY - f.y) / L) * 13, oy = ((f.x - Q26_PX) / L) * 13;
@@ -2082,15 +2107,35 @@ function jq26(root) {
          * the rim, so it goes where the "no arm" label used to, just outside P, and still carries
          * the value that the reading column and the caption carry */
         const shortArm = d <= 16;
-        /* the edited force carries the relation; the weight just carries its arm, or the two long
-         * labels brush against each other when the arms line up (seen at theta = 249 deg: 98.5 x 1 px) */
-        const lab = T(parent, shortArm ? f.x + 10 : mx + ox, shortArm ? f.y + 22 : my + oy + 4,
-          f.arc ? `d\u22A5 = r sin\u03B8 = ${m3(arm)} m` : `d\u22A5 = ${m3(arm)} m`,
+        /* the relation is written only while r is on the drawing: without it the label is half as
+         * long, which is what keeps it off the rim at theta = 75 and 120 deg */
+        const rel = rShown && f.arc;
+        const labTxt = rel ? `d\u22A5 = r sin\u03B8 = ${m3(arm)} m` : `d\u22A5 = ${m3(arm)} m`;
+        /* two sides to sit on; take the one whose box keeps furthest from the rim, the step and
+         * the ground, so a long label never lies across a drawn line */
+        let sideSgn = 1;
+        if (!shortArm) {
+          let bestCost = -1;
+          for (const sgn of [1, -1]) {
+            const lx = mx + ox * sgn, ly = my + oy * sgn + 4;
+            const half = rel ? 62 : 34;
+            let cost = 99;
+            for (const u of [-1, -0.5, 0, 0.5, 1]) {
+              const qx = lx + half * u;
+              cost = Math.min(cost, Math.abs(Math.hypot(qx - Q26_CX, ly - Q26_CY) - Q26_R));
+              if (qx > Q26_PX - 40) cost = Math.min(cost, Math.abs(ly - Q26_TOP) + 6);
+              cost = Math.min(cost, Math.abs(ly - Q26_GROUND) + 8);
+            }
+            if (cost > bestCost) { bestCost = cost; sideSgn = sgn; }
+          }
+        }
+        const lab = T(parent, shortArm ? f.x + 10 : mx + ox * sideSgn, shortArm ? f.y + 22 : my + oy * sideSgn + 4,
+          labTxt,
           { "text-anchor": shortArm ? "start" : "middle", "font-size": 11, "font-weight": 700, fill: f.color,
             stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round",
             class: "g-meas g-arm-lab" });
         lab.dataset.short = `${m3(arm)} m`;
-        lab.dataset.full = `d\u22A5 = r sin\u03B8 = ${m3(arm)} m`;
+        lab.dataset.full = labTxt;
       } else {
         /* no arm, and no pretend one: the line of action runs through P */
         T(parent, f.x + 10, f.y + 22, "no arm \u2014 line through P",
@@ -2121,9 +2166,12 @@ function jq26(root) {
     const nx = -uy * side, ny = ux * side;
     const anchor = nx > 0.25 ? "start" : nx < -0.25 ? "end" : "middle";
     const off = anchor === "middle" ? 16 : 12;
-    T(parent, clamp(f.x + ux * (L * 0.55) + nx * off, 34, 588), f.y + uy * (L * 0.55) + ny * off + 4, f.label,
-      { "text-anchor": anchor, "font-size": 11.5, "font-weight": 700, fill: f.color,
-        stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
+    /* W and F labels can be switched off; the arrows themselves stay - they are the drawing */
+    if (f.key === "W" ? wShown : fShown) {
+      T(parent, clamp(f.x + ux * (L * 0.55) + nx * off, 34, 588), f.y + uy * (L * 0.55) + ny * off + 4, f.label,
+        { "text-anchor": anchor, "font-size": 11.5, "font-weight": 700, fill: f.color,
+          stroke: "#fff", "stroke-width": 3.2, "paint-order": "stroke", "stroke-linejoin": "round" });
+    }
 
     // the point it acts at, and the hollow knob that turns it (mode b only).
     // In (b) the point can be dragged anywhere round the rim, so it is drawn with a dashed
@@ -2155,8 +2203,26 @@ function jq26(root) {
     const hit = (a, b) => Math.min(a.x + a.width, b.x + b.width) > Math.max(a.x, b.x) + 1
       && Math.min(a.y + a.height, b.y + b.height) > Math.max(a.y, b.y) + 1;
     const fixed = [...texts.filter((o) => !o.arm).map((o) => o.box), ...circles];
+    /* how many points of a box lie on a printed line: the rim, the step's top and its vertical
+     * edge, the ground. A label that crosses one of them is moved (the 75 and 120 deg arms used
+     * to run straight across the rim and the step). */
+    const onLine = (b) => {
+      let n = 0;
+      const corners = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]];
+      const near = Math.hypot(Math.max(b.x, Math.min(Q26_CX, b.x + b.width)) - Q26_CX,
+        Math.max(b.y, Math.min(Q26_CY, b.y + b.height)) - Q26_CY);
+      const far = Math.max(...corners.map(([x, y]) => Math.hypot(x - Q26_CX, y - Q26_CY)));
+      if (near < Q26_R - 3 && far > Q26_R + 3) n += 6;                       // the rim crosses it
+      if (b.x < Q26_PX && b.x + b.width > Q26_PX && b.y + b.height > Q26_TOP - 4) n += 4;
+      if (b.y < Q26_TOP && b.y + b.height > Q26_TOP && b.x + b.width > Q26_PX - 40) n += 4;
+      if (b.y + b.height > Q26_GROUND - 4) n += 4;
+      if (b.x < 26 || b.x + b.width > 594 || b.y < 26 || b.y + b.height > 386) n += 8;   // off the canvas
+      return n;
+    };
     const D = [];
-    for (const dy of [0, 13, -13, 26, -26, 39, -39]) for (const dx of [0, 18, -18, 34, -34]) D.push([dx, dy]);
+    for (const dy of [0, 13, -13, 26, -26, 39, -39, 52, -52]) {
+      for (const dx of [0, 18, -18, 34, -34, 52, -52, 72, -72]) D.push([dx, dy]);
+    }
     D.sort((a, b) => Math.abs(a[0]) + Math.abs(a[1]) - (Math.abs(b[0]) + Math.abs(b[1])));
     for (const o of texts.filter((x) => x.arm)) {
       const x0 = Number(o.el.getAttribute("x")), y0 = Number(o.el.getAttribute("y"));
@@ -2164,7 +2230,7 @@ function jq26(root) {
       let best = null, bestCost = null;
       for (const [dx, dy] of D) {
         const b = { x: before.x + dx, y: before.y + dy, width: before.width, height: before.height };
-        const cost = fixed.filter((f) => hit(f, b)).length * 1000 + Math.abs(dx) + Math.abs(dy);
+        const cost = fixed.filter((f) => hit(f, b)).length * 1000 + onLine(b) * 40 + Math.abs(dx) + Math.abs(dy);
         if (bestCost === null || cost < bestCost) { bestCost = cost; best = [dx, dy]; }
         if (cost < 1) break;
       }
@@ -2190,7 +2256,7 @@ function jq26(root) {
     S("circle", { cx: Q26_CX, cy: Q26_CY, r: Q26_R, fill: C.soft, stroke: C.line, "stroke-width": 2.4 }, g);
     S("circle", { cx: Q26_CX, cy: Q26_CY, r: Q26_AXR, fill: "#fff", stroke: C.line, "stroke-width": 2 }, g);
     S("circle", { cx: Q26_CX, cy: Q26_CY, r: 3, fill: C.line }, g);
-    dimWheel(g);
+    dimWheel(camG);
 
     const list = [];
     if (mode === 0) {
@@ -2371,7 +2437,8 @@ function jq26(root) {
   /* Puts the tab you are on back to the state the widget opens in: (a) W = 40.4 N, the
    * printed answer;
    * (b) the point at the top of the rim (300, 60), its direction along +x (ba = 0),
-   * k = 1.00 and the r sin(theta) layer shown. The readings redraw with it. */
+   * k = 1.00 and the r sin(theta) layer shown. The three switches go back too - r off, W on,
+   * F on - because the button promises "how it opened". The readings redraw with it. */
   const resetBtn = H("button", {
     type: "button", onclick: () => {
       if (mode === 0) {
@@ -2383,6 +2450,8 @@ function jq26(root) {
         armShown = true;
         if (armBtnEl) armBtnEl.textContent = "hide r sin\u03B8";
       }
+      rShown = false; wShown = true; fShown = true;
+      paintToggles();
       render();
     }, title: "put this tab back to how it opened",
   }, ["Reset"]);
@@ -2432,7 +2501,31 @@ function jq26(root) {
     ["hide r sin\u03B8"]);
   armBtnEl.title = "show or hide the d\u22A5 arm, its right angle and its d\u22A5 = r sin\u03B8 value on the drawing";
 
-  const tools = H("div", { class: "g-btns" }, [bestBtn, armBtnEl]);
+  /* three view switches: r (off, because the printed page prints no r), W and F (on).
+   * Reset leaves them alone - they are how the reader is looking at the picture, not a state
+   * of this tab. */
+  const togState = [];
+  const paintToggles = () => {
+    for (const [btn, isOn] of togState) {
+      const on = isOn();
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.style.background = on ? C.blueSoft : "#fff";
+      btn.style.color = on ? C.ink : C.grey;
+      btn.style.borderColor = on ? C.blue : C.soft;
+    }
+  };
+  const togBtn = (label, isOn, flip, title) => {
+    const b = H("button", { type: "button", onclick: () => { flip(); paintToggles(); render(); } }, [label]);
+    b.title = title;
+    togState.push([b, isOn]);
+    return b;
+  };
+  const rBtn = togBtn("r", () => rShown, () => { rShown = !rShown; },
+    "show or hide r, the distance from P to the point where each force acts");
+  const wBtn = togBtn("W", () => wShown, () => { wShown = !wShown; }, "show or hide the weight's label");
+  const fBtn = togBtn("F", () => fShown, () => { fShown = !fShown; }, "show or hide the force's label");
+  const tools = H("div", { class: "g-btns" }, [bestBtn, armBtnEl, rBtn, wBtn, fBtn]);
+  paintToggles();
 
   function syncUI() {
     /* the hidden attribute alone loses to .g-slider's display:flex, and to nothing else, so the

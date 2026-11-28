@@ -1939,9 +1939,23 @@ function jq26(root) {
   let bx = 300, by = 60;               // (b) where the force acts: always on the rim
   let ba = 0;                          // (b) its direction, radians (screen)
   let knobAt = [bx, by];               // (b) where the direction knob was drawn
-  let armShown = true;                 // the d_perp / r sin(theta) layer
+  let armShown = false;                // the moment layer: d_perp, right angle, theta, P
   let rShown = false;                  // the r labels: the printed page has none, so they start off
-  let wShown = true, fShown = true;    // the W and F labels
+  let wShown = false, fShown = true;   // the W and F forces (arrow and label together)
+  /* What a tab shows when it opens. (a) is the printed figure and nothing else: page 11 has the
+   * wheel, the step, the ground, the 50 N push and the three sizes - no P, no theta, no d_perp,
+   * and no W (the page asks you to find W). (b) is the moment comparison, so the moment layer
+   * and the weight are on there. Reset puts the current tab back to its own row. */
+  const VIEW = [
+    { r: false, w: false, f: true, arm: false },
+    { r: false, w: true, f: true, arm: true },
+  ];
+  function applyView(m) {
+    const v = VIEW[m] || VIEW[0];
+    rShown = v.r; wShown = v.w; fShown = v.f; armShown = v.arm;
+    if (armBtnEl) armBtnEl.textContent = armShown ? "hide r sin\u03B8" : "show r sin\u03B8";
+    paintToggles();
+  }
   let k = 1;                           // (b) how much harder than the minimum you push
   let phi = 0, swingK = 1, fitK = 1, raf = 0;  // the swing; fitK is the fixed camera scale
   /* fitK is the one scale the whole picture is drawn at, chosen at rest so that a 30 deg
@@ -2051,20 +2065,32 @@ function jq26(root) {
   /* ---- one force: its line of action, its arm from P (dashed, right angle, value), r and the
    * angle wedge. Everything the arm/angle layer draws is `g-meas`, so the swing can fade it. ---- */
   function oneForce(f, parent, idx) {
+    /* the W and F switches take the whole force off the drawing - the arrow is the force, so it
+     * goes with its label - while the numbers below the canvas are computed either way. The whole
+     * force is drawn into its own group so one switch can drop it in one go. */
+    const shown = f.key === "W" ? wShown : fShown;
+    parent = S("g", {}, parent);
     const { foot, z, d, ux, uy, along, rr } = armOf(f.x, f.y, f.a);
     const arm = d / Q26_S;
     const th = thetaDeg(f.x, f.y, f.a);
 
-    const ext = 24;
-    const t0 = Math.min(0, -along) - ext, t1 = Math.max(0, -along) + ext;
-    S("line", {
-      x1: f.x + ux * t0, y1: f.y + uy * t0, x2: f.x + ux * t1, y2: f.y + uy * t1,
-      stroke: C.grey, "stroke-width": 1.1, "stroke-dasharray": "7 5", "stroke-opacity": 0.8,
-    }, parent);
+    /* the line of action, extended past the force so the perpendicular foot can be found: a
+     * construction line, so it appears with the moment layer (the printed page has none) */
+    if (armShown) {
+      const ext = 24;
+      const t0 = Math.min(0, -along) - ext, t1 = Math.max(0, -along) + ext;
+      S("line", {
+        x1: f.x + ux * t0, y1: f.y + uy * t0, x2: f.x + ux * t1, y2: f.y + uy * t1,
+        stroke: C.grey, "stroke-width": 1.1, "stroke-dasharray": "7 5", "stroke-opacity": 0.8,
+      }, parent);
+    }
 
-    /* r: the line from P to the point where the force acts */
-    S("line", { x1: Q26_PX, y1: Q26_PY, x2: f.x, y2: f.y, stroke: C.grey, "stroke-width": 1,
-      "stroke-opacity": 0.85, class: "g-meas" }, parent);
+    /* r: the line from P to the point where the force acts. It is one side of the r sin(theta)
+     * triangle, so it belongs to the moment layer; its value is the r switch. */
+    if (armShown) {
+      S("line", { x1: Q26_PX, y1: Q26_PY, x2: f.x, y2: f.y, stroke: C.grey, "stroke-width": 1,
+        "stroke-opacity": 0.85, class: "g-meas" }, parent);
+    }
     /* the page prints no r at all, so this label waits for the r button; and it is left out when
      * the point sits on P, where it would only repeat "no arm - line through P" over the step */
     if (rShown && rr / Q26_S >= 0.002) {
@@ -2147,7 +2173,7 @@ function jq26(root) {
     /* the angle wedge: only the force being edited carries one. W's theta is a bookkeeping angle
      * for the column (its line of action is fixed), so a 240 deg near-circle around the hub would
      * be noise on the drawing - ruled out by the user. */
-    if (f.arc && d > 0.6) {
+    if (armShown && f.arc && d > 0.6) {
       const base = (Math.atan2(f.y - Q26_PY, f.x - Q26_PX) * 180) / Math.PI;
       arcSweep(parent, f.x, f.y, 26, base, th, f.color, 1.3, "g-meas g-theta");
       const bis = ((base + th / 2) * Math.PI) / 180;
@@ -2186,6 +2212,7 @@ function jq26(root) {
     /* a force of 0 N, or one that no finite value can give, has no moment: the reading says so
      * rather than printing a NaN into the column */
     const Fin = Number.isFinite(f.F) ? f.F : 0;
+    if (!shown) parent.remove();
     return { arm, th, r: rr / Q26_S, tau: Math.sign(z) * Fin * arm, tip: [tx, ty], F: f.F, key: f.key, color: f.color, note: f.note };
   }
 
@@ -2279,9 +2306,12 @@ function jq26(root) {
     gotNow = got;
     if (mode === 1) knobAt = got[1].tip;
 
-    // the pivot, outside the swing group and last, so it is never covered
-    S("circle", { cx: Q26_PX, cy: Q26_PY, r: 8.5, fill: C.ink, stroke: "#fff", "stroke-width": 2.2 }, camG);
-    T(svg, Q26_PX + 13, Q26_PY - 12, "P", { "font-size": 13, "font-weight": 700, fill: C.ink });
+    // the pivot, outside the swing group and last, so it is never covered. The printed figure has
+    // no P, so it belongs to the moment layer and appears with the arms.
+    if (armShown) {
+      S("circle", { cx: Q26_PX, cy: Q26_PY, r: 8.5, fill: C.ink, stroke: "#fff", "stroke-width": 2.2 }, camG);
+      T(svg, Q26_PX + 13, Q26_PY - 12, "P", { "font-size": 13, "font-weight": 700, fill: C.ink });
+    }
 
     nudgeArmLabels();
 
@@ -2429,6 +2459,7 @@ function jq26(root) {
   /* ---- controls ---- */
   const modeTabs = tabs(["(a) the 50 N push", "(b) the smallest force"], (i) => {
     mode = i;
+    applyView(i);
     syncUI();
     render();
   });
@@ -2447,11 +2478,8 @@ function jq26(root) {
       } else {
         bx = 300; by = 60; ba = 0;
         k = 1; kS.set(1);
-        armShown = true;
-        if (armBtnEl) armBtnEl.textContent = "hide r sin\u03B8";
       }
-      rShown = false; wShown = true; fShown = true;
-      paintToggles();
+      applyView(mode);
       render();
     }, title: "put this tab back to how it opened",
   }, ["Reset"]);
@@ -2499,7 +2527,7 @@ function jq26(root) {
    * read it against. The numbers in the column stay put either way. */
   const armBtnEl = H("button", { type: "button", onclick: () => { armShown = !armShown; render(); } },
     ["hide r sin\u03B8"]);
-  armBtnEl.title = "show or hide the d\u22A5 arm, its right angle and its d\u22A5 = r sin\u03B8 value on the drawing";
+  armBtnEl.title = "show or hide the moment layer: the d\u22A5 arm, its right angle, its value, the angle \u03B8 and the corner P";
 
   /* three view switches: r (off, because the printed page prints no r), W and F (on).
    * Reset leaves them alone - they are how the reader is looking at the picture, not a state
